@@ -160,22 +160,31 @@ public:
 
   /// ReplaceText - This method replaces a range of characters in the input
   /// buffer with a new string.  This is effectively a combined "remove/insert"
-  /// operation.
-  bool ReplaceText(CharSourceRange range, StringRef NewStr) {
-    return ReplaceText(range.getBegin(), getRangeSize(range), NewStr);
+  /// operation. To ensure correct computation of the size of the range to
+  /// replace, pass RewriteOptions with IncludeInsertsAtBeginOfRange = false
+  /// (unless different behavior is desired).
+  bool ReplaceText(CharSourceRange range, StringRef NewStr,
+      RewriteOptions opts = RewriteOptions()) {
+    return ReplaceText(range.getBegin(), getRangeSize(range, opts), NewStr);
   }
 
   /// ReplaceText - This method replaces a range of characters in the input
   /// buffer with a new string.  This is effectively a combined "remove/insert"
-  /// operation.
-  bool ReplaceText(SourceRange range, StringRef NewStr) {
-    return ReplaceText(range.getBegin(), getRangeSize(range), NewStr);
+  /// operation. To ensure correct computation of the size of the range to
+  /// replace, pass RewriteOptions with IncludeInsertsAtBeginOfRange = false
+  /// (unless different behavior is desired).
+  bool ReplaceText(SourceRange range, StringRef NewStr,
+      RewriteOptions opts = RewriteOptions()) {
+    return ReplaceText(range.getBegin(), getRangeSize(range, opts), NewStr);
   }
 
   /// ReplaceText - This method replaces a range of characters in the input
   /// buffer with a new string.  This is effectively a combined "remove/insert"
-  /// operation.
-  bool ReplaceText(SourceRange range, SourceRange replacementRange);
+  /// operation. To ensure correct computation of the size of the ranges,
+  /// pass RewriteOptions with IncludeInsertsAtBeginOfRange = false (unless
+  /// different behavior is desired).
+  bool ReplaceText(SourceRange range, SourceRange replacementRange,
+    RewriteOptions opts = RewriteOptions());
 
   /// Increase indentation for the lines between the given source range.
   /// To determine what the indentation should be, 'parentIndent' is used

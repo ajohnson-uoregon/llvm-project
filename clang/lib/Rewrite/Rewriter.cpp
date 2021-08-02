@@ -328,13 +328,13 @@ bool Rewriter::ReplaceText(SourceLocation Start, unsigned OrigLength,
   return false;
 }
 
-bool Rewriter::ReplaceText(SourceRange range, SourceRange replacementRange) {
+bool Rewriter::ReplaceText(SourceRange range, SourceRange replacementRange, RewriteOptions opts) {
   if (!isRewritable(range.getBegin())) return true;
   if (!isRewritable(range.getEnd())) return true;
   if (replacementRange.isInvalid()) return true;
   SourceLocation start = range.getBegin();
-  unsigned origLength = getRangeSize(range);
-  unsigned newLength = getRangeSize(replacementRange);
+  unsigned origLength = getRangeSize(range, opts);
+  unsigned newLength = getRangeSize(replacementRange, opts);
   FileID FID;
   unsigned newOffs = getLocationOffsetAndFileID(replacementRange.getBegin(),
                                                 FID);
