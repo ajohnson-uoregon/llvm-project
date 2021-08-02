@@ -62,6 +62,7 @@ TEST(Rewriter, ReplaceTextRangeTypes) {
   // Check that correct text is replaced for each range type.  Ranges remain in
   // terms of the original text but include the new text.
   StringRef Code = "int main(int argc, char *argv[]) { return argc; }";
+  //                                                          foogc; }
   //                            replace char range with "foo" ^~
   //                                                      get ^~~~~ = "foogc;"
   //                           replace token range with "bar" ^~++
@@ -76,5 +77,35 @@ TEST(Rewriter, ReplaceTextRangeTypes) {
   T.Rewrite.ReplaceText(T.SRange, "0");
   EXPECT_EQ(T.Rewrite.getRewrittenText(T.makeCharRange(42, 47)), "0;");
 }
+
+TEST(Rewriter, ReplaceAfterInsert) {
+  // Check that remove/insert after insert behaves correctly based on the
+  // RewriteOptions passed.
+
+  StringRef code = "int main(int argc, char *argv[]) { return argc; } double f(int text_to_erase) {}";
+  //                                                  ^ insert "int answer = 42;"
+  //                                                          ^ replace with answer
+  //                                                          ^ replace with 42
+  //                                                       extra text to erase ^
+  std::unique_ptr<ASTUnit> AST = tooling::buildASTFromCode(code);
+  ASTContext &C = AST->getASTContext();
+  Rewriter Rewrite = Rewriter(C.getSourceManager(), C.getLangOpts());;
+  SourceLocation FileStart = AST->getStartOfMainFileID();
+  SourceLocation insert_point = FileStart.getLocWithOffset(34);
+  Rewrite.InsertText(insert_point, "int answer = 42;");
+  SourceRange replace_range = SourceRange(FileStart.getLocWithOffset(42),
+                                          FileStart.getLocWithOffset(45));
+  Rewriter::RewriteOptions opts;
+  opts.IncludeInsertsAtBeginOfRange = false;
+  Rewrite.ReplaceText(replace_range, "answer", opts);
+  EXPECT_EQ(Rewrite.getRewrittenText(
+      SourceRange(FileStart.getLocWithOffset(33), FileStart.getLocWithOffset(48))),
+    "{int answer = 42; return answer; }");
+  Rewrite.ReplaceText(replace_range, "42", Rewriter::RewriteOptions());
+  EXPECT_EQ(Rewrite.getRewrittenText(
+      SourceRange(FileStart.getLocWithOffset(33), FileStart.getLocWithOffset(55))),
+    "{int answer = 42; return 42; } double");
+}
+
 
 } // anonymous namespace
