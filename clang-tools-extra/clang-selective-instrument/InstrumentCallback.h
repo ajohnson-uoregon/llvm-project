@@ -263,26 +263,28 @@ public:
   void replaceCode(const Stmt* match, const MatchFinder::MatchResult& result, std::string replacetxt) {
 
     // TODO: verify all things for blocks
+    Rewriter::RewriteOptions opts;
+    opts.IncludeInsertsAtBeginOfRange = false;
     if (isBlock(match)) {
       if (auto* comp = dyn_cast<CompoundStmt>(match)) {
-        rw.ReplaceText(SourceRange(comp->getLBracLoc(), comp->getRBracLoc()), replacetxt);
+        rw.ReplaceText(SourceRange(comp->getLBracLoc(), comp->getRBracLoc()), replacetxt, opts);
       }
       else {
         // TODO: verify, it can't be this simple
-        rw.ReplaceText(SourceRange(match->getBeginLoc(), match->getEndLoc()), replacetxt);
+        rw.ReplaceText(SourceRange(match->getBeginLoc(), match->getEndLoc()), replacetxt, opts);
       }
     }
     else if (isLine(match)) {
       printf("waaaaaaaaaaaaat\n");
       match->getBeginLoc().dump(result.Context->getSourceManager());
       match->getEndLoc().dump(result.Context->getSourceManager());
-      rw.ReplaceText(SourceRange(match->getBeginLoc(), match->getEndLoc()), replacetxt);
+      rw.ReplaceText(SourceRange(match->getBeginLoc(), match->getEndLoc()), replacetxt, opts);
     }
     else {
       if (verbose) {
         printf("WARNING: unhandled location type, treating as block\n");
       }
-      rw.ReplaceText(SourceRange(match->getBeginLoc(), match->getEndLoc()), replacetxt);
+      rw.ReplaceText(SourceRange(match->getBeginLoc(), match->getEndLoc()), replacetxt, opts);
     }
   }
 
