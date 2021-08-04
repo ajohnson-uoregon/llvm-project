@@ -170,9 +170,6 @@ int main(int argc, const char **argv) {
 
 // TODO
 // user specified code and actions
-//    insert-pre-match
-//    insert-post-match
-//    replace
 //    replace with arguments
 // for each match, rewrite ast before and after to call inst function
 //    figure out which inst function based on finsturment-functions
