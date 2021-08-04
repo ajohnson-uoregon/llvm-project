@@ -78,34 +78,54 @@ TEST(Rewriter, ReplaceTextRangeTypes) {
   EXPECT_EQ(T.Rewrite.getRewrittenText(T.makeCharRange(42, 47)), "0;");
 }
 
-TEST(Rewriter, ReplaceAfterInsert) {
+TEST(Rewriter, ReplaceAfterInsertNoOpts) {
   // Check that remove/insert after insert behaves correctly based on the
-  // RewriteOptions passed.
+  // RewriteOptions passed. This should erase extra text.
 
-  StringRef code = "int main(int argc, char *argv[]) { return argc; } double f(int text_to_erase) {}";
-  //                                                  ^ insert "int answer = 42;"
-  //                                                          ^ replace with answer
-  //                                                          ^ replace with 42
-  //                                                       extra text to erase ^
+  StringRef code = "int main(int argc, char *argv[]) { return argc; } double "
+                   "f(int text_to_erase) {}";
+  //                        insert "int answer = 42;" ^
+  //                                  replace with 42 ^
+  //                                         extra text to erase ^
   std::unique_ptr<ASTUnit> AST = tooling::buildASTFromCode(code);
   ASTContext &C = AST->getASTContext();
-  Rewriter Rewrite = Rewriter(C.getSourceManager(), C.getLangOpts());;
+  Rewriter Rewrite = Rewriter(C.getSourceManager(), C.getLangOpts());
   SourceLocation FileStart = AST->getStartOfMainFileID();
   SourceLocation insert_point = FileStart.getLocWithOffset(34);
   Rewrite.InsertText(insert_point, "int answer = 42;");
-  SourceRange replace_range = SourceRange(FileStart.getLocWithOffset(42),
+  SourceRange replace_range = SourceRange(FileStart.getLocWithOffset(34),
                                           FileStart.getLocWithOffset(45));
-  Rewriter::RewriteOptions opts;
-  opts.IncludeInsertsAtBeginOfRange = false;
-  Rewrite.ReplaceText(replace_range, "answer", opts);
-  EXPECT_EQ(Rewrite.getRewrittenText(
-      SourceRange(FileStart.getLocWithOffset(33), FileStart.getLocWithOffset(48))),
-    "{int answer = 42; return answer; }");
-  Rewrite.ReplaceText(replace_range, "42", Rewriter::RewriteOptions());
-  EXPECT_EQ(Rewrite.getRewrittenText(
-      SourceRange(FileStart.getLocWithOffset(33), FileStart.getLocWithOffset(55))),
-    "{int answer = 42; return 42; } double");
+  Rewrite.ReplaceText(replace_range, "42;");
+  EXPECT_EQ(
+      Rewrite.getRewrittenText(SourceRange(FileStart.getLocWithOffset(33),
+                                           FileStart.getLocWithOffset(65))),
+      "{int answer = 42;42; text_to_erase");
 }
 
+TEST(Rewriter, ReplaceAfterInsertOpts) {
+  // Check that remove/insert after insert behaves correctly based on the
+  // RewriteOptions passed. This should NOT erase extra text.
+
+  StringRef code = "int main(int argc, char *argv[]) { return argc; } double "
+                   "f(int text_to_erase) {}";
+  //                        insert "int answer = 42;" ^
+  //                                  replace with 42 ^
+  //                                         extra text to erase ^
+  std::unique_ptr<ASTUnit> AST = tooling::buildASTFromCode(code);
+  ASTContext &C = AST->getASTContext();
+  Rewriter Rewrite = Rewriter(C.getSourceManager(), C.getLangOpts());
+  SourceLocation FileStart = AST->getStartOfMainFileID();
+  SourceLocation insert_point = FileStart.getLocWithOffset(34);
+  Rewrite.InsertText(insert_point, "int answer = 42;");
+  SourceRange replace_range = SourceRange(FileStart.getLocWithOffset(34),
+                                          FileStart.getLocWithOffset(46));
+  Rewriter::RewriteOptions opts;
+  opts.IncludeInsertsAtBeginOfRange = false;
+  Rewrite.ReplaceText(replace_range, "42;", opts);
+  EXPECT_EQ(
+      Rewrite.getRewrittenText(SourceRange(FileStart.getLocWithOffset(33),
+                                           FileStart.getLocWithOffset(58))),
+      "{int answer = 42;42; } double f(");
+}
 
 } // anonymous namespace

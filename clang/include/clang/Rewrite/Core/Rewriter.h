@@ -164,7 +164,7 @@ public:
   /// replace, pass RewriteOptions with IncludeInsertsAtBeginOfRange = false
   /// (unless different behavior is desired).
   bool ReplaceText(CharSourceRange range, StringRef NewStr,
-      RewriteOptions opts = RewriteOptions()) {
+                   RewriteOptions opts = RewriteOptions()) {
     return ReplaceText(range.getBegin(), getRangeSize(range, opts), NewStr);
   }
 
@@ -174,7 +174,7 @@ public:
   /// replace, pass RewriteOptions with IncludeInsertsAtBeginOfRange = false
   /// (unless different behavior is desired).
   bool ReplaceText(SourceRange range, StringRef NewStr,
-      RewriteOptions opts = RewriteOptions()) {
+                   RewriteOptions opts = RewriteOptions()) {
     return ReplaceText(range.getBegin(), getRangeSize(range, opts), NewStr);
   }
 
@@ -184,7 +184,7 @@ public:
   /// pass RewriteOptions with IncludeInsertsAtBeginOfRange = false (unless
   /// different behavior is desired).
   bool ReplaceText(SourceRange range, SourceRange replacementRange,
-    RewriteOptions opts = RewriteOptions());
+                   RewriteOptions opts = RewriteOptions());
 
   /// Increase indentation for the lines between the given source range.
   /// To determine what the indentation should be, 'parentIndent' is used

@@ -328,7 +328,8 @@ bool Rewriter::ReplaceText(SourceLocation Start, unsigned OrigLength,
   return false;
 }
 
-bool Rewriter::ReplaceText(SourceRange range, SourceRange replacementRange, RewriteOptions opts) {
+bool Rewriter::ReplaceText(SourceRange range, SourceRange replacementRange,
+                           RewriteOptions opts) {
   if (!isRewritable(range.getBegin())) return true;
   if (!isRewritable(range.getEnd())) return true;
   if (replacementRange.isInvalid()) return true;
