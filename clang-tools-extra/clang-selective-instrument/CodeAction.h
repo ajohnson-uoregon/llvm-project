@@ -22,9 +22,12 @@ public:
   std::string code_snippet;
   NewCodeKind kind;
   std::vector<std::string> matcher_names;
+  std::string action_name;
 
-  CodeAction(NewCodeKind kind, std::vector<std::string> matcher_names, std::string code) :
-    code_snippet(code), kind(kind), matcher_names(matcher_names) {}
+  CodeAction(NewCodeKind kind, std::vector<std::string> matcher_names,
+             std::string code, std::string action_name) :
+    code_snippet(code), kind(kind), matcher_names(matcher_names),
+    action_name(action_name) {}
 
   ~CodeAction() {}
 

@@ -112,8 +112,10 @@ public:
     unsigned int end_line = end.getSpellingLineNumber();
     unsigned int end_col = end.getSpellingColumnNumber();
 
-    printf("FOUND %s at %d:%d - %d:%d\n", kind_name.c_str(),
-      begin_line, begin_col, end_line, end_col);
+    std::string action_name = func->getNameAsString();
+
+    printf("FOUND %s action called %s at %d:%d - %d:%d\n", kind_name.c_str(),
+      action_name.c_str(), begin_line, begin_col, end_line, end_col);
 
     // grab all strings in list of matchers, make vector
     const VarDecl* matcher_list = result.Nodes.getNodeAs<VarDecl>("matcher_list");
@@ -148,7 +150,10 @@ public:
         eol = tok->getLocation();
         // printf("tok %s\n", tok->getName());
       }
-      eol = tok->getEndLoc(); // grab semicolon
+      // TODO: this is a hack and we should be smarter about semicolons
+      if (kind != Replace) {
+        eol = tok->getEndLoc(); // grab semicolon
+      }
       body_end = context->getFullLoc(eol);
     }
     else { // empty body just use brackets
@@ -181,7 +186,7 @@ public:
 
 
     // make action, put in vector of actions
-    CodeAction* act = new CodeAction(kind, matcher_names, std::string(code));
+    CodeAction* act = new CodeAction(kind, matcher_names, std::string(code), action_name);
     all_actions.push_back(act);
 
     delete[] code;
