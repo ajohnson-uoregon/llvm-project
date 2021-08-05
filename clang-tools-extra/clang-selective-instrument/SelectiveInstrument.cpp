@@ -124,7 +124,7 @@ int main(int argc, const char **argv) {
   std::vector<MatcherWrapper<StatementMatcher>*> matchers;
 
   matchers.push_back(new MatcherWrapper<StatementMatcher>(ReturnIntMatcher, "returns", "this", 81, 1));
-  // matchers.push_back(new MatcherWrapper<StatementMatcher>(LoopCondMatcher, "loops", "this", 74, 1));
+  matchers.push_back(new MatcherWrapper<StatementMatcher>(LoopCondMatcher, "loops", "this", 74, 1));
   matchers.push_back(new MatcherWrapper<StatementMatcher>(ThenMatcher, "then code", "this", 84, 1));
 
   // for each matcher, go through all the actions and find the ones relevant to it

@@ -61,11 +61,6 @@ bool isBlock(const Stmt* stmt) {
 // - IndirectGotoStmt
 
 
-// template <class T>
-// class MatcherWrapper;
-//
-// class CodeAction;
-
 template <class T>
 class InstrumentCallback : public MatchFinder::MatchCallback {
 public:
@@ -90,17 +85,16 @@ public:
     for (CodeAction* action : matcher->actions) {
       switch (action->kind) {
         case InsertPrematch:
-          addBeforeCode(match, result, action->code_snippet);
+          addBeforeCode(match, result, action);
           break;
         case InsertPostmatch:
-          addAfterCode(match, result, action->code_snippet);
+          addAfterCode(match, result, action);
           break;
         case Replace:
-          // printf("WARNING: replacing code is not yet implemented.\n");
-          replaceCode(match, result, action->code_snippet);
+          replaceCode(match, result, action);
           break;
         default:
-          printf("ERROR: unknown action kind\n");
+          printf("ERROR: unknown action kind for %s\n", action->action_name.c_str());
       }
     }
   }
@@ -130,8 +124,6 @@ public:
       // printf("is rewritable\n");
 
       runActions(result, match);
-      // addBeforeCode(match, result);
-      // addAfterCode(match, result);
 
       const RewriteBuffer* buff = rw.getRewriteBufferFor(rw.getSourceMgr().getFileID(match->getBeginLoc()));
       if (buff) {
@@ -190,7 +182,8 @@ public:
   }
 
 
-  void checkedInsertTextAfterToken(const MatchFinder::MatchResult& result, SourceLocation loc, std::string text, bool isBeforeCode = false) {
+  void checkedInsertTextAfterToken(const MatchFinder::MatchResult& result, SourceLocation loc, CodeAction* act, bool isBeforeCode = false) {
+    std::string text = act->code_snippet;
     if ((isBeforeCode && locValidForCodeInsertBefore(result)) || (!isBeforeCode && locValidForCodeInsertAfter(result))) {
       rw.InsertTextAfterToken(loc, text.c_str());
     }
@@ -199,13 +192,14 @@ public:
       unsigned int line = full_loc.getSpellingLineNumber();
       unsigned int col = full_loc.getSpellingColumnNumber();
       if (verbose) {
-        printf("WARNING: location %d:%d not valid for code insertion, skipping\n", line, col);
+        printf("WARNING: location %d:%d not valid for action %s, skipping\n", line, col, act->action_name.c_str());
       }
 
     }
   }
 
-  void checkedInsertTextBefore(const MatchFinder::MatchResult& result, SourceLocation loc, std::string text, bool isBeforeCode = false) {
+  void checkedInsertTextBefore(const MatchFinder::MatchResult& result, SourceLocation loc, CodeAction* act, bool isBeforeCode = false) {
+    std::string text = act->code_snippet;
     if ((isBeforeCode && locValidForCodeInsertBefore(result)) || (!isBeforeCode && locValidForCodeInsertAfter(result))) {
       rw.InsertTextBefore(loc, text.c_str());
     }
@@ -214,29 +208,29 @@ public:
       unsigned int line = full_loc.getSpellingLineNumber();
       unsigned int col = full_loc.getSpellingColumnNumber();
       if (verbose) {
-        printf("WARNING: location %d:%d not valid for code insertion, skipping\n", line, col);
+        printf("WARNING: location %d:%d not valid for action %s, skipping\n", line, col, act->action_name.c_str());
       }
     }
   }
 
-  void addBeforeCode(const Stmt* match, const MatchFinder::MatchResult& result, std::string beforetxt) {
+  void addBeforeCode(const Stmt* match, const MatchFinder::MatchResult& result, CodeAction* act) {
 
     if (auto* comp = dyn_cast<CompoundStmt>(match)) {
-      checkedInsertTextAfterToken(result, comp->getLBracLoc(), beforetxt, true);
+      checkedInsertTextAfterToken(result, comp->getLBracLoc(), act, true);
     }
     else {
-      checkedInsertTextBefore(result, match->getBeginLoc(), beforetxt, true);
+      checkedInsertTextBefore(result, match->getBeginLoc(), act, true);
     }
   }
 
-  void addAfterCode(const Stmt* match, const MatchFinder::MatchResult& result, std::string aftertxt) {
+  void addAfterCode(const Stmt* match, const MatchFinder::MatchResult& result, CodeAction* act) {
 
     if (isBlock(match)) {
       if (auto* comp = dyn_cast<CompoundStmt>(match)) {
-        checkedInsertTextBefore(result, comp->getRBracLoc(), aftertxt);
+        checkedInsertTextBefore(result, comp->getRBracLoc(), act);
       }
       else{
-        checkedInsertTextAfterToken(result, match->getEndLoc(), aftertxt);
+        checkedInsertTextAfterToken(result, match->getEndLoc(), act);
       }
     }
     else if (isLine(match)) {
@@ -250,17 +244,18 @@ public:
         // printf("tok %s\n", tok->getName());
       }
       // insert call after that
-      checkedInsertTextAfterToken(result, eol, aftertxt.c_str());
+      checkedInsertTextAfterToken(result, eol, act);
     }
     else {
       if (verbose) {
-        printf("WARNING: unhandled location type, treating as block\n");
+        printf("WARNING: unhandled location type for action %s, treating as block\n", act->action_name.c_str());
       }
-      checkedInsertTextAfterToken(result, match->getEndLoc(), aftertxt.c_str());
+      checkedInsertTextAfterToken(result, match->getEndLoc(), act);
     }
   }
 
-  void replaceCode(const Stmt* match, const MatchFinder::MatchResult& result, std::string replacetxt) {
+  void replaceCode(const Stmt* match, const MatchFinder::MatchResult& result, CodeAction* act) {
+    std::string replacetxt = act->code_snippet;
 
     // TODO: verify all things for blocks
     Rewriter::RewriteOptions opts;
@@ -275,14 +270,14 @@ public:
       }
     }
     else if (isLine(match)) {
-      printf("waaaaaaaaaaaaat\n");
-      match->getBeginLoc().dump(result.Context->getSourceManager());
-      match->getEndLoc().dump(result.Context->getSourceManager());
-      rw.ReplaceText(SourceRange(match->getBeginLoc(), match->getEndLoc()), replacetxt, opts);
+      // printf("waaaaaaaaaaaaat\n");
+      // match->getBeginLoc().dump(result.Context->getSourceManager());
+      // match->getEndLoc().dump(result.Context->getSourceManager());
+      rw.ReplaceText(CharSourceRange::getTokenRange(match->getBeginLoc(), match->getEndLoc()), replacetxt, opts);
     }
     else {
       if (verbose) {
-        printf("WARNING: unhandled location type, treating as block\n");
+        printf("WARNING: unhandled location type for action %s, treating as block\n", act->action_name.c_str());
       }
       rw.ReplaceText(SourceRange(match->getBeginLoc(), match->getEndLoc()), replacetxt, opts);
     }
