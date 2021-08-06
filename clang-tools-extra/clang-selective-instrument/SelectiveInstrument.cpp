@@ -121,19 +121,30 @@ int main(int argc, const char **argv) {
   // TODO are we going to need any other kinds of matchers? probably
   // DeclarationMatchers
   // https://clang.llvm.org/doxygen/classclang_1_1ast__matchers_1_1MatchFinder.html
-  std::vector<MatcherWrapper<StatementMatcher> *> matchers;
+  std::vector<MatcherWrapper<StatementMatcher> *> stmt_matchers;
+  std::vector<MatcherWrapper<DeclarationMatcher>*> decl_matchers;
 
   // temp hack until we have a real front end
-  matchers.push_back(new MatcherWrapper<StatementMatcher>(
-      ReturnIntMatcher, "returns", "this", 81, 1));
-  matchers.push_back(new MatcherWrapper<StatementMatcher>(
-      LoopCondMatcher, "loops", "this", 74, 1));
-  matchers.push_back(new MatcherWrapper<StatementMatcher>(
-      ThenMatcher, "then code", "this", 84, 1));
+  // stmt_matchers.push_back(new MatcherWrapper<StatementMatcher>(
+  //     ReturnIntMatcher, "returns", "this", 81, 1));
+  // stmt_matchers.push_back(new MatcherWrapper<StatementMatcher>(
+  //     LoopCondMatcher, "loops", "this", 74, 1));
+  // stmt_matchers.push_back(new MatcherWrapper<StatementMatcher>(
+  //     ThenMatcher, "then code", "this", 84, 1));
+
+  decl_matchers.push_back(new MatcherWrapper<DeclarationMatcher>(
+      IntDeclMatcher, "intdecl", "this", 24, 1));
 
   // for each matcher, go through all the actions and find the ones relevant to
   // it
-  for (auto m : matchers) {
+  for (auto m : stmt_matchers) {
+    for (CodeAction *act : all_actions) {
+      if (act->do_for_matcher(m->getName())) {
+        m->addAction(act);
+      }
+    }
+  }
+  for (auto m : decl_matchers) {
     for (CodeAction *act : all_actions) {
       if (act->do_for_matcher(m->getName())) {
         m->addAction(act);
@@ -141,13 +152,23 @@ int main(int argc, const char **argv) {
     }
   }
 
-  InstrumentCallback<StatementMatcher> **callbacks =
-      new InstrumentCallback<StatementMatcher> *[matchers.size()];
+  InstrumentCallback<StatementMatcher> **stmt_callbacks =
+      new InstrumentCallback<StatementMatcher> *[stmt_matchers.size()];
+  InstrumentCallback<DeclarationMatcher> **decl_callbacks =
+      new InstrumentCallback<DeclarationMatcher> *[decl_matchers.size()];
 
   int i = 0;
-  for (MatcherWrapper<StatementMatcher> *m : matchers) {
-    callbacks[i] = new InstrumentCallback<StatementMatcher>(m);
-    Finder.addMatcher(m->getMatcher(), callbacks[i]);
+  for (MatcherWrapper<StatementMatcher> *m : stmt_matchers) {
+    stmt_callbacks[i] = new InstrumentCallback<StatementMatcher>(m);
+    Finder.addMatcher(m->getMatcher(), stmt_callbacks[i]);
+    if (verbose) {
+      m->dump();
+    }
+    i++;
+  }
+  for (MatcherWrapper<DeclarationMatcher> *m : decl_matchers) {
+    decl_callbacks[i] = new InstrumentCallback<DeclarationMatcher>(m);
+    Finder.addMatcher(m->getMatcher(), decl_callbacks[i]);
     if (verbose) {
       m->dump();
     }
@@ -156,16 +177,23 @@ int main(int argc, const char **argv) {
   int retval = Tool.run(newFrontendActionFactory(&Finder).get());
 
   // memory cleanup
-  for (MatcherWrapper<StatementMatcher> *m : matchers) {
+  for (MatcherWrapper<StatementMatcher> *m : stmt_matchers) {
+    delete m;
+  }
+  for (MatcherWrapper<DeclarationMatcher> *m : decl_matchers) {
     delete m;
   }
   for (CodeAction *act : all_actions) {
     delete act;
   }
-  for (unsigned int j = 0; j < matchers.size(); j++) {
-    delete callbacks[j];
+  for (unsigned int j = 0; j < stmt_matchers.size(); j++) {
+    delete stmt_callbacks[j];
   }
-  delete[] callbacks;
+  delete[] stmt_callbacks;
+  for (unsigned int j = 0; j < decl_matchers.size(); j++) {
+    delete decl_callbacks[j];
+  }
+  delete[] decl_callbacks;
 
   return retval;
 }
