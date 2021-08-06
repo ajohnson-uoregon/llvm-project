@@ -1,9 +1,9 @@
 #ifndef CLANG_CODE_ACTION_H
 #define CLANG_CODE_ACTION_H
 
-#include <vector>
-#include <string>
 #include <algorithm>
+#include <string>
+#include <vector>
 
 using namespace clang;
 using namespace clang::ast_matchers;
@@ -25,33 +25,27 @@ public:
   std::string action_name;
 
   CodeAction(NewCodeKind kind, std::vector<std::string> matcher_names,
-             std::string code, std::string action_name) :
-    code_snippet(code), kind(kind), matcher_names(matcher_names),
-    action_name(action_name) {}
+             std::string code, std::string action_name)
+      : code_snippet(code), kind(kind), matcher_names(matcher_names),
+        action_name(action_name) {}
 
   ~CodeAction() {}
 
   void add_matcher(std::string m) {
     matcher_names.push_back(m);
-    //TODO: ???
+    // TODO: do we need to unique these???
     std::sort(matcher_names.begin(), matcher_names.end());
     auto new_end = std::unique(matcher_names.begin(), matcher_names.end());
     matcher_names.erase(new_end, matcher_names.end());
   }
 
   bool do_for_matcher(std::string matcher) {
-    // printf("checking for %s in action\n", matcher.c_str());
-    // this->dump();
+    // if no matcher is specified, do it for everything
     if (matcher_names.empty()) {
-      // printf("matcher list empty return true\n");
       return true;
     }
-    bool retval = std::find(matcher_names.begin(), matcher_names.end(), matcher) != matcher_names.end();
-    // if (retval) {
-    //   printf("found [%s] in ", matcher.c_str());
-    //   dump_list();
-    // }
-    return retval;
+    return std::find(matcher_names.begin(), matcher_names.end(), matcher) !=
+           matcher_names.end();
   }
 
   void dump_list() {
