@@ -23,7 +23,8 @@ using namespace clang::ast_matchers;
 using namespace clang::tooling;
 using namespace llvm;
 
-bool isLine(const Stmt *stmt) {
+template <class S>
+bool isLine(const S *stmt) {
   if (isa<AsmStmt>(stmt) || isa<NullStmt>(stmt) || isa<ReturnStmt>(stmt) ||
       isa<ValueStmt>(stmt) // exprs
   ) {
@@ -33,7 +34,8 @@ bool isLine(const Stmt *stmt) {
   }
 }
 
-bool isBlock(const Stmt *stmt) {
+template <class S>
+bool isBlock(const S *stmt) {
   if (isa<CompoundStmt>(stmt) || isa<CoroutineBodyStmt>(stmt) ||
       isa<CXXCatchStmt>(stmt) || isa<CXXForRangeStmt>(stmt) ||
       isa<CXXTryStmt>(stmt) || isa<DoStmt>(stmt) || isa<ForStmt>(stmt) ||
@@ -66,7 +68,8 @@ public:
 
   void onStartOfTranslationUnit() override {}
 
-  void runActions(const MatchFinder::MatchResult &result, const Stmt *match) {
+  template <class S>
+  void runActions(const MatchFinder::MatchResult &result, const S *match) {
     for (CodeAction *action : matcher->actions) {
       switch (action->kind) {
       case InsertPrematch:
@@ -85,17 +88,8 @@ public:
     }
   }
 
-  void run(const MatchFinder::MatchResult &result) override {
-    context = result.Context;
-    rw.setSourceMgr(context->getSourceManager(), context->getLangOpts());
-
-    const Stmt *match = result.Nodes.getNodeAs<Stmt>("match");
-
-    if (!match || !context->getSourceManager().isWrittenInMainFile(
-                      match->getBeginLoc())) {
-      return;
-    }
-
+  template <class S>
+  void run_helper(const MatchFinder::MatchResult &result, S* match) {
     FullSourceLoc begin = context->getFullLoc(match->getBeginLoc());
     FullSourceLoc end = context->getFullLoc(match->getEndLoc());
     unsigned int begin_line = begin.getSpellingLineNumber();
@@ -140,6 +134,35 @@ public:
     }
   }
 
+  void run(const MatchFinder::MatchResult &result) override {
+    printf("RUNNING\n");
+    context = result.Context;
+    rw.setSourceMgr(context->getSourceManager(), context->getLangOpts());
+
+    const Stmt *smatch = result.Nodes.getNodeAs<Stmt>("match");
+    const Decl *dmatch = result.Nodes.getNodeAs<Decl>("match");
+
+    if ((!smatch || !context->getSourceManager().isWrittenInMainFile(
+                      smatch->getBeginLoc()))
+    && (!dmatch || !context->getSourceManager().isWrittenInMainFile(
+                      dmatch->getBeginLoc()))) {
+      // if (verbose) {
+        printf("no match or invalid type\n");
+      // }
+      return;
+    }
+    if (smatch) {
+      // run stmt version
+      run_helper(result, smatch);
+    }
+    else if (dmatch) {
+      // run decl version
+      run_helper(result, dmatch);
+    }
+
+
+  }
+
   void onEndOfTranslationUnit() override {
     // clear out duplicates
     std::sort(files_changed.begin(), files_changed.end());
@@ -169,6 +192,7 @@ public:
     files_changed.clear();
   }
 
+private:
   void checkedInsertTextAfterToken(const MatchFinder::MatchResult &result,
                                    SourceLocation loc, CodeAction *act,
                                    bool isBeforeCode = false) {
@@ -205,7 +229,8 @@ public:
     }
   }
 
-  void addBeforeCode(const Stmt *match, const MatchFinder::MatchResult &result,
+  template <class S>
+  void addBeforeCode(const S *match, const MatchFinder::MatchResult &result,
                      CodeAction *act) {
 
     if (auto *comp = dyn_cast<CompoundStmt>(match)) {
@@ -215,7 +240,8 @@ public:
     }
   }
 
-  void addAfterCode(const Stmt *match, const MatchFinder::MatchResult &result,
+  template <class S>
+  void addAfterCode(const S *match, const MatchFinder::MatchResult &result,
                     CodeAction *act) {
 
     if (isBlock(match)) {
@@ -248,7 +274,8 @@ public:
     }
   }
 
-  void replaceCode(const Stmt *match, const MatchFinder::MatchResult &result,
+  template <class S>
+  void replaceCode(const S *match, const MatchFinder::MatchResult &result,
                    CodeAction *act) {
     std::string replacetxt = act->code_snippet;
 
@@ -279,14 +306,10 @@ public:
     }
   }
 
-  bool locValidForCodeInsertBefore(const MatchFinder::MatchResult &result) {
-    const Stmt *stmt = result.Nodes.getNodeAs<Stmt>("match");
-    const Stmt *root = result.Nodes.getNodeAs<Stmt>("root");
+  template <class S, class D>
+  bool locValidForCodeInsertBeforeHelp(const MatchFinder::MatchResult &result, S* match, D* root) {
     // check if is inside conditional (for, if, elseif, while, etc)
-    if (!root) {
-      root = stmt;
-    }
-    SourceRange insert_point(stmt->getBeginLoc(), stmt->getEndLoc());
+    SourceRange insert_point(match->getBeginLoc(), match->getEndLoc());
 
     if (auto *w = dyn_cast<DoStmt>(root)) {
       SourceRange while_cond(w->getCond()->getBeginLoc(),
@@ -328,14 +351,64 @@ public:
     return true;
   }
 
+  bool locValidForCodeInsertBefore(const MatchFinder::MatchResult &result) {
+    const Stmt *smatch = result.Nodes.getNodeAs<Stmt>("match");
+    const Stmt *sroot = result.Nodes.getNodeAs<Stmt>("root");
+
+    const Decl *dmatch = result.Nodes.getNodeAs<Decl>("match");
+    const Decl *droot = result.Nodes.getNodeAs<Decl>("root");
+
+    // sometimes the outermost part of the matcher *is* the match so we have no
+    // root and need to make one
+    if (!sroot && !droot) {
+      if (smatch) {
+        sroot = smatch;
+      }
+      else if (dmatch) {
+        droot = dmatch;
+      }
+    }
+
+    if (smatch && sroot) {
+      return locValidForCodeInsertBeforeHelp(result, smatch, sroot);
+    }
+    else if (smatch && droot) {
+      return locValidForCodeInsertBeforeHelp(result, smatch, droot);
+    }
+    else if (dmatch && sroot) {
+      return locValidForCodeInsertBeforeHelp(result, dmatch, sroot);
+    }
+    else if (dmatch && droot) {
+      return locValidForCodeInsertBeforeHelp(result, dmatch, droot);
+    }
+    else {
+      printf("ERROR in locValidForCodeInsertBefore\n");
+      return false;
+    }
+  }
+
   bool locValidForCodeInsertAfter(const MatchFinder::MatchResult &result) {
-    const Stmt *stmt = result.Nodes.getNodeAs<Stmt>("match");
+    const Stmt *smatch = result.Nodes.getNodeAs<Stmt>("match");
+    const Decl *dmatch = result.Nodes.getNodeAs<Decl>("match");
     // check if will obviously be dead code (after return, break, continue)
     // anything more difficult left for future work/integration with unused code
     // pass
-    if (isa<BreakStmt>(stmt) || isa<ContinueStmt>(stmt) ||
-        isa<CoreturnStmt>(stmt) || isa<GotoStmt>(stmt) ||
-        isa<ReturnStmt>(stmt)) {
+    if (smatch) {
+      if (isa<BreakStmt>(smatch) || isa<ContinueStmt>(smatch) ||
+          isa<CoreturnStmt>(smatch) || isa<GotoStmt>(smatch) ||
+          isa<ReturnStmt>(smatch)) {
+        return false;
+      }
+    }
+    else if (dmatch) {
+      if (isa<BreakStmt>(dmatch) || isa<ContinueStmt>(dmatch) ||
+          isa<CoreturnStmt>(dmatch) || isa<GotoStmt>(dmatch) ||
+          isa<ReturnStmt>(dmatch)) {
+        return false;
+      }
+    }
+    else {
+      printf("ERROR in locValidForCodeInsertAfter\n");
       return false;
     }
     // check if is inside conditional (for, if, elseif, while, etc)
