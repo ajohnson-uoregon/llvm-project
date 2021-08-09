@@ -2,6 +2,7 @@
 #define CLANG_INSTRUMENT_CALLBACK_H
 
 #include "clang/AST/ASTContext.h"
+// #include "clang/AST/DeclTemplate.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/Lex/Lexer.h"
@@ -23,8 +24,7 @@ using namespace clang::ast_matchers;
 using namespace clang::tooling;
 using namespace llvm;
 
-template <class S>
-bool isLine(const S *stmt) {
+bool isLine(const Stmt *stmt) {
   if (isa<AsmStmt>(stmt) || isa<NullStmt>(stmt) || isa<ReturnStmt>(stmt) ||
       isa<ValueStmt>(stmt) // exprs
   ) {
@@ -34,8 +34,29 @@ bool isLine(const S *stmt) {
   }
 }
 
-template <class S>
-bool isBlock(const S *stmt) {
+bool isLine(const Decl* decl) {
+  if (isa<AccessSpecDecl>(decl) ||
+      isa<BindingDecl>(decl) ||
+      isa<EmptyDecl>(decl) ||
+      isa<EnumConstantDecl>(decl) ||
+      isa<ExportDecl>(decl) ||
+      isa<FieldDecl>(decl) ||
+      isa<ImportDecl>(decl) ||
+      isa<LinkageSpecDecl>(decl) ||
+      isa<PragmaCommentDecl>(decl) ||
+      isa<PragmaDetectMismatchDecl>(decl) ||
+      isa<TypeAliasTemplateDecl>(decl) ||
+      isa<TypedefNameDecl>(decl) ||
+      isa<VarDecl>(decl) ||
+      isa<VarTemplateDecl>(decl)) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
+bool isBlock(const Stmt *stmt) {
   if (isa<CompoundStmt>(stmt) || isa<CoroutineBodyStmt>(stmt) ||
       isa<CXXCatchStmt>(stmt) || isa<CXXForRangeStmt>(stmt) ||
       isa<CXXTryStmt>(stmt) || isa<DoStmt>(stmt) || isa<ForStmt>(stmt) ||
@@ -47,9 +68,28 @@ bool isBlock(const S *stmt) {
   }
 }
 
+bool isBlock(const Decl* decl) {
+  if (isa<BlockDecl>(decl) ||
+      isa<ClassScopeFunctionSpecializationDecl>(decl) ||
+      isa<ClassTemplateDecl>(decl) ||
+      isa<FunctionDecl>(decl) ||
+      isa<FunctionTemplateDecl>(decl) ||
+      isa<TagDecl>(decl)) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
 // TODO:
 // - DeclStmt
 // - IndirectGotoStmt
+// - CapturedDecl
+// - FriendDecl
+// - RequiresExprBodyDecl
+// - TranslationUnitDecl
+// - TemplateParamObjectDecl
 
 template <class T>
 class InstrumentCallback : public MatchFinder::MatchCallback {
@@ -135,7 +175,6 @@ public:
   }
 
   void run(const MatchFinder::MatchResult &result) override {
-    printf("RUNNING\n");
     context = result.Context;
     rw.setSourceMgr(context->getSourceManager(), context->getLangOpts());
 
@@ -146,9 +185,9 @@ public:
                       smatch->getBeginLoc()))
     && (!dmatch || !context->getSourceManager().isWrittenInMainFile(
                       dmatch->getBeginLoc()))) {
-      // if (verbose) {
+      if (verbose) {
         printf("no match or invalid type\n");
-      // }
+      }
       return;
     }
     if (smatch) {
@@ -229,8 +268,7 @@ private:
     }
   }
 
-  template <class S>
-  void addBeforeCode(const S *match, const MatchFinder::MatchResult &result,
+  void addBeforeCode(const Stmt *match, const MatchFinder::MatchResult &result,
                      CodeAction *act) {
 
     if (auto *comp = dyn_cast<CompoundStmt>(match)) {
@@ -240,8 +278,18 @@ private:
     }
   }
 
-  template <class S>
-  void addAfterCode(const S *match, const MatchFinder::MatchResult &result,
+  void addBeforeCode(const Decl *match, const MatchFinder::MatchResult &result,
+                     CodeAction *act) {
+
+    // TODO feex
+    // if (auto *comp = dyn_cast<CompoundStmt>(match)) {
+    //   checkedInsertTextAfterToken(result, comp->getLBracLoc(), act, true);
+    // } else {
+      checkedInsertTextBefore(result, match->getBeginLoc(), act, true);
+    // }
+  }
+
+  void addAfterCode(const Stmt *match, const MatchFinder::MatchResult &result,
                     CodeAction *act) {
 
     if (isBlock(match)) {
@@ -274,8 +322,41 @@ private:
     }
   }
 
-  template <class S>
-  void replaceCode(const S *match, const MatchFinder::MatchResult &result,
+  void addAfterCode(const Decl *match, const MatchFinder::MatchResult &result,
+                    CodeAction *act) {
+
+    if (isBlock(match)) {
+      // TODO: feex
+      // if (auto *comp = dyn_cast<CompoundStmt>(match)) {
+      //   checkedInsertTextBefore(result, comp->getRBracLoc(), act);
+      // } else {
+        checkedInsertTextAfterToken(result, match->getEndLoc(), act);
+      // }
+    } else if (isLine(match)) {
+      // go to end of line
+      SourceLocation eol = Lexer::getLocForEndOfToken(
+          match->getBeginLoc(), 0, context->getSourceManager(),
+          context->getLangOpts());
+      Optional<Token> tok = Lexer::findNextToken(
+          eol, context->getSourceManager(), context->getLangOpts());
+      while (tok.hasValue() && tok->isNot(clang::tok::semi)) {
+        tok = Lexer::findNextToken(eol, context->getSourceManager(),
+                                   context->getLangOpts());
+        eol = tok->getLocation();
+      }
+      // insert call after that
+      checkedInsertTextAfterToken(result, eol, act);
+    } else {
+      if (verbose) {
+        printf("WARNING: unhandled location type for action %s, treating as "
+               "block\n",
+               act->action_name.c_str());
+      }
+      checkedInsertTextAfterToken(result, match->getEndLoc(), act);
+    }
+  }
+
+  void replaceCode(const Stmt *match, const MatchFinder::MatchResult &result,
                    CodeAction *act) {
     std::string replacetxt = act->code_snippet;
 
@@ -306,8 +387,40 @@ private:
     }
   }
 
-  template <class S, class D>
-  bool locValidForCodeInsertBeforeHelp(const MatchFinder::MatchResult &result, S* match, D* root) {
+  void replaceCode(const Decl *match, const MatchFinder::MatchResult &result,
+                   CodeAction *act) {
+    std::string replacetxt = act->code_snippet;
+
+    // TODO: verify all things for blocks
+    Rewriter::RewriteOptions opts;
+    opts.IncludeInsertsAtBeginOfRange = false;
+    if (isBlock(match)) {
+      // TODO: feex
+      // if (auto *comp = dyn_cast<CompoundStmt>(match)) {
+      //   rw.ReplaceText(SourceRange(comp->getLBracLoc(), comp->getRBracLoc()),
+      //                  replacetxt, opts);
+      // } else {
+        // TODO: verify, it can't be this simple
+        rw.ReplaceText(SourceRange(match->getBeginLoc(), match->getEndLoc()),
+                       replacetxt, opts);
+      // }
+    } else if (isLine(match)) {
+      rw.ReplaceText(CharSourceRange::getTokenRange(match->getBeginLoc(),
+                                                    match->getEndLoc()),
+                     replacetxt, opts);
+    } else {
+      if (verbose) {
+        printf("WARNING: unhandled location type for action %s, treating as "
+               "block\n",
+               act->action_name.c_str());
+      }
+      rw.ReplaceText(SourceRange(match->getBeginLoc(), match->getEndLoc()),
+                     replacetxt, opts);
+    }
+  }
+
+  template <class S>
+  bool locValidForCodeInsertBeforeHelp(const MatchFinder::MatchResult &result, const S* match, const Stmt* root) {
     // check if is inside conditional (for, if, elseif, while, etc)
     SourceRange insert_point(match->getBeginLoc(), match->getEndLoc());
 
@@ -347,6 +460,23 @@ private:
         return false;
       }
     }
+
+    return true;
+  }
+
+  template <class S>
+  bool locValidForCodeInsertBeforeHelp(const MatchFinder::MatchResult &result, const S* match, const Decl* root) {
+    // check if is inside conditional (for, if, elseif, while, etc)
+    SourceRange insert_point(match->getBeginLoc(), match->getEndLoc());
+
+    // TODO: do stuff like this for decls
+    // if (auto *w = dyn_cast<DoStmt>(root)) {
+    //   SourceRange while_cond(w->getCond()->getBeginLoc(),
+    //                          w->getCond()->getEndLoc());
+    //
+    //   if (while_cond.fullyContains(insert_point)) {
+    //     return false;
+    //   }
 
     return true;
   }
@@ -401,11 +531,12 @@ private:
       }
     }
     else if (dmatch) {
-      if (isa<BreakStmt>(dmatch) || isa<ContinueStmt>(dmatch) ||
-          isa<CoreturnStmt>(dmatch) || isa<GotoStmt>(dmatch) ||
-          isa<ReturnStmt>(dmatch)) {
-        return false;
-      }
+      // TODO do this for decls
+      // if (isa<BreakStmt>(dmatch) || isa<ContinueStmt>(dmatch) ||
+      //     isa<CoreturnStmt>(dmatch) || isa<GotoStmt>(dmatch) ||
+      //     isa<ReturnStmt>(dmatch)) {
+      //   return false;
+      // }
     }
     else {
       printf("ERROR in locValidForCodeInsertAfter\n");

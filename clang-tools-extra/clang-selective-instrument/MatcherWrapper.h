@@ -9,7 +9,6 @@
 using namespace clang;
 using namespace clang::ast_matchers;
 
-using namespace clang::tooling;
 using namespace llvm;
 
 template <class T> class MatcherWrapper {
