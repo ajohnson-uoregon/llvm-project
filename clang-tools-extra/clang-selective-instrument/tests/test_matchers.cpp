@@ -23,6 +23,5 @@ StatementMatcher ThenMatcher =
 
 DeclarationMatcher IntDeclMatcher =
   varDecl(hasType(asString("int"))).bind("match");
-  // varDecl(anything()).bind("match");
 
 #endif
