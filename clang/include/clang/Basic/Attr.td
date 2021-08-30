@@ -4029,6 +4029,35 @@ def Error : InheritableAttr {
   let Args = [StringArgument<"UserDiagnostic">];
   let Subjects = SubjectList<[Function], ErrorDiag>;
   let Documentation = [ErrorAttrDocs];
+
+class CodeModifyAttr : InheritableAttr;
+
+def InsertCodeBefore : CodeModifyAttr {
+  let Spellings = [Clang<"insert_before">];
+  let Subjects = SubjectList<[Function]>;
+  let Args = [VariadicStringArgument<"Matchers">];
+  let Documentation = [Undocumented];
+}
+
+def InsertCodeAfter : CodeModifyAttr {
+  let Spellings = [Clang<"insert_after">];
+  let Subjects = SubjectList<[Function]>;
+  let Args = [VariadicStringArgument<"Matchers">];
+  let Documentation = [Undocumented];
+}
+
+def ReplaceCode : CodeModifyAttr {
+  let Spellings = [Clang<"replace">];
+  let Subjects = SubjectList<[Function]>;
+  let Args = [VariadicStringArgument<"Matchers">];
+  let Documentation = [Undocumented];
+}
+
+def Matcher : CodeModifyAttr {
+  let Spellings = [Clang<"matcher">];
+  let Subjects = SubjectList<[Function]>;
+  let Args = [StringArgument<"MatcherName">];
+  let Documentation = [Undocumented];
 }
 
 def HLSLNumThreads: InheritableAttr {

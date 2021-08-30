@@ -2915,6 +2915,7 @@ static const AttrClassDescriptor AttrClassDescriptors[] = {
   { "INHERITABLE_PARAM_ATTR", "InheritableParamAttr" },
   { "PARAMETER_ABI_ATTR", "ParameterABIAttr" },
   { "HLSL_ANNOTATION_ATTR", "HLSLAnnotationAttr"}
+  { "CODE_MODIFY_ATTR", "CodeModifyAttr" }
 };
 
 static void emitDefaultDefine(raw_ostream &OS, StringRef name,

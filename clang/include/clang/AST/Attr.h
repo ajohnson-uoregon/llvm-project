@@ -237,6 +237,22 @@ public:
    }
 };
 
+/// An attribute for clang-selective-instrument front end.
+class CodeModifyAttr : public InheritableAttr {
+protected:
+  CodeModifyAttr(ASTContext &Context, const AttributeCommonInfo &CommonInfo,
+                 attr::Kind AK, bool IsLateParsed,
+                 bool InheritEvenIfAlreadyPresent)
+      : InheritableAttr(Context, CommonInfo, AK, IsLateParsed,
+                        InheritEvenIfAlreadyPresent) {}
+
+public:
+  static bool classof(const Attr *A) {
+    return A->getKind() >= attr::FirstCodeModifyAttr &&
+           A->getKind() <= attr::LastCodeModifyAttr;
+  }
+};
+
 /// A single parameter index whose accessors require each use to make explicit
 /// the parameter index encoding needed.
 class ParamIdx {

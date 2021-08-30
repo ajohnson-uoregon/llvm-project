@@ -8512,6 +8512,36 @@ static void handleEnforceTCBAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
   D->addAttr(AttrTy::Create(S.Context, Argument, AL));
 }
 
+// TODO: verify multiple matchers work
+static void handleCodeModifyAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
+  SmallVector<StringRef, 4> Matchers;
+  unsigned num_args = AL.getNumArgs();
+  for (unsigned i = 0; i < num_args; i++) {
+    StringRef Arg;
+    if (!S.checkStringLiteralArgumentAttr(AL, i, Arg)) {
+      return;
+    }
+    Matchers.push_back(Arg);
+  }
+
+  llvm::sort(Matchers);
+  Matchers.erase(std::unique(Matchers.begin(), Matchers.end()), Matchers.end());
+
+  switch (AL.getKind()) {
+    case ParsedAttr::AT_ReplaceCode:
+      D->addAttr(::new (S.Context) ReplaceCodeAttr(S.Context, AL, Matchers.data(), Matchers.size()));
+      break;
+    case ParsedAttr::AT_InsertCodeAfter:
+      D->addAttr(::new (S.Context) InsertCodeAfterAttr(S.Context, AL, Matchers.data(), Matchers.size()));
+      break;
+    case ParsedAttr::AT_InsertCodeBefore:
+      D->addAttr(::new (S.Context) InsertCodeBeforeAttr(S.Context, AL, Matchers.data(), Matchers.size()));
+      break;
+    default:
+      llvm_unreachable("unexpected attribute kind");
+  }
+}
+
 template <typename AttrTy, typename ConflictingAttrTy>
 static AttrTy *mergeEnforceTCBAttrImpl(Sema &S, Decl *D, const AttrTy &AL) {
   // Check if the new redeclaration has different leaf-ness in the same TCB.
@@ -9362,6 +9392,12 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
 
   case ParsedAttr::AT_UsingIfExists:
     handleSimpleAttribute<UsingIfExistsAttr>(S, D, AL);
+    break;
+
+  case ParsedAttr::AT_ReplaceCode:
+  case ParsedAttr::AT_InsertCodeBefore:
+  case ParsedAttr::AT_InsertCodeAfter:
+    handleCodeModifyAttr(S, D, AL);
     break;
   }
 }
