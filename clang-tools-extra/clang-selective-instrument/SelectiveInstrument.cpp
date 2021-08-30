@@ -96,7 +96,7 @@ int main(int argc, const char **argv) {
   if (quiet) {
     verbose = false;
   }
-
+  int retval;
   // TODO: multiple inst files
   if (!inst_file.empty()) {
     ClangTool InstTool(OptionsParser.getCompilations(), {inst_file});
@@ -105,14 +105,16 @@ int main(int argc, const char **argv) {
     InsertPrematchCallback prematch_callback;
     InsertPostmatchCallback postmatch_callback;
     ReplaceCallback replace_callback;
+    // ReplaceCallback2 r2d2;
 
-    inst_finder.addMatcher(insert_prematch, &prematch_callback);
-    inst_finder.addMatcher(insert_postmatch, &postmatch_callback);
+    inst_finder.addMatcher(insert_before_match, &prematch_callback);
+    inst_finder.addMatcher(insert_after_match, &postmatch_callback);
     inst_finder.addMatcher(replace_match, &replace_callback);
+    // inst_finder.addMatcher(replace2, &r2d2);
 
-    InstTool.run(newFrontendActionFactory(&inst_finder).get());
+    retval = InstTool.run(newFrontendActionFactory(&inst_finder).get());
   }
-
+/*
   InstrumentCallback<StatementMatcher>::verbose = verbose;
   InstrumentCallback<StatementMatcher>::rewrite_file = rewrite_file;
 
@@ -125,15 +127,17 @@ int main(int argc, const char **argv) {
   std::vector<MatcherWrapper<DeclarationMatcher>*> decl_matchers;
 
   // temp hack until we have a real front end
-  // stmt_matchers.push_back(new MatcherWrapper<StatementMatcher>(
-  //     ReturnIntMatcher, "returns", "this", 81, 1));
-  // stmt_matchers.push_back(new MatcherWrapper<StatementMatcher>(
-  //     LoopCondMatcher, "loops", "this", 74, 1));
+  stmt_matchers.push_back(new MatcherWrapper<StatementMatcher>(
+      ReturnIntMatcher, "returns", "this", 81, 1));
+  stmt_matchers.push_back(new MatcherWrapper<StatementMatcher>(
+      LoopCondMatcher, "loops", "this", 74, 1));
   // stmt_matchers.push_back(new MatcherWrapper<StatementMatcher>(
   //     ThenMatcher, "then code", "this", 84, 1));
 
-  decl_matchers.push_back(new MatcherWrapper<DeclarationMatcher>(
-      IntDeclMatcher, "intdecl", "this", 24, 1));
+  // decl_matchers.push_back(new MatcherWrapper<DeclarationMatcher>(
+  //     IntDeclMatcher, "intdecl", "this", 24, 1));
+  // decl_matchers.push_back(new MatcherWrapper<DeclarationMatcher>(
+  //     AddMatcher, "addfxn", "this", 27, 1));
 
   // for each matcher, go through all the actions and find the ones relevant to
   // it
@@ -194,7 +198,7 @@ int main(int argc, const char **argv) {
     delete decl_callbacks[j];
   }
   delete[] decl_callbacks;
-
+*/
   return retval;
 }
 
