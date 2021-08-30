@@ -20,41 +20,50 @@ using namespace clang::ast_matchers;
 using namespace clang::tooling;
 using namespace llvm;
 
-DeclarationMatcher insert_prematch =
-    functionDecl(
-        matchesName("insert_prematch*"),
-        hasBody(compoundStmt(
-            allOf(hasAnySubstatement(declStmt(containsDeclaration(
-                      0, varDecl(hasName("matchers")).bind("matcher_list")))),
-                  hasAnySubstatement(cxxForRangeStmt(
-                      allOf(hasRangeInit(ignoringParenImpCasts(
-                                declRefExpr(to(varDecl(hasName("matchers")))))),
-                            hasBody(compoundStmt().bind("new_code")))))))))
-        .bind("insert_prematch");
+// DeclarationMatcher insert_prematch =
+//     functionDecl(
+//         matchesName("insert_prematch*"),
+//         hasBody(compoundStmt(
+//             allOf(hasAnySubstatement(declStmt(containsDeclaration(
+//                       0, varDecl(hasName("matchers")).bind("matcher_list")))),
+//                   hasAnySubstatement(cxxForRangeStmt(
+//                       allOf(hasRangeInit(ignoringParenImpCasts(
+//                                 declRefExpr(to(varDecl(hasName("matchers")))))),
+//                             hasBody(compoundStmt().bind("new_code")))))))))
+//         .bind("insert_prematch");
+//
+// DeclarationMatcher insert_postmatch =
+//     functionDecl(
+//         matchesName("insert_postmatch*"),
+//         hasBody(compoundStmt(
+//             allOf(hasAnySubstatement(declStmt(containsDeclaration(
+//                       0, varDecl(hasName("matchers")).bind("matcher_list")))),
+//                   hasAnySubstatement(cxxForRangeStmt(
+//                       allOf(hasRangeInit(ignoringParenImpCasts(
+//                                 declRefExpr(to(varDecl(hasName("matchers")))))),
+//                             hasBody(compoundStmt().bind("new_code")))))))))
+//         .bind("insert_postmatch");
+//
+// DeclarationMatcher replace_match =
+//     functionDecl(
+//         matchesName("replace*"),
+//         hasBody(compoundStmt(
+//             allOf(hasAnySubstatement(declStmt(containsDeclaration(
+//                       0, varDecl(hasName("matchers")).bind("matcher_list")))),
+//                   hasAnySubstatement(cxxForRangeStmt(
+//                       allOf(hasRangeInit(ignoringParenImpCasts(
+//                                 declRefExpr(to(varDecl(hasName("matchers")))))),
+//                             hasBody(compoundStmt().bind("new_code")))))))))
+//         .bind("replace");
 
-DeclarationMatcher insert_postmatch =
-    functionDecl(
-        matchesName("insert_postmatch*"),
-        hasBody(compoundStmt(
-            allOf(hasAnySubstatement(declStmt(containsDeclaration(
-                      0, varDecl(hasName("matchers")).bind("matcher_list")))),
-                  hasAnySubstatement(cxxForRangeStmt(
-                      allOf(hasRangeInit(ignoringParenImpCasts(
-                                declRefExpr(to(varDecl(hasName("matchers")))))),
-                            hasBody(compoundStmt().bind("new_code")))))))))
-        .bind("insert_postmatch");
+DeclarationMatcher insert_before_match =
+  functionDecl(hasAttr(attr::InsertCodeBefore)).bind("insert_before_match");
+
+DeclarationMatcher insert_after_match =
+  functionDecl(hasAttr(attr::InsertCodeAfter)).bind("insert_after_match");
 
 DeclarationMatcher replace_match =
-    functionDecl(
-        matchesName("replace*"),
-        hasBody(compoundStmt(
-            allOf(hasAnySubstatement(declStmt(containsDeclaration(
-                      0, varDecl(hasName("matchers")).bind("matcher_list")))),
-                  hasAnySubstatement(cxxForRangeStmt(
-                      allOf(hasRangeInit(ignoringParenImpCasts(
-                                declRefExpr(to(varDecl(hasName("matchers")))))),
-                            hasBody(compoundStmt().bind("new_code")))))))))
-        .bind("replace");
+  functionDecl(hasAttr(attr::ReplaceCode)).bind("replace");
 
 std::vector<CodeAction *> all_actions;
 
@@ -73,7 +82,7 @@ public:
 
     if (!func ||
         !context->getSourceManager().isWrittenInMainFile(func->getBeginLoc())) {
-      // printf("ERROR: invalid function definition.\n");
+      printf("ERROR: invalid function definition.\n");
       return;
     }
 
@@ -89,79 +98,101 @@ public:
     printf("FOUND %s action called %s at %d:%d - %d:%d\n", kind_name.c_str(),
            action_name.c_str(), begin_line, begin_col, end_line, end_col);
 
-    // grab all strings in list of matchers, make vector
-    const VarDecl *matcher_list =
-        result.Nodes.getNodeAs<VarDecl>("matcher_list");
-    if (!matcher_list || !context->getSourceManager().isWrittenInMainFile(
-                             matcher_list->getBeginLoc())) {
-      return;
-    }
-
+    // grab all matcher names, put in list
     std::vector<std::string> matcher_names;
-    findStringChildren(matcher_list->getAnyInitializer(), matcher_names);
+    for (Attr* attr : func->attrs()) {
+      attr->printPretty(llvm::outs(), PrintingPolicy(context->getLangOpts()));
+      printf("\n");
+      switch(attr->getKind()) {
+        case attr::ReplaceCode:
+          for (StringRef m : cast<ReplaceCodeAttr>(attr)->matchers()) {
+            llvm::outs() << m << "\n";
+            matcher_names.push_back(m.str());
+          }
+          break;
+        case attr::InsertCodeAfter:
+          for (StringRef m : cast<InsertCodeAfterAttr>(attr)->matchers()) {
+            llvm::outs() << m << "\n";
+            matcher_names.push_back(m.str());
+          }
+          break;
+        case attr::InsertCodeBefore:
+          for (StringRef m : cast<InsertCodeBeforeAttr>(attr)->matchers()) {
+            llvm::outs() << m << "\n";
+            matcher_names.push_back(m.str());
+          }
+          break;
+        default:
+          break;
+      }
+
+    }
 
     // grab function body as new code
-    const CompoundStmt *new_code =
-        result.Nodes.getNodeAs<CompoundStmt>("new_code");
-    if (!new_code || !context->getSourceManager().isWrittenInMainFile(
-                         new_code->getBeginLoc())) {
-      return;
+    Stmt* new_code = nullptr;
+    if (func->hasBody()) {
+      new_code = func->getBody();
+      printf("function body!!!\n");
+      new_code->dump();
+    }
+    else {
+      printf("WARNING: code modification empty\n");
     }
 
-    FullSourceLoc body_begin;
-    FullSourceLoc body_end;
-    if (!new_code->body_empty()) {
-      body_begin = context->getFullLoc(new_code->body_front()->getBeginLoc());
-
-      // go to end of line; stmts don't work, gotta lex to the end of the line
-      SourceLocation eol = Lexer::getLocForEndOfToken(
-          new_code->body_back()->getBeginLoc(), 0, context->getSourceManager(),
-          context->getLangOpts());
-      Optional<Token> tok = Lexer::findNextToken(
-          eol, context->getSourceManager(), context->getLangOpts());
-      while (tok.hasValue() && tok->isNot(clang::tok::semi)) {
-        tok = Lexer::findNextToken(eol, context->getSourceManager(),
-                                   context->getLangOpts());
-        eol = tok->getLocation();
-      }
-      // TODO: this is a hack and we should be smarter about semicolons
-      if (kind != Replace) {
-        eol = tok->getEndLoc(); // grab semicolon
-      }
-      body_end = context->getFullLoc(eol);
-    } else { // empty body just use brackets
-      body_begin = context->getFullLoc(new_code->getLBracLoc());
-      body_end = context->getFullLoc(new_code->getRBracLoc());
-    }
-
-    FileID fid = body_begin.getFileID();
-    unsigned int begin_offset = body_begin.getFileOffset();
-    unsigned int end_offset = body_end.getFileOffset();
-
-    printf("begin offset %u\n", begin_offset);
-    printf("end offset   %u\n", end_offset);
-    printf("array length %u\n", end_offset - begin_offset);
-
-    llvm::Optional<llvm::MemoryBufferRef> buff =
-        context->getSourceManager().getBufferOrNone(fid);
-
-    char *code = new char[end_offset - begin_offset + 1];
-    if (buff.hasValue()) {
-      memcpy(code, &(buff->getBufferStart()[begin_offset]),
-             (end_offset - begin_offset + 1) * sizeof(char));
-      code[end_offset - begin_offset] =
-          '\0'; // force null terminated for Reasons
-      printf("code??? %s\n", code);
-    } else {
-      printf("no buffer :<\n");
-    }
-
-    // make action, put in vector of actions
-    CodeAction *act =
-        new CodeAction(kind, matcher_names, std::string(code), action_name);
-    all_actions.push_back(act);
-
-    delete[] code;
+    // FullSourceLoc body_begin;
+    // FullSourceLoc body_end;
+    // if (!new_code->body_empty()) {
+    //   body_begin = context->getFullLoc(new_code->body_front()->getBeginLoc());
+    //
+    //   // go to end of line; stmts don't work, gotta lex to the end of the line
+    //   SourceLocation eol = Lexer::getLocForEndOfToken(
+    //       new_code->body_back()->getBeginLoc(), 0, context->getSourceManager(),
+    //       context->getLangOpts());
+    //   Optional<Token> tok = Lexer::findNextToken(
+    //       eol, context->getSourceManager(), context->getLangOpts());
+    //   while (tok.hasValue() && tok->isNot(clang::tok::semi)) {
+    //     tok = Lexer::findNextToken(eol, context->getSourceManager(),
+    //                                context->getLangOpts());
+    //     eol = tok->getLocation();
+    //   }
+    //   // TODO: this is a hack and we should be smarter about semicolons
+    //   if (kind != Replace) {
+    //     eol = tok->getEndLoc(); // grab semicolon
+    //   }
+    //   body_end = context->getFullLoc(eol);
+    // } else { // empty body just use brackets
+    //   body_begin = context->getFullLoc(new_code->getLBracLoc());
+    //   body_end = context->getFullLoc(new_code->getRBracLoc());
+    // }
+    //
+    // FileID fid = body_begin.getFileID();
+    // unsigned int begin_offset = body_begin.getFileOffset();
+    // unsigned int end_offset = body_end.getFileOffset();
+    //
+    // printf("begin offset %u\n", begin_offset);
+    // printf("end offset   %u\n", end_offset);
+    // printf("array length %u\n", end_offset - begin_offset);
+    //
+    // llvm::Optional<llvm::MemoryBufferRef> buff =
+    //     context->getSourceManager().getBufferOrNone(fid);
+    //
+    // char *code = new char[end_offset - begin_offset + 1];
+    // if (buff.hasValue()) {
+    //   memcpy(code, &(buff->getBufferStart()[begin_offset]),
+    //          (end_offset - begin_offset + 1) * sizeof(char));
+    //   code[end_offset - begin_offset] =
+    //       '\0'; // force null terminated for Reasons
+    //   printf("code??? %s\n", code);
+    // } else {
+    //   printf("no buffer :<\n");
+    // }
+    //
+    // // make action, put in vector of actions
+    // CodeAction *act =
+    //     new CodeAction(kind, matcher_names, std::string(code), action_name);
+    // all_actions.push_back(act);
+    //
+    // delete[] code;
   }
 
 private:
@@ -182,7 +213,7 @@ class InsertPrematchCallback : public NewCodeCallback {
 public:
   InsertPrematchCallback() {
     kind = InsertPrematch;
-    kind_name = "insert_prematch";
+    kind_name = "insert_before_match";
   }
 };
 
@@ -190,13 +221,21 @@ class InsertPostmatchCallback : public NewCodeCallback {
 public:
   InsertPostmatchCallback() {
     kind = InsertPostmatch;
-    kind_name = "insert_postmatch";
+    kind_name = "insert_after_match";
   }
 };
 
 class ReplaceCallback : public NewCodeCallback {
 public:
   ReplaceCallback() {
+    kind = Replace;
+    kind_name = "replace";
+  }
+};
+
+class ReplaceCallback2 : public NewCodeCallback {
+public:
+  ReplaceCallback2() {
     kind = Replace;
     kind_name = "replace";
   }

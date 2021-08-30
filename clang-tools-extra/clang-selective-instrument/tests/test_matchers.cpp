@@ -24,4 +24,10 @@ StatementMatcher ThenMatcher =
 DeclarationMatcher IntDeclMatcher =
   varDecl(hasType(asString("int"))).bind("match");
 
+DeclarationMatcher AddMatcher =
+  functionDecl(allOf(
+    matchesName("add*"),
+    parameterCountIs(2)
+  ));
+
 #endif
