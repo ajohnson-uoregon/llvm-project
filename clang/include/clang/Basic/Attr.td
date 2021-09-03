@@ -3943,6 +3943,7 @@ def Error : InheritableAttr {
   let Args = [StringArgument<"UserDiagnostic">];
   let Subjects = SubjectList<[Function], ErrorDiag>;
   let Documentation = [ErrorAttrDocs];
+}
 
 class CodeModifyAttr : InheritableAttr;
 

@@ -17,6 +17,7 @@
 #include "InstrumentCallback.h"
 #include "MatcherWrapper.h"
 #include "NewCodeCallback.h"
+#include "MatcherGenCallback.h"
 #include "tests/test_matchers.cpp"
 
 #include <algorithm>
@@ -105,11 +106,13 @@ int main(int argc, const char **argv) {
     InsertPrematchCallback prematch_callback;
     InsertPostmatchCallback postmatch_callback;
     ReplaceCallback replace_callback;
+    MatcherGenCallback matcher_callback;
     // ReplaceCallback2 r2d2;
 
     inst_finder.addMatcher(insert_before_match, &prematch_callback);
     inst_finder.addMatcher(insert_after_match, &postmatch_callback);
     inst_finder.addMatcher(replace_match, &replace_callback);
+    inst_finder.addMatcher(matcher, &matcher_callback);
     // inst_finder.addMatcher(replace2, &r2d2);
 
     retval = InstTool.run(newFrontendActionFactory(&inst_finder).get());
