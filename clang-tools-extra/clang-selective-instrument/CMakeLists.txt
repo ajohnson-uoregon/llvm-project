@@ -8,5 +8,6 @@ target_link_libraries(clang-selective-instrument
   clangTooling
   clangBasic
   clangASTMatchers
+  clangDynamicASTMatchers
   clangLex
   )
