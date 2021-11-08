@@ -69,7 +69,14 @@ public:
     for (int i = 0; i < tab_depth; i++) {
       printf("  ");
     }
-    printf("%s\n", n->matcher_string.c_str());
+    printf("%s;", n->matcher_string.c_str());
+    if (n->has_type) {
+      printf("  has type %s;", n->type.c_str());
+    }
+    if (n->bound) {
+      printf("  bound to %s;", n->bound_name.c_str());
+    }
+    printf("\n");
     for (Node* child : n->children) {
       dump_help(child, tab_depth+1);
     }
