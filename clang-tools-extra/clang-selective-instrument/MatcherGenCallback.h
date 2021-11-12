@@ -5,8 +5,7 @@
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/ASTMatchers/ASTMatchersInternal.h"
-#include "clang/ASTMatchers/Dynamic/VariantValue.h"
-#include "clang/ASTMatchers/Dynamic/Registry.h"
+
 #include "clang/Lex/Lexer.h"
 #include "clang/Lex/Token.h"
 
@@ -18,6 +17,7 @@
 #include "clang/Tooling/Tooling.h"
 
 #include "CodeAction.h"
+#include "ConstructMatchers.h"
 
 #include <string>
 #include <vector>
@@ -31,78 +31,15 @@ using namespace clang::tooling;
 
 using ast_matchers::internal::Matcher;
 
-
-enum class MatcherType {
-  compoundStmt,
-  returnStmt,
-  hasReturnValue,
-  declRefExpr,
-};
-
 using MT = MatcherType;
-using R = clang::ast_matchers::dynamic::Registry;
 
-
-class Node {
-public:
-  MatcherType matcher_type;
-  std::string matcher_string; // for debug/dumping purposes
-  bool bound;
-  std::string bound_name;
-  bool has_type;
-  std::string type;
-  bool ignore_casts;
-  std::vector<Node*> children;
-
-  Node(MatcherType m, std::string ms) : matcher_type(m), matcher_string(ms) {}
-
-  void add_child(Node* parent, Node* child) {
-    if (parent == nullptr) {
-      parent = child;
-    }
-    else {
-      parent->children.push_back(child);
-    }
-  }
-
-  void dump_help(Node* n, int tab_depth) {
-    for (int i = 0; i < tab_depth; i++) {
-      printf("  ");
-    }
-    printf("%s;", n->matcher_string.c_str());
-    if (n->has_type) {
-      printf("  has type %s;", n->type.c_str());
-    }
-    if (n->bound) {
-      printf("  bound to %s;", n->bound_name.c_str());
-    }
-    printf("\n");
-    for (Node* child : n->children) {
-      dump_help(child, tab_depth+1);
-    }
-  }
-
-  void dump() {
-    dump_help(this, 0);
-  }
-
-  void clean_tree() {
-    for (Node* child : this->children) {
-      child->clean_tree();
-    }
-    delete this;
-  }
-};
-
-StatementMatcher rettest =
+DynTypedMatcher rettest =
   returnStmt(
     hasReturnValue(
       ignoringParenImpCasts(
-        declRefExpr(
-          allOf(
-            hasType(asString("int")),
-            expr().bind("x")
-          )
+        allOf(
+          hasType(asString("int")),
+          expr().bind("x")
         )
       )
     )
@@ -140,7 +77,7 @@ public:
     bool VisitDeclRefExpr(DeclRefExpr* ref) {
       ValueDecl* decl = ref->getDecl();
       std::string name = decl->getNameAsString();
-      update_matcher(MT::declRefExpr, "declRefExpr()");
+      // update_matcher(MT::declRefExpr, "declRefExpr()");
       bind_to(name);
       if (decl->getType()->getTypeClass() != clang::Type::TypeClass::Auto) {
         std::string type = decl->getType().getAsString();
@@ -162,6 +99,7 @@ private:
     if (root == nullptr) {
       root = temp;
       current = root;
+      // bind_to("match");
     }
     else {
       current->add_child(current, temp);
@@ -200,135 +138,6 @@ class MatcherGenCallback : public MatchFinder::MatchCallback {
 public:
   ASTContext* context;
   std::string matcher_name;
-
-  std::vector<ParserValue> Args() { return std::vector<ParserValue>(); }
-  std::vector<ParserValue> Args(const VariantValue &Arg1) {
-    std::vector<ParserValue> Out(1);
-    Out[0].Value = Arg1;
-    return Out;
-  }
-  std::vector<ParserValue> Args(const VariantValue &Arg1,
-                                const VariantValue &Arg2) {
-    std::vector<ParserValue> Out(2);
-    Out[0].Value = Arg1;
-    Out[1].Value = Arg2;
-    return Out;
-  }
-  std::vector<ParserValue> Args(std::vector<VariantValue> args) {
-    std::vector<ParserValue> out(args.size());
-    for (unsigned int i = 0; i < args.size(); i++) {
-      out[i].Value = args[i];
-    }
-    return out;
-  }
-
-
-  VariantMatcher constructMatcher(StringRef MatcherName,
-                                  Diagnostics *Error = nullptr) {
-    Diagnostics DummyError;
-    if (!Error) {
-      Error = &DummyError;
-    }
-    llvm::Optional<MatcherCtor> Ctor = R::lookupMatcherCtor(MatcherName);
-    VariantMatcher Out;
-    if (Ctor) {
-      Out = R::constructMatcher(*Ctor, {}, Args(), Error);
-    }
-    printf("made matcher %s\n", MatcherName.str().c_str());
-    return Out;
-  }
-
-  VariantMatcher constructMatcher(StringRef MatcherName,
-                                  const VariantValue &Arg1,
-                                  Diagnostics *Error = nullptr) {
-    Diagnostics DummyError;
-    if (!Error) {
-      Error = &DummyError;
-    }
-    llvm::Optional<MatcherCtor> Ctor = R::lookupMatcherCtor(MatcherName);
-    VariantMatcher Out;
-    if (Ctor) {
-      Out = R::constructMatcher(*Ctor, {}, Args(Arg1), Error);
-    }
-    printf("made matcher %s\n", MatcherName.str().c_str());
-    return Out;
-  }
-
-  VariantMatcher constructMatcher(StringRef MatcherName,
-                                  const VariantValue &Arg1,
-                                  const VariantValue &Arg2,
-                                  Diagnostics *Error = nullptr) {
-    Diagnostics DummyError;
-    if (!Error) {
-      Error = &DummyError;
-    }
-    llvm::Optional<MatcherCtor> Ctor = R::lookupMatcherCtor(MatcherName);
-    VariantMatcher Out;
-    if (Ctor) {
-      Out = R::constructMatcher(*Ctor, {}, Args(Arg1, Arg2), Error);
-    }
-    printf("made matcher %s\n", MatcherName.str().c_str());
-    return Out;
-  }
-
-  VariantMatcher constructMatcher(StringRef MatcherName, std::vector<VariantValue> args,
-                                  Diagnostics* Error = nullptr) {
-    Diagnostics DummyError;
-    if (!Error) {
-      Error = &DummyError;
-    }
-    llvm::Optional<MatcherCtor> Ctor = R::lookupMatcherCtor(MatcherName);
-    VariantMatcher Out;
-    if (Ctor) {
-      Out = R::constructMatcher(*Ctor, {}, Args(args), Error);
-    }
-    printf("made matcher %s\n", MatcherName.str().c_str());
-    return Out;
-  }
-
-  VariantMatcher make_matcher(Node* root) {
-    std::vector<VariantValue> child_matchers;
-    switch(root->matcher_type) {
-      case MT::compoundStmt:
-        child_matchers.clear();
-        if (root->children.size() > 1) {
-          for (Node* child : root->children) {
-            child_matchers.push_back(
-              constructMatcher("hasAnySubstatement", make_matcher(child)));
-          }
-          return constructMatcher("compoundStmt",
-                  constructMatcher("allOf", child_matchers)
-                 );
-        }
-        else if (root->children.size() == 1) {
-          return constructMatcher("compoundStmt",
-                  constructMatcher("hasAnySubstatement", make_matcher(root->children[0])));
-        }
-        else {
-          return constructMatcher("compoundStmt");
-        }
-        break;
-      case MT::returnStmt:
-        child_matchers.clear();
-        if (root->children.size() > 1) {
-          for (Node* child : root->children) {
-            child_matchers.push_back(make_matcher(child));
-          }
-          return constructMatcher("returnStmt", child_matchers);
-        }
-        else if (root->children.size() == 1) {
-          return constructMatcher("returnStmt", make_matcher(root->children[0]));
-        }
-        else {
-          return constructMatcher("returnStmt");
-        }
-        break;
-      default:
-        printf("ERROR: unimplemented matcher type\n");
-        return VariantMatcher();
-        break;
-    }
-  }
 
   void run(const MatchFinder::MatchResult& result) override {
     printf("found matcher\n");
