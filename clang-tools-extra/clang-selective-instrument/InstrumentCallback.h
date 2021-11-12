@@ -175,6 +175,10 @@ public:
   }
 
   void run(const MatchFinder::MatchResult &result) override {
+
+    printf("HALLO WE RUN\n");
+    printf("FOUND match for %s\n", matcher->getName().c_str());
+
     context = result.Context;
     rw.setSourceMgr(context->getSourceManager(), context->getLangOpts());
 
@@ -185,9 +189,9 @@ public:
                       smatch->getBeginLoc()))
     && (!dmatch || !context->getSourceManager().isWrittenInMainFile(
                       dmatch->getBeginLoc()))) {
-      if (verbose) {
+      // if (verbose) {
         printf("no match or invalid type\n");
-      }
+      // }
       return;
     }
     if (smatch) {

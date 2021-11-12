@@ -115,11 +115,18 @@ int main(int argc, const char **argv) {
     inst_finder.addMatcher(matcher, &matcher_callback);
     // inst_finder.addMatcher(replace2, &r2d2);
 
+    // MatcherWrapper<DynTypedMatcher>* m = new MatcherWrapper<DynTypedMatcher>(rettest, "returns_test",
+    //   "test",
+    //   0, 0);
+    // user_matchers.push_back(m);
+
     retval = InstTool.run(newFrontendActionFactory(&inst_finder).get());
   }
 
   InstrumentCallback<StatementMatcher>::verbose = verbose;
   InstrumentCallback<StatementMatcher>::rewrite_file = rewrite_file;
+
+  printf("NUM MATCHERS FOUND: %ld\n", user_matchers.size());
 
   MatchFinder Finder;
 
@@ -144,6 +151,7 @@ int main(int argc, const char **argv) {
   // for each matcher, go through all the actions and find the ones relevant to
   // it
   for (auto m : user_matchers) {
+    // printf("matcher name %s\n", m->getName().c_str());
     for (CodeAction *act : all_actions) {
       if (act->do_for_matcher(m->getName())) {
         m->addAction(act);
