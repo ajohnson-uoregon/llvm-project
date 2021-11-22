@@ -14,7 +14,7 @@
 #include "clang/Rewrite/Core/Rewriter.h"
 
 #include "CodeAction.h"
-#include "InstrumentCallback.h"
+#include "RewriteCallback.h"
 #include "MatcherWrapper.h"
 #include "NewCodeCallback.h"
 #include "MatcherGenCallback.h"
@@ -33,32 +33,32 @@ using namespace llvm;
 // Apply a custom category to all command-line options so that they are the
 // only ones displayed.
 static llvm::cl::OptionCategory
-    SelectiveInstrumentCategory("Selective instrumentation options");
+    RewriteCategory("Automatic code rewriting options");
 
 // TODO: set to false :3
 cl::opt<bool> verbose("verbose", cl::desc("Print verbose (debug) output."),
-                      cl::init(true), cl::cat(SelectiveInstrumentCategory));
+                      cl::init(true), cl::cat(RewriteCategory));
 cl::alias verboseshort("v", cl::desc("Short for --verbose."),
                        cl::aliasopt(verbose), cl::Hidden);
 
 cl::opt<bool> quiet("quiet", cl::desc("Disable output."), cl::init(false),
-                    cl::cat(SelectiveInstrumentCategory));
+                    cl::cat(RewriteCategory));
 cl::alias quietshort("q", cl::desc("Short for --quiet."), cl::aliasopt(quiet),
                      cl::Hidden);
 
 cl::opt<bool>
     rewrite_file("rewrite-file",
-                 cl::desc("Rewrite input file with instrumentation code."),
-                 cl::init(true), cl::cat(SelectiveInstrumentCategory));
+                 cl::desc("Rewrite input file with matchers and modifiers."),
+                 cl::init(true), cl::cat(RewriteCategory));
 cl::opt<bool> norewrite_file("no-rewrite-file",
                              cl::desc("Do not rewrite input file."),
                              cl::init(true),
-                             cl::cat(SelectiveInstrumentCategory));
+                             cl::cat(RewriteCategory));
 
 cl::opt<std::string>
     inst_file("inst-file",
               cl::desc("File with code changes to be made at matched points."),
-              cl::cat(SelectiveInstrumentCategory));
+              cl::cat(RewriteCategory));
 
 // CommonOptionsParser declares HelpMessage with a description of the common
 // command-line options related to the compilation database and input files.
@@ -77,7 +77,7 @@ static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 
 int main(int argc, const char **argv) {
   auto ExpectedParser =
-      CommonOptionsParser::create(argc, argv, SelectiveInstrumentCategory);
+      CommonOptionsParser::create(argc, argv, RewriteCategory);
   if (!ExpectedParser) {
     // Fail gracefully for unsupported options.
     llvm::errs() << ExpectedParser.takeError();
@@ -123,8 +123,8 @@ int main(int argc, const char **argv) {
     retval = InstTool.run(newFrontendActionFactory(&inst_finder).get());
   }
 
-  InstrumentCallback<StatementMatcher>::verbose = verbose;
-  InstrumentCallback<StatementMatcher>::rewrite_file = rewrite_file;
+  RewriteCallback<StatementMatcher>::verbose = verbose;
+  RewriteCallback<StatementMatcher>::rewrite_file = rewrite_file;
 
   printf("NUM MATCHERS FOUND: %ld\n", user_matchers.size());
 
@@ -159,12 +159,12 @@ int main(int argc, const char **argv) {
     }
   }
 
-  InstrumentCallback<ast_matchers::internal::DynTypedMatcher> **callbacks =
-      new InstrumentCallback<ast_matchers::internal::DynTypedMatcher> *[user_matchers.size()];
+  RewriteCallback<ast_matchers::internal::DynTypedMatcher> **callbacks =
+      new RewriteCallback<ast_matchers::internal::DynTypedMatcher> *[user_matchers.size()];
 
   int i = 0;
   for (MatcherWrapper<ast_matchers::internal::DynTypedMatcher> *m : user_matchers) {
-    callbacks[i] = new InstrumentCallback<ast_matchers::internal::DynTypedMatcher>(m);
+    callbacks[i] = new RewriteCallback<ast_matchers::internal::DynTypedMatcher>(m);
     Finder.addDynamicMatcher(m->getMatcher(), callbacks[i]);
     if (verbose) {
       m->dump();
@@ -191,7 +191,7 @@ int main(int argc, const char **argv) {
 // user specified code and actions
 //    replace with arguments
 // for each match, rewrite ast before and after to call inst function
-//    figure out which inst function based on finsturment-functions
+//    figure out which inst function based on finstrument-functions
 // for each match, annotate with attribute
 //    make new attribute(s)
 // in codegen, if we see a node with that attribute, give the block we're

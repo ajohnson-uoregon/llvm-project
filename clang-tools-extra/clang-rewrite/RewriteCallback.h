@@ -1,5 +1,5 @@
-#ifndef CLANG_INSTRUMENT_CALLBACK_H
-#define CLANG_INSTRUMENT_CALLBACK_H
+#ifndef CLANG_REWRITE_CALLBACK_H
+#define CLANG_REWRITE_CALLBACK_H
 
 #include "clang/AST/ASTContext.h"
 // #include "clang/AST/DeclTemplate.h"
@@ -92,7 +92,7 @@ bool isBlock(const Decl* decl) {
 // - TemplateParamObjectDecl
 
 template <class T>
-class InstrumentCallback : public MatchFinder::MatchCallback {
+class RewriteCallback : public MatchFinder::MatchCallback {
 public:
   static Rewriter rw;
   ASTContext *context;
@@ -102,9 +102,9 @@ public:
   static bool verbose;
   static bool rewrite_file;
 
-  InstrumentCallback(MatcherWrapper<T> *matcher) : matcher(matcher) {}
+  RewriteCallback(MatcherWrapper<T> *matcher) : matcher(matcher) {}
 
-  ~InstrumentCallback() {}
+  ~RewriteCallback() {}
 
   void onStartOfTranslationUnit() override {}
 
@@ -556,10 +556,10 @@ private:
   }
 };
 
-template <class T> Rewriter InstrumentCallback<T>::rw;
-template <class T> std::vector<FileID> InstrumentCallback<T>::files_changed;
-template <class T> int InstrumentCallback<T>::num_matched = 0;
-template <class T> bool InstrumentCallback<T>::verbose = false;
-template <class T> bool InstrumentCallback<T>::rewrite_file = true;
+template <class T> Rewriter RewriteCallback<T>::rw;
+template <class T> std::vector<FileID> RewriteCallback<T>::files_changed;
+template <class T> int RewriteCallback<T>::num_matched = 0;
+template <class T> bool RewriteCallback<T>::verbose = false;
+template <class T> bool RewriteCallback<T>::rewrite_file = true;
 
 #endif
