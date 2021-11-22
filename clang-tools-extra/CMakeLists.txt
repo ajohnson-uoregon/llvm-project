@@ -17,7 +17,7 @@ add_subdirectory(clang-query)
 add_subdirectory(pp-trace)
 add_subdirectory(pseudo)
 add_subdirectory(tool-template)
-add_subdirectory(clang-selective-instrument)
+add_subdirectory(clang-rewrite)
 
 # Add the common testsuite after all the tools.
 if(CLANG_INCLUDE_TESTS)
