@@ -99,7 +99,7 @@ private:
     if (root == nullptr) {
       root = temp;
       current = root;
-      // bind_to("match");
+      bind_to("match");
     }
     else {
       current->add_child(current, temp);
@@ -127,7 +127,10 @@ DeclarationMatcher matcher =
   functionDecl(allOf(
     hasAttr(attr::Matcher),
     hasBody(compoundStmt(
-      hasAnySubstatement(compoundStmt(anything()).bind("body"))
+      hasAnySubstatement(attributedStmt(allOf(
+        isAttr(attr::MatcherBlock),
+        hasSubStmt(compoundStmt(anything()).bind("body"))
+      )))
     ))
   )).bind("matcher");
 

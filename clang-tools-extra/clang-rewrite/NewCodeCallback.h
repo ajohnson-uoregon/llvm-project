@@ -57,13 +57,39 @@ using namespace llvm;
 //         .bind("replace");
 
 DeclarationMatcher insert_before_match =
-  functionDecl(hasAttr(attr::InsertCodeBefore)).bind("insert_before_match");
+  functionDecl(allOf(
+    hasAttr(attr::InsertCodeBefore),
+    hasBody(compoundStmt(
+      hasAnySubstatement(attributedStmt(allOf(
+        isAttr(attr::MatcherBlock),
+        hasSubStmt(compoundStmt(anything()).bind("body"))
+      )))
+    ))
+  )).bind("insert_before_match");
 
 DeclarationMatcher insert_after_match =
-  functionDecl(hasAttr(attr::InsertCodeAfter)).bind("insert_after_match");
+  functionDecl(allOf(
+    hasAttr(attr::InsertCodeAfter),
+    hasBody(compoundStmt(
+      hasAnySubstatement(attributedStmt(allOf(
+        isAttr(attr::MatcherBlock),
+        hasSubStmt(compoundStmt(anything()).bind("body"))
+      )))
+    ))
+  )).bind("insert_after_match");
 
 DeclarationMatcher replace_match =
-  functionDecl(hasAttr(attr::ReplaceCode)).bind("replace");
+  functionDecl(allOf(
+    hasAttr(attr::ReplaceCode),
+    hasBody(compoundStmt(
+      hasAnySubstatement(attributedStmt(allOf(
+        isAttr(attr::MatcherBlock),
+        hasSubStmt(compoundStmt(anything()).bind("body"))
+      )))
+    ))
+  )).bind("replace");
+
+
 
 std::vector<CodeAction *> all_actions;
 
@@ -129,70 +155,69 @@ public:
     }
 
     // grab function body as new code
-    Stmt* new_code = nullptr;
-    if (func->hasBody()) {
-      new_code = func->getBody();
-      printf("function body!!!\n");
-      new_code->dump();
+    const CompoundStmt* body = result.Nodes.getNodeAs<CompoundStmt>("body");
+    if (!body || !context->getSourceManager().isWrittenInMainFile(body->getBeginLoc())) {
+      printf("ERROR: invalid body\n");
+      return;
     }
-    else {
-      printf("WARNING: code modification empty\n");
+    printf("function body\n");
+    body->dump();
+
+    FullSourceLoc body_begin;
+    FullSourceLoc body_end;
+    if (!body->body_empty()) {
+      body_begin = context->getFullLoc(body->body_front()->getBeginLoc());
+
+      // go to end of line; stmts don't work, gotta lex to the end of the line
+      SourceLocation eol = Lexer::getLocForEndOfToken(
+          body->body_back()->getBeginLoc(), 0, context->getSourceManager(),
+          context->getLangOpts());
+      Optional<Token> tok = Lexer::findNextToken(
+          eol, context->getSourceManager(), context->getLangOpts());
+      while (tok.hasValue() && tok->isNot(clang::tok::semi)) {
+        tok = Lexer::findNextToken(eol, context->getSourceManager(),
+                                   context->getLangOpts());
+        eol = tok->getLocation();
+      }
+      // TODO: this is a hack and we should be smarter about semicolons
+      if (kind != Replace) {
+        eol = tok->getEndLoc(); // grab semicolon
+      }
+      body_end = context->getFullLoc(eol);
+    }
+    else { // empty body just use brackets
+      body_begin = context->getFullLoc(body->getLBracLoc());
+      body_end = context->getFullLoc(body->getRBracLoc());
     }
 
-    // FullSourceLoc body_begin;
-    // FullSourceLoc body_end;
-    // if (!new_code->body_empty()) {
-    //   body_begin = context->getFullLoc(new_code->body_front()->getBeginLoc());
-    //
-    //   // go to end of line; stmts don't work, gotta lex to the end of the line
-    //   SourceLocation eol = Lexer::getLocForEndOfToken(
-    //       new_code->body_back()->getBeginLoc(), 0, context->getSourceManager(),
-    //       context->getLangOpts());
-    //   Optional<Token> tok = Lexer::findNextToken(
-    //       eol, context->getSourceManager(), context->getLangOpts());
-    //   while (tok.hasValue() && tok->isNot(clang::tok::semi)) {
-    //     tok = Lexer::findNextToken(eol, context->getSourceManager(),
-    //                                context->getLangOpts());
-    //     eol = tok->getLocation();
-    //   }
-    //   // TODO: this is a hack and we should be smarter about semicolons
-    //   if (kind != Replace) {
-    //     eol = tok->getEndLoc(); // grab semicolon
-    //   }
-    //   body_end = context->getFullLoc(eol);
-    // } else { // empty body just use brackets
-    //   body_begin = context->getFullLoc(new_code->getLBracLoc());
-    //   body_end = context->getFullLoc(new_code->getRBracLoc());
-    // }
-    //
-    // FileID fid = body_begin.getFileID();
-    // unsigned int begin_offset = body_begin.getFileOffset();
-    // unsigned int end_offset = body_end.getFileOffset();
-    //
-    // printf("begin offset %u\n", begin_offset);
-    // printf("end offset   %u\n", end_offset);
-    // printf("array length %u\n", end_offset - begin_offset);
-    //
-    // llvm::Optional<llvm::MemoryBufferRef> buff =
-    //     context->getSourceManager().getBufferOrNone(fid);
-    //
-    // char *code = new char[end_offset - begin_offset + 1];
-    // if (buff.hasValue()) {
-    //   memcpy(code, &(buff->getBufferStart()[begin_offset]),
-    //          (end_offset - begin_offset + 1) * sizeof(char));
-    //   code[end_offset - begin_offset] =
-    //       '\0'; // force null terminated for Reasons
-    //   printf("code??? %s\n", code);
-    // } else {
-    //   printf("no buffer :<\n");
-    // }
-    //
-    // // make action, put in vector of actions
-    // CodeAction *act =
-    //     new CodeAction(kind, matcher_names, std::string(code), action_name);
-    // all_actions.push_back(act);
-    //
-    // delete[] code;
+    FileID fid = body_begin.getFileID();
+    unsigned int begin_offset = body_begin.getFileOffset();
+    unsigned int end_offset = body_end.getFileOffset();
+
+    printf("begin offset %u\n", begin_offset);
+    printf("end offset   %u\n", end_offset);
+    printf("array length %u\n", end_offset - begin_offset);
+
+    llvm::Optional<llvm::MemoryBufferRef> buff =
+        context->getSourceManager().getBufferOrNone(fid);
+
+    char *code = new char[end_offset - begin_offset + 1];
+    if (buff.hasValue()) {
+      memcpy(code, &(buff->getBufferStart()[begin_offset]),
+             (end_offset - begin_offset + 1) * sizeof(char));
+      code[end_offset - begin_offset] =
+          '\0'; // force null terminated for Reasons
+      printf("code??? %s\n", code);
+    } else {
+      printf("no buffer :<\n");
+    }
+
+    // make action, put in vector of actions
+    CodeAction *act =
+        new CodeAction(kind, matcher_names, std::string(code), action_name);
+    all_actions.push_back(act);
+
+    delete[] code;
   }
 
 private:
@@ -233,12 +258,5 @@ public:
   }
 };
 
-class ReplaceCallback2 : public NewCodeCallback {
-public:
-  ReplaceCallback2() {
-    kind = Replace;
-    kind_name = "replace";
-  }
-};
 
 #endif

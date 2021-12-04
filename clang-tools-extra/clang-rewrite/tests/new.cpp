@@ -6,14 +6,26 @@ auto returns_test() {
   for (int i = 0; i < 3; i++) {
     x = i;
   }
+  [[likely]]
+  {
+    printf("not a matcher\n");
+  }
+  [[clang::matcher_block]]
   {
     return x;
   }
+}
 
+constexpr double pow(double x, long long n) noexcept {
+    if (n > 0) [[likely]]
+        return x * pow(x, n - 1);
+    else [[unlikely]]
+        return 1;
 }
 
 // [[clang::matcher("cuda_kernel")]]
 // auto kern() {
+//   [[clang::matcher_block]]
 //   {
 //     kernel<<<numblocks, numthreads>>>(arg1, arg2, ...);
 //   }
@@ -21,25 +33,37 @@ auto returns_test() {
 //
 // [[clang::replace("cuda_kernel")]]
 // auto hip() {
-//   {
-//     hip_launch(kernkel, numblocks, numthreads, 0, 0, arg1, arg2, ...);
+//   if (kernel == "gaussian") {
+//     [[clang::matcher_block]]
+//     {
+//       hip_launch(kernel, numblocks, numthreads, 0, 0, arg1, arg2, ...);
+//     }
 //   }
 // }
 
 
 [[clang::replace("returns")]]
 auto return42() {
-  return 42;
+  [[clang::matcher_block]]
+  {
+    return 42;
+  }
 }
 
 [[clang::insert_before("returns", "thencode")]]
 auto foobar() {
-  printf("returning\n");;
+  [[clang::matcher_block]]
+  {
+    printf("returning\n");
+  }
 }
 
 [[clang::insert_after("thencode")]]
 auto helloworld() {
-  printf("hello world\n");
+  [[clang::matcher_block]]
+  {
+    printf("hello world\n");
+  }
 }
 
 int main() {
