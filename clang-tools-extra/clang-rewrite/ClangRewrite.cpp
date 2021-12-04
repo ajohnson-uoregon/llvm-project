@@ -107,13 +107,11 @@ int main(int argc, const char **argv) {
     InsertPostmatchCallback postmatch_callback;
     ReplaceCallback replace_callback;
     MatcherGenCallback matcher_callback;
-    // ReplaceCallback2 r2d2;
 
     inst_finder.addMatcher(insert_before_match, &prematch_callback);
     inst_finder.addMatcher(insert_after_match, &postmatch_callback);
     inst_finder.addMatcher(replace_match, &replace_callback);
     inst_finder.addMatcher(matcher, &matcher_callback);
-    // inst_finder.addMatcher(replace2, &r2d2);
 
     // MatcherWrapper<DynTypedMatcher>* m = new MatcherWrapper<DynTypedMatcher>(rettest, "returns_test",
     //   "test",

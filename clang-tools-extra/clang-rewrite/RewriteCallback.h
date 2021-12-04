@@ -137,11 +137,11 @@ public:
     unsigned int end_line = end.getSpellingLineNumber();
     unsigned int end_col = end.getSpellingColumnNumber();
 
-    if (verbose) {
+    // if (verbose) {
       printf("FOUND match for %s at %d:%d - %d:%d\n",
              matcher->getName().c_str(), begin_line, begin_col, end_line,
              end_col);
-    }
+    // }
     if (rw.isRewritable(match->getBeginLoc()) &&
         rw.isRewritable(match->getEndLoc())) {
 
