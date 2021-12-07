@@ -180,7 +180,25 @@ public:
 
     BuildMatcherVisitor visitor(context);
 
-    visitor.TraverseStmt(const_cast<CompoundStmt*>(body));
+    if (body->size() == 1) {
+      visitor.TraverseStmt(const_cast<Stmt*>(body->body_front()));
+    }
+    else {
+      printf("WARNING: matcher generation for more than one statement is not "
+        "fully implemented and may produce incorrect or invalid results.\n");
+      // TODO: figure out multiple statements. ideas:
+      // possibly do the compoundStmt thing but bind matchers for hasAnySubstmt
+      //    to s1, s2, etc and then verify that loc(s1) < loc(s2) < ...
+      // if we want to allow for intervening statements,
+      //    loc(s1) < loc(s2) < loc(s3) is good
+      // if we have s1; sa; s2; s3 that holds but if s1, s2, and s3 are
+      //    reordered at all it'll break
+      // if we don't allow intervening statements, we'd need the strict
+      //    ordering and something like end(s1) = start(s2) and
+      //    end(s2) = start(s3) in addition
+      visitor.TraverseStmt(const_cast<CompoundStmt*>(body));
+    }
+
 
     Node* matcher = visitor.get_matcher();
 
