@@ -23,6 +23,15 @@ constexpr double pow(double x, long long n) noexcept {
         return 1;
 }
 
+// [[clang::matcher("another test")]]
+// auto test() {
+//   [[clang::matcher_block]]
+//   {
+//     int x = 42;
+//     printf("this should print the warning!\n");
+//   }
+// }
+
 // [[clang::matcher("cuda_kernel")]]
 // auto kern() {
 //   [[clang::matcher_block]]
