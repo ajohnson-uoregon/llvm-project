@@ -180,6 +180,9 @@ VariantMatcher handle_compoundStmt(Node* root) {
   if (root->has_type) {
     child_matchers.push_back(constructMatcher("hasType", constructMatcher("asString", StringRef(root->type))));
   }
+  if (root->has_name) {
+    child_matchers.push_back(constructMatcher("hasName", StringRef(root->name)));
+  }
 
   if (root->children.size() > 0) {
     for (Node* child : root->children) {
@@ -238,11 +241,81 @@ VariantMatcher handle_compoundStmt(Node* root) {
   } // child_matchers.size()
 }
 
+VariantMatcher handle_declRefExpr(Node* root) {
+  std::vector<VariantValue> child_matchers;
+
+  if (root->has_type) {
+    child_matchers.push_back(constructMatcher("hasType", constructMatcher("asString", StringRef(root->type))));
+  }
+  if (root->has_name) {
+    child_matchers.push_back(constructMatcher("hasName", StringRef(root->name)));
+  }
+
+  if (root->children.size() > 0) {
+    for (Node* child : root->children) {
+      child_matchers.push_back(make_matcher(child));
+    }
+  }
+  else {
+    // guarantee child_matchers.size() >= 1 (also required to not make an
+    // ambiguous matcher and actually match things)
+    child_matchers.push_back(constructMatcher("anything"));
+  }
+
+  if (child_matchers.size() > 1) {
+    if (root->ignore_casts) {
+      if (root->bound) {
+        return constructBoundMatcher("declRefExpr", StringRef(root->bound_name),
+                constructMatcher("ignoringParenImpCasts",
+                  constructMatcher("allOf", child_matchers)));
+      }
+      else {
+        return constructMatcher("declRefExpr",
+                constructMatcher("ignoringParenImpCasts",
+                  constructMatcher("allOf", child_matchers)));
+      }
+    }
+    else { // no ignore casts
+      if (root->bound) {
+        return constructBoundMatcher("declRefExpr", StringRef(root->bound_name),
+                constructMatcher("allOf", child_matchers));
+      }
+      else {
+        return constructMatcher("declRefExpr",
+                constructMatcher("allOf", child_matchers));
+      }
+    } // ignore_casts
+  }
+  else { // child_matchers.size() == 1
+    if (root->ignore_casts) {
+      if (root->bound) {
+        return constructBoundMatcher("declRefExpr", StringRef(root->bound_name),
+                constructMatcher("ignoringParenImpCasts", child_matchers[0]));
+      }
+      else {
+        return constructMatcher("declRefExpr",
+                constructMatcher("ignoringParenImpCasts", child_matchers[0]));
+      }
+    }
+    else { // no ignore casts
+      if (root->bound) {
+        return constructBoundMatcher("declRefExpr", StringRef(root->bound_name), child_matchers[0]);
+      }
+      else {
+        return constructMatcher("declRefExpr", child_matchers[0]);
+      }
+    } // ignore_casts
+  } // child_matchers.size()
+}
+
 VariantMatcher handle_non_bindable_node(Node* root, StringRef name) {
   std::vector<VariantValue> child_matchers;
 
   if (root->has_type) {
     child_matchers.push_back(constructMatcher("hasType", constructMatcher("asString", StringRef(root->type))));
+  }
+  if (root->has_name) {
+    child_matchers.push_back(constructMatcher("hasName", StringRef(root->name)));
   }
   if (root->bound) {
     child_matchers.push_back(constructBoundMatcher("expr", StringRef(root->bound_name)));
@@ -286,6 +359,9 @@ VariantMatcher handle_bindable_node(Node* root, StringRef name) {
 
   if (root->has_type) {
     child_matchers.push_back(constructMatcher("hasType", constructMatcher("asString", StringRef(root->type))));
+  }
+  if (root->has_name) {
+    child_matchers.push_back(constructMatcher("hasName", StringRef(root->name)));
   }
 
   if (root->children.size() > 0) {
@@ -346,7 +422,6 @@ VariantMatcher handle_bindable_node(Node* root, StringRef name) {
 }
 
 VariantMatcher make_matcher(Node* root) {
-  std::vector<VariantValue> child_matchers;
   switch(root->matcher_type) {
     case MT::compoundStmt:
       return handle_compoundStmt(root);
@@ -357,21 +432,11 @@ VariantMatcher make_matcher(Node* root) {
     case MT::hasReturnValue:
       return handle_non_bindable_node(root, "hasReturnValue");
       break;
-    // case MT::declRefExpr: //TODO: make to() its own node and figure out literals
-    //   child_matchers.clear();
-    //   if (root->children.size() > 1) {
-    //     for (Node* child : root->children) {
-    //       child_matchers.push_back(make_matcher(child));
-    //     }
-    //     return constructMatcher("declRefExpr",
-    //             constructMatcher("allOf", child_matchers));
-    //   }
-    //   else if (root->children.size() == 1) {
-    //     return constructMatcher("declRefExpr", make_matcher(root->children[0]));
-    //   }
-    //   else {
-    //     return constructMatcher("declRefExpr", constructMatcher("anything"));
-    //   }
+    case MT::declRefExpr: //TODO: make to() its own node and figure out literals
+      return handle_declRefExpr(root);
+      break;
+    case MT::callExpr:
+      return handle_bindable_node(root, "callExpr");
       break;
     default:
       printf("ERROR: unimplemented matcher type %d\n", (int) root->matcher_type);

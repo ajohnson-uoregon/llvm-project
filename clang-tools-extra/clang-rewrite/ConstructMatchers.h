@@ -8,10 +8,13 @@
 using namespace clang::ast_matchers::dynamic;
 
 enum class MatcherType {
+  callExpr,
+  callee,
   compoundStmt,
-  returnStmt,
-  hasReturnValue,
   declRefExpr,
+  functionDecl,
+  hasReturnValue,
+  returnStmt,
 };
 
 class Node {
@@ -19,11 +22,15 @@ public:
   MatcherType matcher_type;
   std::string matcher_string; // for debug/dumping purposes
   bool bound = false;
-  std::string bound_name;
+  std::string bound_name; // the name the matcher should be bound to
+  bool has_name = false;
+  std::string name; // the actual name of the thing, eg function name, var name
   bool has_type = false;
   std::string type;
   bool ignore_casts = false;
+  bool is_literal = false;
   std::vector<Node*> children;
+  Node* parent = nullptr;
 
   Node(MatcherType m, std::string ms) : matcher_type(m), matcher_string(ms) {}
 
@@ -49,6 +56,9 @@ public:
     }
     if (n->bound) {
       printf("  bound to %s;", n->bound_name.c_str());
+    }
+    if (n->has_name) {
+      printf("  named %s;", n->name.c_str());
     }
     printf("\n");
     for (Node* child : n->children) {

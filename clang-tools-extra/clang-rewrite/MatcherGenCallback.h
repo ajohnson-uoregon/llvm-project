@@ -54,34 +54,77 @@ public:
       return root;
     }
 
-    bool VisitCompoundStmt(CompoundStmt* comp) {
-      update_matcher(MT::compoundStmt, "compountStmt()");
-      return true;
+    // TODO: placeholder until we actually figure out literals
+    bool is_literal(Stmt* stmt) {
+      return false;
     }
 
-    bool VisitReturnStmt(ReturnStmt* ret) {
-      update_matcher(MT::returnStmt, "returnStmt()");
-      if (ret->getRetValue()) {
-        std::string type = ret->getRetValue()->getType().getAsString();
-        update_matcher(MT::hasReturnValue, "hasReturnValue()");
-        add_type(type);
+    int getNumChildren(Stmt* stmt) {
+      int num_children = 0;
+      for (auto iter = stmt->child_begin(); iter != stmt->child_end(); iter++) {
+        num_children++;
+      }
+      return num_children;
+    }
+
+    bool VisitCallExpr(CallExpr* call) {
+      FunctionDecl* callee = call->getDirectCallee();
+      if (callee != nullptr) {
+        // plus 1 for callee
+        add_node(MT::callExpr, "callExpr()", getNumChildren(call) +1);
+        add_node(MT::callee, "callee()", 1);
+        add_node(MT::functionDecl, "functionDecl()", 0);
+        set_name(callee->getNameAsString());
+        update_tree(0);
+      }
+      else {
+        add_node(MT::callExpr, "callExpr()", getNumChildren(call));
+        update_tree(getNumChildren(call));
       }
       return true;
     }
 
-    bool VisitImplicitCastExpr(ImplicitCastExpr* expr) {
-      set_ignore_casts(true);
+    bool VisitCompoundStmt(CompoundStmt* comp) {
+      add_node(MT::compoundStmt, "compountStmt()", getNumChildren(comp));
+      update_tree(getNumChildren(comp));
       return true;
     }
 
     bool VisitDeclRefExpr(DeclRefExpr* ref) {
       ValueDecl* decl = ref->getDecl();
       std::string name = decl->getNameAsString();
-      // update_matcher(MT::declRefExpr, "declRefExpr()");
+
+      add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref));
       bind_to(name);
+      set_ignore_casts(true);
+      if (is_literal(ref)) {
+        set_is_literal(true);
+      }
+
       if (decl->getType()->getTypeClass() != clang::Type::TypeClass::Auto) {
         std::string type = decl->getType().getAsString();
         add_type(type);
+      }
+      update_tree(getNumChildren(ref));
+      return true;
+    }
+
+    // bool VisitImplicitCastExpr(ImplicitCastExpr* expr) {
+    //   set_ignore_casts(true);
+    //   return true;
+    // }
+
+    bool VisitReturnStmt(ReturnStmt* ret) {
+      if (ret->getRetValue()) {
+        add_node(MT::returnStmt, "returnStmt()", 1);
+        std::string type = ret->getRetValue()->getType().getAsString();
+        add_node(MT::hasReturnValue, "hasReturnValue()", getNumChildren(ret));
+        add_type(type);
+        update_tree(getNumChildren(ret));
+      }
+      else {
+        add_node(MT::returnStmt, "returnStmt()", getNumChildren(ret));
+        update_tree(getNumChildren(ret));
       }
       return true;
     }
@@ -91,18 +134,52 @@ private:
   std::string matcher = "";
   Node* root = nullptr;
   Node* current = root;
-  int insert_point = 0;
-  int bind_point = 0;
+  // stack for keeping track of branches; int is expected number of children
+  std::vector<std::pair<Node*, int>> branch_points;
+  int added_children = 0;
 
-  void update_matcher(MatcherType sm, std::string code) {
+  void update_tree(int children) {
+    // if it's a leaf, set the current node to the last branch point and maybe pop it
+    if (children == 0) {
+      current = branch_points.back().first;
+      if (added_children == branch_points.back().second) {
+        branch_points.pop_back();
+        added_children = 0;
+      }
+    }
+  }
+
+  void add_node(MatcherType sm, std::string code, int children) {
     Node* temp = new Node(sm, code);
+    // if the tree is empty
     if (root == nullptr) {
       root = temp;
       current = root;
+      current->parent = nullptr;
       bind_to("match");
+      branch_points.push_back(std::pair<Node*, int>(current, children));
+      return;
     }
+    // if this has multiple children, push it onto the branch stack
+    if (children > 1) {
+      current->add_child(current, temp);
+      temp->parent = current;
+      current = temp;
+      branch_points.push_back(std::pair<Node*, int>(current, children));
+    }
+    // if it's a leaf, we've finished adding this child, increment;
+    // actually popping from branch_points is handled by update_tree because
+    // we might have other things to do to this node and that has to wait
+    else if (children == 0) {
+      current->add_child(current, temp);
+      temp->parent = current;
+      current = temp;
+      added_children++;
+    }
+    // children == 1; stick
     else {
       current->add_child(current, temp);
+      temp->parent = current;
       current = temp;
     }
   }
@@ -119,6 +196,15 @@ private:
   void add_type(std::string type) {
     current->has_type = true;
     current->type = type;
+  }
+
+  void set_name(std::string name) {
+    current->has_name = true;
+    current->name = name;
+  }
+
+  void set_is_literal(bool b) {
+    current->is_literal = b;
   }
 };
 
