@@ -1,4 +1,6 @@
+#include "fake_hip.h"
 #include <stdio.h>
+
 
 [[clang::matcher("returns")]]
 auto returns_test() {
@@ -16,12 +18,12 @@ auto returns_test() {
   }
 }
 
-constexpr double pow(double x, long long n) noexcept {
-    if (n > 0) [[likely]]
-        return x * pow(x, n - 1);
-    else [[unlikely]]
-        return 1;
-}
+// constexpr double pow(double x, long long n) noexcept {
+//     if (n > 0) [[likely]]
+//         return x * pow(x, n - 1);
+//     else [[unlikely]]
+//         return 1;
+// }
 
 // [[clang::matcher("another test")]]
 // auto test() {
@@ -32,23 +34,49 @@ constexpr double pow(double x, long long n) noexcept {
 //   }
 // }
 
+// __global__
+// void kernel(float* a, float* b) {
+//   int i = blockIdx.x*blockDim.x + threadIdx.x;
+//   a[i] = a[i] + b[i];
+// }
+
+extern __global__ void kernel(float* a, float* b);
+
+__global__
+void kernel(float* a, float* b) {
+  int i = hipBlockIdx_x*hipBlockDim_x + hipThreadIdx_x;
+  a[i] = a[i] + b[i];
+}
+
 // [[clang::matcher("cuda_kernel")]]
-// auto kern() {
+// auto mycuda() {
+//   int numblocks, numthreads;
+//   float *arg1, *arg2;
 //   [[clang::matcher_block]]
 //   {
-//     kernel<<<numblocks, numthreads>>>(arg1, arg2, ...);
+//     kernel<<<numblocks, numthreads>>>(arg1, arg2);
 //   }
 // }
-//
-// [[clang::replace("cuda_kernel")]]
-// auto hip() {
-//   if (kernel == "gaussian") {
-//     [[clang::matcher_block]]
-//     {
-//       hip_launch(kernel, numblocks, numthreads, 0, 0, arg1, arg2, ...);
-//     }
-//   }
-// }
+
+[[clang::matcher("hip_kernel")]]
+auto otherhip() {
+  int numblocks, numthreads;
+  float *arg1, *arg2;
+  [[clang::matcher_block]]
+  {
+    hipLaunchKernelGGL(kernel, dim3(numblocks), dim3(numthreads), 0, 0, arg1, arg2);
+  }
+}
+
+[[clang::replace("cuda_kernel")]]
+auto myhip() {
+  int numblocks, numthreads;
+  float *arg1, *arg2;
+  [[clang::matcher_block]]
+  {
+    hipLaunchKernelGGL(kernel, dim3(numblocks), dim3(numthreads), 0, 0, arg1, arg2);
+  }
+}
 
 
 [[clang::replace("returns")]]
