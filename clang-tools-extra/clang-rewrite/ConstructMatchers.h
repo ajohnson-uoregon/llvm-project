@@ -78,6 +78,6 @@ public:
   }
 };
 
-VariantMatcher make_matcher(Node* root);
+VariantMatcher make_matcher(Node* root, int level);
 
 #endif // CLANG_CONSTRUCT_MATCHERS_H
