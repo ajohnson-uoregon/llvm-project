@@ -292,7 +292,7 @@ public:
     matcher->dump();
 
     printf("ACTUAL MATCHER\n");
-    VariantMatcher varmatcher = make_matcher(matcher);
+    VariantMatcher varmatcher = make_matcher(matcher, 0);
 
     llvm::Optional<DynTypedMatcher> dynmatcher = varmatcher.getSingleMatcher();
     if (dynmatcher) {
