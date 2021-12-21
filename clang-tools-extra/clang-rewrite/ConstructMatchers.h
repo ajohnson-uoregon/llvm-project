@@ -8,12 +8,14 @@
 using namespace clang::ast_matchers::dynamic;
 
 enum class MatcherType {
-  callExpr,
   callee,
+  callExpr,
   compoundStmt,
   declRefExpr,
+  equals,
   functionDecl,
   hasReturnValue,
+  integerLiteral,
   returnStmt,
 };
 
@@ -30,6 +32,7 @@ public:
   bool ignore_casts = false;
   bool is_literal = false;
   std::vector<Node*> children;
+  std::vector<VariantValue> args;
   Node* parent = nullptr;
 
   Node(MatcherType m, std::string ms) : matcher_type(m), matcher_string(ms) {}
@@ -41,6 +44,15 @@ public:
     else {
       parent->children.push_back(child);
     }
+  }
+
+  Node* get_child_or_null(MatcherType type) {
+    for (Node* child : children) {
+      if (child->matcher_type == type) {
+        return child;
+      }
+    }
+    return nullptr;
   }
 
   void dump_help(Node* n, int tab_depth) {

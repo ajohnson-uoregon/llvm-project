@@ -109,6 +109,14 @@ public:
       return true;
     }
 
+    bool VisitIntegerLiteral(IntegerLiteral* lit) {
+      add_node(MT::integerLiteral, "integerLiteral()", 1);
+      add_node(MT::equals, "equals()", 0);
+      add_arg((int) lit->getValue().getSExtValue());
+      update_tree(0);
+      return true;
+    }
+
     // bool VisitImplicitCastExpr(ImplicitCastExpr* expr) {
     //   set_ignore_casts(true);
     //   return true;
@@ -205,6 +213,10 @@ private:
 
   void set_is_literal(bool b) {
     current->is_literal = b;
+  }
+
+  void add_arg(VariantValue arg) {
+    current->args.push_back(arg);
   }
 };
 
