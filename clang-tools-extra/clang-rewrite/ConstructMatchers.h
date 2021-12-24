@@ -11,6 +11,8 @@ enum class MatcherType {
   callee,
   callExpr,
   compoundStmt,
+  cxxConstructExpr, //TODO
+  cxxFunctionalCastExpr, // TODO
   declRefExpr,
   equals,
   functionDecl,

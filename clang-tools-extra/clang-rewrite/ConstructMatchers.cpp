@@ -6,6 +6,7 @@
 #include "ConstructMatchers.h"
 
 #include <vector>
+#include <string>
 
 using namespace clang;
 using namespace clang::ast_matchers;
@@ -37,27 +38,32 @@ std::vector<ParserValue> Args(std::vector<VariantValue> args) {
   return out;
 }
 
-void dump_VariantValue(VariantValue val) {
+std::string VariantValue_asString(VariantValue val, bool dump_matcher) {
   if (val.isBoolean()) {
-    printf("boolean: %d\n", val.getBoolean());
+    return "boolean: " + std::to_string(val.getBoolean());
   }
   else if (val.isDouble()) {
-    printf("double: %f\n", val.getDouble());
+     return "double: " + std::to_string(val.getDouble());
   }
   else if (val.isUnsigned()) {
-    printf("unsigned: %u\n", val.getUnsigned());
+    return "unsigned: " + std::to_string(val.getUnsigned());
   }
   else if (val.isString()) {
-    printf("string: %s\n", val.getString().c_str());
+    return "string: " + val.getString();
   }
   else if (val.isNodeKind()) {
-    printf("AST node: %s\n", val.getNodeKind().asStringRef().str().c_str());
+    return "AST node: " + val.getNodeKind().asStringRef().str();
   }
   else if (val.isMatcher()) {
-    printf("matcher: %s\n", val.getMatcher().getTypeAsString().c_str());
+    if (dump_matcher) {
+      return "matcher: " + val.getMatcher().getTypeAsString();
+    }
+    else {
+      return "matcher";
+    }
   }
   else {
-    printf("unknown/bad value\n");
+    return "unknown/bad value";
   }
 }
 
@@ -98,6 +104,10 @@ VariantMatcher constructMatcher(StringRef MatcherName,
     printf("  ");
   }
   printf("made matcher (2) %s\n", MatcherName.str().c_str());
+  for (int i = 0; i < tab; i++) {
+    printf("  ");
+  }
+  printf("  with arg %s\n", VariantValue_asString(Arg1, false).c_str());
   return Out;
 }
 
@@ -119,7 +129,14 @@ VariantMatcher constructMatcher(StringRef MatcherName,
     printf("  ");
   }
   printf("made matcher (3) %s\n", MatcherName.str().c_str());
-  // dump_VariantValue(Arg1);
+  for (int i = 0; i < tab; i++) {
+    printf("  ");
+  }
+  printf("  with arg %s\n", VariantValue_asString(Arg1, false).c_str());
+  for (int i = 0; i < tab; i++) {
+    printf("  ");
+  }
+  printf("  with arg %s\n", VariantValue_asString(Arg2, false).c_str());
   return Out;
 }
 
@@ -140,6 +157,12 @@ VariantMatcher constructMatcher(StringRef MatcherName,
     printf("  ");
   }
   printf("made matcher (4) %s\n", MatcherName.str().c_str());
+  for (auto arg : args) {
+    for (int i = 0; i < tab; i++) {
+      printf("  ");
+    }
+    printf("  with arg %s\n", VariantValue_asString(arg, false).c_str());
+  }
   return Out;
 }
 
@@ -183,6 +206,10 @@ VariantMatcher constructBoundMatcher(StringRef MatcherName,
     printf("  ");
   }
   printf("made bound matcher (2) %s (%s)\n", MatcherName.str().c_str(), BoundName.str().c_str());
+  for (int i = 0; i < tab; i++) {
+    printf("  ");
+  }
+  printf("  with arg %s\n", VariantValue_asString(Arg1, false).c_str());
   return Out;
 }
 
@@ -205,6 +232,14 @@ VariantMatcher constructBoundMatcher(StringRef MatcherName,
     printf("  ");
   }
   printf("made bound matcher (3) %s (%s)\n", MatcherName.str().c_str(), BoundName.str().c_str());
+  for (int i = 0; i < tab; i++) {
+    printf("  ");
+  }
+  printf("  with arg %s\n", VariantValue_asString(Arg1, false).c_str());
+  for (int i = 0; i < tab; i++) {
+    printf("  ");
+  }
+  printf("  with arg %s\n", VariantValue_asString(Arg2, false).c_str());
   return Out;
 }
 
@@ -226,6 +261,12 @@ VariantMatcher constructBoundMatcher(StringRef MatcherName,
     printf("  ");
   }
   printf("made matcher (4) %s (%s)\n", MatcherName.str().c_str(), BoundName.str().c_str());
+    for (auto arg : args) {
+      for (int i = 0; i < tab; i++) {
+        printf("  ");
+      }
+      printf("  with arg %s\n", VariantValue_asString(arg, false).c_str());
+    }
   return Out;
 }
 
