@@ -50,6 +50,7 @@ public:
   explicit BuildMatcherVisitor(ASTContext* context)
     : context(context) {}
 
+
     Node* get_matcher() {
       return root;
     }
@@ -90,6 +91,13 @@ public:
       return true;
     }
 
+    bool VisitCXXFunctionalCastExpr(CXXFunctionalCastExpr* cast) {
+      std::string ty = cast->getTypeAsWritten().getAsString();
+      // printf("cast type??? %s\n", ty.c_str());
+      add_type(ty); //TODO this needs to be put on the *child*, not the current node
+      return true;
+    }
+
     bool VisitDeclRefExpr(DeclRefExpr* ref) {
       ValueDecl* decl = ref->getDecl();
       std::string name = decl->getNameAsString();
@@ -101,7 +109,7 @@ public:
         set_is_literal(true);
       }
 
-      if (decl->getType()->getTypeClass() != clang::Type::TypeClass::Auto) {
+      if (!has_type() && decl->getType()->getTypeClass() != clang::Type::TypeClass::Auto) {
         std::string type = decl->getType().getAsString();
         add_type(type);
       }
@@ -204,6 +212,10 @@ private:
   void add_type(std::string type) {
     current->has_type = true;
     current->type = type;
+  }
+
+  bool has_type() {
+    return current->has_type;
   }
 
   void set_name(std::string name) {

@@ -34,11 +34,11 @@ auto returns_test() {
 //   }
 // }
 
-// __global__
-// void kernel(float* a, float* b) {
-//   int i = blockIdx.x*blockDim.x + threadIdx.x;
-//   a[i] = a[i] + b[i];
-// }
+__global__
+void cukernel(float* a, float* b) {
+  int i = blockIdx.x*blockDim.x + threadIdx.x;
+  a[i] = a[i] + b[i];
+}
 
 extern __global__ void kernel(float* a, float* b);
 
@@ -48,15 +48,15 @@ void kernel(float* a, float* b) {
   a[i] = a[i] + b[i];
 }
 
-// [[clang::matcher("cuda_kernel")]]
-// auto mycuda() {
-//   int numblocks, numthreads;
-//   float *arg1, *arg2;
-//   [[clang::matcher_block]]
-//   {
-//     kernel<<<numblocks, numthreads>>>(arg1, arg2);
-//   }
-// }
+[[clang::matcher("cuda_kernel")]]
+auto mycuda() {
+  int numblocks, numthreads;
+  float *arg1, *arg2;
+  [[clang::matcher_block]]
+  {
+    cukernel<<<numblocks, numthreads>>>(arg1, arg2);
+  }
+}
 
 [[clang::matcher("hip_kernel")]]
 auto otherhip() {
