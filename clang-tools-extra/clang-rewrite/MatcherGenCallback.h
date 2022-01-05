@@ -91,10 +91,20 @@ public:
       return true;
     }
 
+    bool VisitCXXConstructExpr(CXXConstructExpr* expr) {
+      if (expr->isElidable()) {
+        printf("is elidable\n");
+      }
+      std::string ty = expr->getType().getAsString();
+      //this needs to be put on the *child* of the cast, not the cast itself
+      add_type_to_child(ty);
+      return true;
+    }
+
     bool VisitCXXFunctionalCastExpr(CXXFunctionalCastExpr* cast) {
       std::string ty = cast->getTypeAsWritten().getAsString();
-      // printf("cast type??? %s\n", ty.c_str());
-      add_type(ty); //TODO this needs to be put on the *child*, not the current node
+      //this needs to be put on the *child* of the cast, not the cast itself
+      add_type_to_child(ty);
       return true;
     }
 
@@ -109,6 +119,8 @@ public:
         set_is_literal(true);
       }
 
+      // if it's already been given a type by nodes higher up (eg, cxxFunctionalCastExpr)
+      // don't overwrite that; need highest level type to match
       if (!has_type() && decl->getType()->getTypeClass() != clang::Type::TypeClass::Auto) {
         std::string type = decl->getType().getAsString();
         add_type(type);
@@ -153,6 +165,8 @@ private:
   // stack for keeping track of branches; int is expected number of children
   std::vector<std::pair<Node*, int>> branch_points;
   int added_children = 0;
+  bool pending_type = false;
+  std::string pending_type_str = "";
 
   void update_tree(int children) {
     // if it's a leaf, set the current node to the last branch point and maybe pop it
@@ -173,6 +187,7 @@ private:
       current = root;
       current->parent = nullptr;
       bind_to("match");
+      handle_pending();
       branch_points.push_back(std::pair<Node*, int>(current, children));
       return;
     }
@@ -181,6 +196,7 @@ private:
       current->add_child(current, temp);
       temp->parent = current;
       current = temp;
+      handle_pending();
       branch_points.push_back(std::pair<Node*, int>(current, children));
     }
     // if it's a leaf, we've finished adding this child, increment;
@@ -191,12 +207,22 @@ private:
       temp->parent = current;
       current = temp;
       added_children++;
+      handle_pending();
     }
     // children == 1; stick
     else {
       current->add_child(current, temp);
       temp->parent = current;
       current = temp;
+      handle_pending();
+    }
+  }
+
+  void handle_pending() {
+    if (pending_type) {
+      add_type(pending_type_str);
+      pending_type = false;
+      pending_type_str = "";
     }
   }
 
@@ -212,6 +238,11 @@ private:
   void add_type(std::string type) {
     current->has_type = true;
     current->type = type;
+  }
+
+  void add_type_to_child(std::string type) {
+    pending_type = true;
+    pending_type_str = type;
   }
 
   bool has_type() {
