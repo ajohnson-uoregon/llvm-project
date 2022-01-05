@@ -190,8 +190,6 @@ int main(int argc, const char **argv) {
 //    replace with arguments
 // for each match, rewrite ast before and after to call inst function
 //    figure out which inst function based on finstrument-functions
-// for each match, annotate with attribute
-//    make new attribute(s)
 // in codegen, if we see a node with that attribute, give the block we're
 // generating the same attribute (?)
 //    add codegenopt like finstrument-functions

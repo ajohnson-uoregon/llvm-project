@@ -20,42 +20,6 @@ using namespace clang::ast_matchers;
 using namespace clang::tooling;
 using namespace llvm;
 
-// DeclarationMatcher insert_prematch =
-//     functionDecl(
-//         matchesName("insert_prematch*"),
-//         hasBody(compoundStmt(
-//             allOf(hasAnySubstatement(declStmt(containsDeclaration(
-//                       0, varDecl(hasName("matchers")).bind("matcher_list")))),
-//                   hasAnySubstatement(cxxForRangeStmt(
-//                       allOf(hasRangeInit(ignoringParenImpCasts(
-//                                 declRefExpr(to(varDecl(hasName("matchers")))))),
-//                             hasBody(compoundStmt().bind("new_code")))))))))
-//         .bind("insert_prematch");
-//
-// DeclarationMatcher insert_postmatch =
-//     functionDecl(
-//         matchesName("insert_postmatch*"),
-//         hasBody(compoundStmt(
-//             allOf(hasAnySubstatement(declStmt(containsDeclaration(
-//                       0, varDecl(hasName("matchers")).bind("matcher_list")))),
-//                   hasAnySubstatement(cxxForRangeStmt(
-//                       allOf(hasRangeInit(ignoringParenImpCasts(
-//                                 declRefExpr(to(varDecl(hasName("matchers")))))),
-//                             hasBody(compoundStmt().bind("new_code")))))))))
-//         .bind("insert_postmatch");
-//
-// DeclarationMatcher replace_match =
-//     functionDecl(
-//         matchesName("replace*"),
-//         hasBody(compoundStmt(
-//             allOf(hasAnySubstatement(declStmt(containsDeclaration(
-//                       0, varDecl(hasName("matchers")).bind("matcher_list")))),
-//                   hasAnySubstatement(cxxForRangeStmt(
-//                       allOf(hasRangeInit(ignoringParenImpCasts(
-//                                 declRefExpr(to(varDecl(hasName("matchers")))))),
-//                             hasBody(compoundStmt().bind("new_code")))))))))
-//         .bind("replace");
-
 DeclarationMatcher insert_before_match =
   functionDecl(allOf(
     hasAttr(attr::InsertCodeBefore),
