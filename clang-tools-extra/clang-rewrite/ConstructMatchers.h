@@ -11,8 +11,9 @@ enum class MatcherType {
   callee,
   callExpr,
   compoundStmt,
-  cxxConstructExpr, //TODO
-  cxxFunctionalCastExpr, // TODO
+  cudaKernelCallExpr,
+  cxxConstructExpr,
+  cxxFunctionalCastExpr,
   declRefExpr,
   equals,
   functionDecl,

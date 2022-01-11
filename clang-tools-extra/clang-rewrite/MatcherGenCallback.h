@@ -69,10 +69,14 @@ public:
     }
 
     bool VisitCallExpr(CallExpr* call) {
+      // short circuit to not double up, yay class inheritance
+      if (isa<CUDAKernelCallExpr>(call)) {
+        return true;
+      }
       FunctionDecl* callee = call->getDirectCallee();
       if (callee != nullptr) {
         // plus 1 for callee
-        add_node(MT::callExpr, "callExpr()", getNumChildren(call) +1);
+        add_node(MT::callExpr, "callExpr()", getNumChildren(call));
         add_node(MT::callee, "callee()", 1);
         add_node(MT::functionDecl, "functionDecl()", 0);
         set_name(callee->getNameAsString());
@@ -88,6 +92,28 @@ public:
     bool VisitCompoundStmt(CompoundStmt* comp) {
       add_node(MT::compoundStmt, "compountStmt()", getNumChildren(comp));
       update_tree(getNumChildren(comp));
+      return true;
+    }
+
+    bool VisitCUDAKernelCallExpr(CUDAKernelCallExpr* call) {
+      CallExpr* conf = call->getConfig();
+      printf("KERNEL CONF\n");
+      conf->dump();
+
+      FunctionDecl* kern = call->getDirectCallee();
+      if (kern != nullptr) {
+        // plus 1 for callee
+        add_node(MT::cudaKernelCallExpr, "cudaKernelCallExpr()", getNumChildren(call));
+        add_node(MT::callee, "callee()", 1);
+        add_node(MT::functionDecl, "functionDecl()", 0);
+        set_name(kern->getNameAsString());
+        update_tree(0);
+      }
+      else {
+        add_node(MT::cudaKernelCallExpr, "cudaKernelCallExpr()", getNumChildren(call));
+        update_tree(getNumChildren(call));
+      }
+
       return true;
     }
 
@@ -137,10 +163,12 @@ public:
       return true;
     }
 
-    // bool VisitImplicitCastExpr(ImplicitCastExpr* expr) {
-    //   set_ignore_casts(true);
-    //   return true;
-    // }
+    bool VisitImplicitCastExpr(ImplicitCastExpr* expr) {
+      std::string ty = expr->getType().getAsString();
+      //this needs to be put on the *child* of the cast, not the cast itself
+      add_type_to_child(ty);
+      return true;
+    }
 
     bool VisitReturnStmt(ReturnStmt* ret) {
       if (ret->getRetValue()) {
@@ -236,13 +264,23 @@ private:
   }
 
   void add_type(std::string type) {
-    current->has_type = true;
-    current->type = type;
+    if (!current->has_type) {
+      current->has_type = true;
+      current->type = type;
+    }
+    // else {
+    //   printf("WARNING: would overwrite %s with %s\n", current->type.c_str(), type.c_str());
+    // }
   }
 
   void add_type_to_child(std::string type) {
-    pending_type = true;
-    pending_type_str = type;
+    if (!pending_type) {
+      pending_type = true;
+      pending_type_str = type;
+    }
+    // else {
+    //   printf("WARNING: would overwrite pending %s with %s\n", pending_type_str.c_str(), type.c_str());
+    // }
   }
 
   bool has_type() {
