@@ -275,7 +275,7 @@ VariantMatcher handle_compoundStmt(Node* root, int level) {
   std::vector<VariantValue> child_matchers;
   child_matchers.insert(child_matchers.end(), root->args.begin(), root->args.end());
 
-  if (root->has_type) {
+  if (root->has_type && root->is_literal) {
     child_matchers.push_back(constructMatcher("hasType",
         constructMatcher("asString", StringRef(root->type), level+6), level+5));
   }
@@ -367,7 +367,7 @@ VariantMatcher handle_declRefExpr(Node* root, int level) {
     }
   }
 
-  if (root->has_type) {
+  if (root->has_type && root->is_literal) {
     child_matchers.push_back(constructMatcher("hasType",
         constructMatcher("asString", StringRef(root->type), level+6), level+5));
   }
@@ -434,11 +434,11 @@ VariantMatcher handle_declRefExpr(Node* root, int level) {
   } // child_matchers.size()
 }
 
-VariantMatcher handle_callExpr(Node* root, int level) {
+VariantMatcher handle_callExpr(Node* root, std::string call_type, int level) {
   std::vector<VariantValue> child_matchers;
   child_matchers.insert(child_matchers.end(), root->args.begin(), root->args.end());
 
-  if (root->has_type) {
+  if (root->has_type && root->is_literal) {
     child_matchers.push_back(constructMatcher("hasType",
         constructMatcher("asString", StringRef(root->type), level+6), level+5));
   }
@@ -457,6 +457,34 @@ VariantMatcher handle_callExpr(Node* root, int level) {
     for (Node* child : root->children) {
       if (child->matcher_type == MT::callee) {
         child_matchers.push_back(make_matcher(child, level+5));
+      }
+      // need to special case for cudaKernelCallExpr so the call to
+      // __cudaPushCallConfiguration isn't treated as an argument
+      else if (root->matcher_type == MT::cudaKernelCallExpr &&
+               child->matcher_type == MT::callExpr) {
+        Node* cuda_call_conf = child->get_child_or_null(MT::callee);
+        if (cuda_call_conf && cuda_call_conf->children[0]->name == "__cudaPushCallConfiguration") {
+          // tree *should* look like
+          // CallExpr <- child
+          //  callee <- children[0]
+          //    functionDecl  for __cudaPushCallConfiguration
+          //  declRefExpr to function <- children[1]
+          //  declRefExprs to at least 2 args <- children[2-5]
+          if (child->children.size() >= 4) {
+            child_matchers.push_back(constructMatcher("cudaGridDim",
+              make_matcher(child->children[2], level+6), level+5));
+            child_matchers.push_back(constructMatcher("cudaBlockDim",
+              make_matcher(child->children[3], level+6), level+5));
+          }
+          if (child->children.size() > 4) {
+            child_matchers.push_back(constructMatcher("cudaSharedMemPerBlock",
+              make_matcher(child->children[4], level+6), level+5));
+          }
+          if (child->children.size() > 5) {
+            child_matchers.push_back(constructMatcher("cudaStream",
+              make_matcher(child->children[5], level+6), level+5));
+          }
+        }
       }
       else {
         if (!(child->bound && child->bound_name == callee_name)) {
@@ -477,22 +505,22 @@ VariantMatcher handle_callExpr(Node* root, int level) {
     if (root->ignore_casts) {
       if (root->bound) {
         return constructMatcher("ignoringParenImpCasts",
-                constructBoundMatcher("callExpr", StringRef(root->bound_name),
+                constructBoundMatcher(call_type, StringRef(root->bound_name),
                   constructMatcher("allOf", child_matchers, level+3), level+2), level+1);
       }
       else {
         return constructMatcher("ignoringParenImpCasts",
-                constructMatcher("callExpr",
+                constructMatcher(call_type,
                   constructMatcher("allOf", child_matchers, level+3), level+2), level+1);
       }
     }
     else { // no ignore casts
       if (root->bound) {
-        return constructBoundMatcher("callExpr", StringRef(root->bound_name),
+        return constructBoundMatcher(call_type, StringRef(root->bound_name),
                 constructMatcher("allOf", child_matchers, level+2), level+1);
       }
       else {
-        return constructMatcher("callExpr",
+        return constructMatcher(call_type,
                 constructMatcher("allOf", child_matchers, level+2), level+1);
       }
     } // ignore_casts
@@ -501,20 +529,20 @@ VariantMatcher handle_callExpr(Node* root, int level) {
     if (root->ignore_casts) {
       if (root->bound) {
         return constructMatcher("ignoringParenImpCasts",
-                constructBoundMatcher("callExpr", StringRef(root->bound_name),
+                constructBoundMatcher(call_type, StringRef(root->bound_name),
                   child_matchers[0], level+2), level+1);
       }
       else {
         return constructMatcher("ignoringParenImpCasts",
-                constructMatcher("callExpr", child_matchers[0], level+2), level+1);
+                constructMatcher(call_type, child_matchers[0], level+2), level+1);
       }
     }
     else { // no ignore casts
       if (root->bound) {
-        return constructBoundMatcher("callExpr", StringRef(root->bound_name), child_matchers[0], level+1);
+        return constructBoundMatcher(call_type, StringRef(root->bound_name), child_matchers[0], level+1);
       }
       else {
-        return constructMatcher("callExpr", child_matchers[0], level+1);
+        return constructMatcher(call_type, child_matchers[0], level+1);
       }
     } // ignore_casts
   } // child_matchers.size()
@@ -524,7 +552,7 @@ VariantMatcher handle_non_bindable_node(Node* root, StringRef name, int level) {
   std::vector<VariantValue> child_matchers;
   child_matchers.insert(child_matchers.end(), root->args.begin(), root->args.end());
 
-  if (root->has_type) {
+  if (root->has_type && root->is_literal) {
     child_matchers.push_back(constructMatcher("hasType", constructMatcher("asString", StringRef(root->type), level+6), level+5));
   }
   if (root->has_name) {
@@ -571,7 +599,7 @@ VariantMatcher handle_bindable_node(Node* root, StringRef name, int level) {
   std::vector<VariantValue> child_matchers;
   child_matchers.insert(child_matchers.end(), root->args.begin(), root->args.end());
 
-  if (root->has_type) {
+  if (root->has_type && root->is_literal) {
     child_matchers.push_back(constructMatcher("hasType", constructMatcher("asString", StringRef(root->type), level+6), level+5));
   }
   if (root->has_name) {
@@ -642,10 +670,13 @@ VariantMatcher make_matcher(Node* root, int level) {
       return handle_non_bindable_node(root, "callee", level);
       break;
     case MT::callExpr:
-      return handle_callExpr(root, level);
+      return handle_callExpr(root, "callExpr", level);
       break;
     case MT::compoundStmt:
       return handle_compoundStmt(root, level);
+      break;
+    case MT::cudaKernelCallExpr:
+      return handle_callExpr(root, "cudaKernelCallExpr", level);
       break;
     case MT::declRefExpr: //TODO: figure out literals and to()
       return handle_declRefExpr(root, level);
