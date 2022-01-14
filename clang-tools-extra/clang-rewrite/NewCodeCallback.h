@@ -178,7 +178,7 @@ public:
 
     // make action, put in vector of actions
     CodeAction *act =
-        new CodeAction(kind, matcher_names, std::string(code), action_name);
+        new CodeAction(kind, matcher_names, std::string(code), action_name, context->getLangOpts());
     all_actions.push_back(act);
 
     delete[] code;
