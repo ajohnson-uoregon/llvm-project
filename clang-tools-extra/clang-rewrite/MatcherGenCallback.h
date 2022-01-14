@@ -214,7 +214,7 @@ private:
       root = temp;
       current = root;
       current->parent = nullptr;
-      bind_to("match");
+      bind_to("clang_rewrite_top_level_match");
       handle_pending();
       branch_points.push_back(std::pair<Node*, int>(current, children));
       return;
