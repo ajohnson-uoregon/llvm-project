@@ -18,10 +18,12 @@
 
 #include "CodeAction.h"
 #include "ConstructMatchers.h"
+#include "FindLiteralsCallback.h"
 
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <algorithm>
 
 using namespace clang;
 using namespace clang::ast_matchers;
@@ -47,17 +49,36 @@ DynTypedMatcher rettest =
 
 class BuildMatcherVisitor : public RecursiveASTVisitor<BuildMatcherVisitor> {
 public:
-  explicit BuildMatcherVisitor(ASTContext* context)
-    : context(context) {}
+  explicit BuildMatcherVisitor(ASTContext* context, std::vector<std::string> literals)
+    : context(context), literals(literals) {}
 
 
     Node* get_matcher() {
       return root;
     }
 
-    // TODO: placeholder until we actually figure out literals
-    bool is_literal(Stmt* stmt) {
+    bool is_literal(NamedDecl* decl) {
+      printf("BUT IS IT LITERAL\n");
+      DeclContext* con = decl->getDeclContext();
+      if (auto ns = dyn_cast<NamespaceDecl>(con)) {
+        printf("NAMESPACE\n");
+        // ns->dump();
+        if (ns->getNameAsString() == "clang_rewrite_literals") {
+          printf("%s is in literal ns\n", ns->getNameAsString().c_str());
+          return true;
+        }
+      }
+      if (std::find(literals.begin(), literals.end(), decl->getNameAsString()) != literals.end() ||
+          std::find(literals.begin(), literals.end(), decl->getQualifiedNameAsString()) != literals.end()) {
+        printf("%s is in list of literals\n", decl->getNameAsString().c_str());
+        return true;
+      }
       return false;
+    }
+
+    // TODO: placeholder until we actually figure out literals
+    bool is_literal(DeclRefExpr* ref) {
+      return is_literal(ref->getDecl());
     }
 
     int getNumChildren(Stmt* stmt) {
@@ -79,7 +100,13 @@ public:
         add_node(MT::callExpr, "callExpr()", getNumChildren(call));
         add_node(MT::callee, "callee()", 1);
         add_node(MT::functionDecl, "functionDecl()", 0);
-        set_name(callee->getNameAsString());
+        if (is_literal(callee)) {
+          set_is_literal(true);
+          set_name(callee->getNameAsString());
+        }
+        else {
+          bind_to(callee->getNameAsString());
+        }
         update_tree(0);
       }
       else {
@@ -106,7 +133,13 @@ public:
         add_node(MT::cudaKernelCallExpr, "cudaKernelCallExpr()", getNumChildren(call));
         add_node(MT::callee, "callee()", 1);
         add_node(MT::functionDecl, "functionDecl()", 0);
-        set_name(kern->getNameAsString());
+        if (is_literal(kern)) {
+          set_is_literal(true);
+          set_name(kern->getNameAsString());
+        }
+        else {
+          bind_to(kern->getNameAsString());
+        }
         update_tree(0);
       }
       else {
@@ -123,14 +156,14 @@ public:
       }
       std::string ty = expr->getType().getAsString();
       //this needs to be put on the *child* of the cast, not the cast itself
-      add_type_to_child(ty);
+      set_type_on_child(ty);
       return true;
     }
 
     bool VisitCXXFunctionalCastExpr(CXXFunctionalCastExpr* cast) {
       std::string ty = cast->getTypeAsWritten().getAsString();
       //this needs to be put on the *child* of the cast, not the cast itself
-      add_type_to_child(ty);
+      set_type_on_child(ty);
       return true;
     }
 
@@ -138,19 +171,27 @@ public:
       ValueDecl* decl = ref->getDecl();
       std::string name = decl->getNameAsString();
 
-      add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref));
-      bind_to(name);
+      add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref) + 1);
       set_ignore_casts(true);
       if (is_literal(ref)) {
         set_is_literal(true);
+        add_node(MT::to, "to()", 1);
+        add_node(MT::valueDecl, "valueDecl()", 0);
+        set_name(name);
+        std::string ty = decl->getType().getAsString();
+        set_type(ty);
+        update_tree(0);
+      }
+      else {
+        bind_to(name);
       }
 
       // if it's already been given a type by nodes higher up (eg, cxxFunctionalCastExpr)
       // don't overwrite that; need highest level type to match
-      if (!has_type() && decl->getType()->getTypeClass() != clang::Type::TypeClass::Auto) {
-        std::string type = decl->getType().getAsString();
-        add_type(type);
-      }
+      // if (!has_type() && decl->getType()->getTypeClass() != clang::Type::TypeClass::Auto) {
+      //   std::string type = decl->getType().getAsString();
+      //   set_type(type);
+      // }
       update_tree(getNumChildren(ref));
       return true;
     }
@@ -166,7 +207,7 @@ public:
     bool VisitImplicitCastExpr(ImplicitCastExpr* expr) {
       std::string ty = expr->getType().getAsString();
       //this needs to be put on the *child* of the cast, not the cast itself
-      add_type_to_child(ty);
+      set_type_on_child(ty);
       return true;
     }
 
@@ -175,7 +216,7 @@ public:
         add_node(MT::returnStmt, "returnStmt()", 1);
         std::string type = ret->getRetValue()->getType().getAsString();
         add_node(MT::hasReturnValue, "hasReturnValue()", getNumChildren(ret));
-        add_type(type);
+        set_type(type);
         update_tree(getNumChildren(ret));
       }
       else {
@@ -187,6 +228,7 @@ public:
 
 private:
   ASTContext* context;
+  std::vector<std::string> literals;
   std::string matcher = "";
   Node* root = nullptr;
   Node* current = root;
@@ -248,7 +290,7 @@ private:
 
   void handle_pending() {
     if (pending_type) {
-      add_type(pending_type_str);
+      set_type(pending_type_str);
       pending_type = false;
       pending_type_str = "";
     }
@@ -263,7 +305,7 @@ private:
     current->bound_name = name;
   }
 
-  void add_type(std::string type) {
+  void set_type(std::string type) {
     if (!current->has_type) {
       current->has_type = true;
       current->type = type;
@@ -273,7 +315,7 @@ private:
     // }
   }
 
-  void add_type_to_child(std::string type) {
+  void set_type_on_child(std::string type) {
     if (!pending_type) {
       pending_type = true;
       pending_type_str = type;
@@ -357,7 +399,9 @@ public:
     printf("function body\n");
     body->dump();
 
-    BuildMatcherVisitor visitor(context);
+    // std::vector<std::string> literals;
+
+    BuildMatcherVisitor visitor(context, clang_rewrite_literals);
 
     if (body->size() == 1) {
       visitor.TraverseStmt(const_cast<Stmt*>(body->body_front()));
@@ -378,6 +422,37 @@ public:
       visitor.TraverseStmt(const_cast<CompoundStmt*>(body));
     }
 
+    // printf(":BIRBSCREM:\n");
+    // Node* testtree = new Node(MT::cudaKernelCallExpr, "cudaKernelCallExpr");
+    // testtree->bound = true;
+    // testtree->bound_name = "clang_rewrite_top_level_match";
+    // Node* arg1 = new Node(MT::declRefExpr, "declRefExpr");
+    // arg1->bound = true;
+    // arg1->bound_name = "arg1";
+    // arg1->ignore_casts = true;
+    // arg1->has_type = true;
+    // arg1->type = "float *";
+    // testtree->add_child(testtree, arg1);
+    // Node* arg2 = new Node(MT::declRefExpr, "declRefExpr");
+    // arg2->has_name = true;
+    // arg2->name = "arg2";
+    // arg2->ignore_casts = true;
+    // arg2->has_type = true;
+    // arg2->type = "float *";
+    // arg2->is_literal = true;
+    // testtree->add_child(testtree, arg2);
+    //
+    // testtree->dump();
+    //
+    // VariantMatcher testmatcher = make_matcher(testtree, 0);
+    //
+    // llvm::Optional<DynTypedMatcher> testdynmatcher = testmatcher.getSingleMatcher();
+    // if (testdynmatcher) {
+    //   printf("YAY IT WORKY\n");
+    // }
+    // else {
+    //   printf("OH NOES :<\n");
+    // }
 
     Node* matcher = visitor.get_matcher();
 
@@ -386,6 +461,24 @@ public:
 
     printf("ACTUAL MATCHER\n");
     VariantMatcher varmatcher = make_matcher(matcher, 0);
+
+    printf("TYPES???\n");
+    if (varmatcher.hasTypedMatcher<DynTypedMatcher>()) {
+      printf("dyntype okay!\n");
+    }
+    if (varmatcher.hasTypedMatcher<Expr>()) {
+      printf("expr okay!\n");
+    }
+    if (varmatcher.hasTypedMatcher<Decl>()) {
+      printf("Decl okay!\n");
+    }
+    if (varmatcher.hasTypedMatcher<Stmt>()) {
+      printf("stmt okay!\n");
+    }
+    if (varmatcher.hasTypedMatcher<CUDAKernelCallExpr>()) {
+      printf("cudaKernelCallExpr okay!\n");
+    }
+    printf("END TYPES???\n");
 
     llvm::Optional<DynTypedMatcher> dynmatcher = varmatcher.getSingleMatcher();
     if (dynmatcher) {

@@ -103,11 +103,11 @@ VariantMatcher constructMatcher(StringRef MatcherName,
   for (int i = 0; i < tab; i++) {
     printf("  ");
   }
-  printf("made matcher (2) %s\n", MatcherName.str().c_str());
+  printf("  with arg %s\n", VariantValue_asString(Arg1, false).c_str());
   for (int i = 0; i < tab; i++) {
     printf("  ");
   }
-  printf("  with arg %s\n", VariantValue_asString(Arg1, false).c_str());
+  printf("made matcher (2) %s\n", MatcherName.str().c_str());
   return Out;
 }
 
@@ -128,15 +128,15 @@ VariantMatcher constructMatcher(StringRef MatcherName,
   for (int i = 0; i < tab; i++) {
     printf("  ");
   }
-  printf("made matcher (3) %s\n", MatcherName.str().c_str());
-  for (int i = 0; i < tab; i++) {
-    printf("  ");
-  }
   printf("  with arg %s\n", VariantValue_asString(Arg1, false).c_str());
   for (int i = 0; i < tab; i++) {
     printf("  ");
   }
   printf("  with arg %s\n", VariantValue_asString(Arg2, false).c_str());
+  for (int i = 0; i < tab; i++) {
+    printf("  ");
+  }
+  printf("made matcher (3) %s\n", MatcherName.str().c_str());
   return Out;
 }
 
@@ -153,16 +153,16 @@ VariantMatcher constructMatcher(StringRef MatcherName,
   if (Ctor) {
     Out = R::constructMatcher(*Ctor, {}, Args(args), Error);
   }
-  for (int i = 0; i < tab; i++) {
-    printf("  ");
-  }
-  printf("made matcher (4) %s\n", MatcherName.str().c_str());
   for (auto arg : args) {
     for (int i = 0; i < tab; i++) {
       printf("  ");
     }
     printf("  with arg %s\n", VariantValue_asString(arg, false).c_str());
   }
+  for (int i = 0; i < tab; i++) {
+    printf("  ");
+  }
+  printf("made matcher (4) %s\n", MatcherName.str().c_str());
   return Out;
 }
 
@@ -205,11 +205,11 @@ VariantMatcher constructBoundMatcher(StringRef MatcherName,
   for (int i = 0; i < tab; i++) {
     printf("  ");
   }
-  printf("made bound matcher (2) %s (%s)\n", MatcherName.str().c_str(), BoundName.str().c_str());
+  printf("  with arg %s\n", VariantValue_asString(Arg1, false).c_str());
   for (int i = 0; i < tab; i++) {
     printf("  ");
   }
-  printf("  with arg %s\n", VariantValue_asString(Arg1, false).c_str());
+  printf("made bound matcher (2) %s (%s)\n", MatcherName.str().c_str(), BoundName.str().c_str());
   return Out;
 }
 
@@ -231,15 +231,15 @@ VariantMatcher constructBoundMatcher(StringRef MatcherName,
   for (int i = 0; i < tab; i++) {
     printf("  ");
   }
-  printf("made bound matcher (3) %s (%s)\n", MatcherName.str().c_str(), BoundName.str().c_str());
-  for (int i = 0; i < tab; i++) {
-    printf("  ");
-  }
   printf("  with arg %s\n", VariantValue_asString(Arg1, false).c_str());
   for (int i = 0; i < tab; i++) {
     printf("  ");
   }
   printf("  with arg %s\n", VariantValue_asString(Arg2, false).c_str());
+  for (int i = 0; i < tab; i++) {
+    printf("  ");
+  }
+  printf("made bound matcher (3) %s (%s)\n", MatcherName.str().c_str(), BoundName.str().c_str());
   return Out;
 }
 
@@ -257,16 +257,16 @@ VariantMatcher constructBoundMatcher(StringRef MatcherName,
   if (Ctor) {
     Out = R::constructBoundMatcher(*Ctor, {}, BoundName, Args(args), Error);
   }
+  for (auto arg : args) {
+    for (int i = 0; i < tab; i++) {
+      printf("  ");
+    }
+    printf("  with arg %s\n", VariantValue_asString(arg, false).c_str());
+  }
   for (int i = 0; i < tab; i++) {
     printf("  ");
   }
   printf("made matcher (4) %s (%s)\n", MatcherName.str().c_str(), BoundName.str().c_str());
-    for (auto arg : args) {
-      for (int i = 0; i < tab; i++) {
-        printf("  ");
-      }
-      printf("  with arg %s\n", VariantValue_asString(arg, false).c_str());
-    }
   return Out;
 }
 
@@ -275,10 +275,10 @@ VariantMatcher handle_compoundStmt(Node* root, int level) {
   std::vector<VariantValue> child_matchers;
   child_matchers.insert(child_matchers.end(), root->args.begin(), root->args.end());
 
-  if (root->has_type && root->is_literal) {
-    child_matchers.push_back(constructMatcher("hasType",
-        constructMatcher("asString", StringRef(root->type), level+6), level+5));
-  }
+  // if (root->has_type && root->is_literal) {
+  //   child_matchers.push_back(constructMatcher("hasType",
+  //       constructMatcher("asString", StringRef(root->type), level+6), level+5));
+  // }
   if (root->has_name) {
     child_matchers.push_back(constructMatcher("hasName", StringRef(root->name), level+5));
   }
@@ -367,11 +367,12 @@ VariantMatcher handle_declRefExpr(Node* root, int level) {
     }
   }
 
-  if (root->has_type && root->is_literal) {
-    child_matchers.push_back(constructMatcher("hasType",
-        constructMatcher("asString", StringRef(root->type), level+6), level+5));
-  }
+  // if (root->has_type && root->is_literal) {
+  //   child_matchers.push_back(constructMatcher("hasType",
+  //       constructMatcher("asString", StringRef(root->type), level+6), level+5));
+  // }
   if (root->has_name) {
+    // printf("WARNING: putting hasName inside expr()\n");
     child_matchers.push_back(constructMatcher("hasName", StringRef(root->name), level+5));
   }
 
@@ -438,10 +439,10 @@ VariantMatcher handle_callExpr(Node* root, std::string call_type, int level) {
   std::vector<VariantValue> child_matchers;
   child_matchers.insert(child_matchers.end(), root->args.begin(), root->args.end());
 
-  if (root->has_type && root->is_literal) {
-    child_matchers.push_back(constructMatcher("hasType",
-        constructMatcher("asString", StringRef(root->type), level+6), level+5));
-  }
+  // if (root->has_type && root->is_literal) {
+  //   child_matchers.push_back(constructMatcher("hasType",
+  //       constructMatcher("asString", StringRef(root->type), level+6), level+5));
+  // }
   if (root->has_name) {
     child_matchers.push_back(constructMatcher("hasName", StringRef(root->name), level+5));
   }
@@ -552,9 +553,10 @@ VariantMatcher handle_non_bindable_node(Node* root, StringRef name, int level) {
   std::vector<VariantValue> child_matchers;
   child_matchers.insert(child_matchers.end(), root->args.begin(), root->args.end());
 
-  if (root->has_type && root->is_literal) {
-    child_matchers.push_back(constructMatcher("hasType", constructMatcher("asString", StringRef(root->type), level+6), level+5));
-  }
+  // if (root->has_type && root->is_literal) {
+  //   child_matchers.push_back(constructMatcher("hasType",
+  //     constructMatcher("asString", StringRef(root->type), level+6), level+5));
+  // }
   if (root->has_name) {
     child_matchers.push_back(constructMatcher("hasName", StringRef(root->name), level+5));
   }
@@ -599,9 +601,10 @@ VariantMatcher handle_bindable_node(Node* root, StringRef name, int level) {
   std::vector<VariantValue> child_matchers;
   child_matchers.insert(child_matchers.end(), root->args.begin(), root->args.end());
 
-  if (root->has_type && root->is_literal) {
-    child_matchers.push_back(constructMatcher("hasType", constructMatcher("asString", StringRef(root->type), level+6), level+5));
-  }
+  // if (root->has_type && root->is_literal) {
+  //   child_matchers.push_back(constructMatcher("hasType",
+  //     constructMatcher("asString", StringRef(root->type), level+6), level+5));
+  // }
   if (root->has_name) {
     child_matchers.push_back(constructMatcher("hasName", StringRef(root->name), level+5));
   }
@@ -695,6 +698,12 @@ VariantMatcher make_matcher(Node* root, int level) {
       break;
     case MT::returnStmt:
       return handle_bindable_node(root, "returnStmt", level);
+      break;
+    case MT::to:
+      return handle_non_bindable_node(root, "to", level);
+      break;
+    case MT::valueDecl:
+      return handle_bindable_node(root, "valueDecl", level);
       break;
     default:
       printf("ERROR: unimplemented matcher type %d\n", (int) root->matcher_type);

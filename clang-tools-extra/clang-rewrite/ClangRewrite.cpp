@@ -18,6 +18,7 @@
 #include "MatcherWrapper.h"
 #include "NewCodeCallback.h"
 #include "MatcherGenCallback.h"
+#include "FindLiteralsCallback.h"
 #include "tests/test_matchers.cpp"
 
 #include <algorithm>
@@ -102,6 +103,13 @@ int main(int argc, const char **argv) {
   if (!inst_file.empty()) {
     ClangTool InstTool(OptionsParser.getCompilations(), {inst_file});
 
+    MatchFinder literal_finder;
+    FindLiteralsCallback literals_callback;
+
+    literal_finder.addMatcher(literal_vector, &literals_callback);
+
+    retval = InstTool.run(newFrontendActionFactory(&literal_finder).get());
+
     MatchFinder inst_finder;
     InsertPrematchCallback prematch_callback;
     InsertPostmatchCallback postmatch_callback;
@@ -112,11 +120,6 @@ int main(int argc, const char **argv) {
     inst_finder.addMatcher(insert_after_match, &postmatch_callback);
     inst_finder.addMatcher(replace_match, &replace_callback);
     inst_finder.addMatcher(matcher, &matcher_callback);
-
-    // MatcherWrapper<DynTypedMatcher>* m = new MatcherWrapper<DynTypedMatcher>(rettest, "returns_test",
-    //   "test",
-    //   0, 0);
-    // user_matchers.push_back(m);
 
     retval = InstTool.run(newFrontendActionFactory(&inst_finder).get());
   }
@@ -131,20 +134,6 @@ int main(int argc, const char **argv) {
   // TODO are we going to need any other kinds of matchers? probably
   // DeclarationMatchers
   // https://clang.llvm.org/doxygen/classclang_1_1ast__matchers_1_1MatchFinder.html
-
-
-  // temp hack until we have a real front end
-  // stmt_matchers.push_back(new MatcherWrapper<StatementMatcher>(
-  //     ReturnIntMatcher, "returns", "this", 81, 1));
-  // stmt_matchers.push_back(new MatcherWrapper<StatementMatcher>(
-  //     LoopCondMatcher, "loops", "this", 74, 1));
-  // stmt_matchers.push_back(new MatcherWrapper<StatementMatcher>(
-  //     ThenMatcher, "then code", "this", 84, 1));
-
-  // decl_matchers.push_back(new MatcherWrapper<DeclarationMatcher>(
-  //     IntDeclMatcher, "intdecl", "this", 24, 1));
-  // decl_matchers.push_back(new MatcherWrapper<DeclarationMatcher>(
-  //     AddMatcher, "addfxn", "this", 27, 1));
 
   // for each matcher, go through all the actions and find the ones relevant to
   // it
