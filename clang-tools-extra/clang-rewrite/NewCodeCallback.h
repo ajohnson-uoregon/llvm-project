@@ -183,18 +183,6 @@ public:
 
     delete[] code;
   }
-
-private:
-  void findStringChildren(const Stmt *stmt, std::vector<std::string> &strings) {
-    for (auto child : stmt->children()) {
-      // specify *CLANG* StringLiteral to not overlap with llvm StringLiteral
-      if (auto *str = dyn_cast<clang::StringLiteral>(child)) {
-        strings.push_back(str->getString().str());
-      } else {
-        findStringChildren(child, strings);
-      }
-    }
-  }
 };
 
 // subclasses for all types of actions

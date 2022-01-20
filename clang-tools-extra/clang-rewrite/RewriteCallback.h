@@ -199,6 +199,10 @@ public:
           code_loc.getEnd(), 0, context->getSourceManager(),
           context->getLangOpts()));
 
+      if (!code_begin.isValid() || !code_end.isValid()) {
+        continue;
+      }
+
       FileID fid = code_begin.getFileID();
       unsigned int begin_offset = code_begin.getFileOffset();
       unsigned int end_offset = code_end.getFileOffset();

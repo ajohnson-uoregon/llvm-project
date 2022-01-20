@@ -20,6 +20,8 @@ enum class MatcherType {
   hasReturnValue,
   integerLiteral,
   returnStmt,
+  to,
+  valueDecl,
 };
 
 class Node {
@@ -74,6 +76,9 @@ public:
     }
     if (n->has_name) {
       printf("  named %s;", n->name.c_str());
+    }
+    if (n->is_literal) {
+      printf("  is literal;");
     }
     printf("\n");
     for (Node* child : n->children) {
