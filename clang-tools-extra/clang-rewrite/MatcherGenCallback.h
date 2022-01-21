@@ -58,19 +58,19 @@ public:
     }
 
     bool is_literal(NamedDecl* decl) {
-      printf("BUT IS IT LITERAL\n");
+      // printf("BUT IS IT LITERAL\n");
       DeclContext* con = decl->getDeclContext();
       if (auto ns = dyn_cast<NamespaceDecl>(con)) {
-        printf("NAMESPACE\n");
+        // printf("NAMESPACE\n");
         // ns->dump();
         if (ns->getNameAsString() == "clang_rewrite_literals") {
-          printf("%s is in literal ns\n", ns->getNameAsString().c_str());
+          // printf("%s is in literal ns\n", ns->getNameAsString().c_str());
           return true;
         }
       }
       if (std::find(literals.begin(), literals.end(), decl->getNameAsString()) != literals.end() ||
           std::find(literals.begin(), literals.end(), decl->getQualifiedNameAsString()) != literals.end()) {
-        printf("%s is in list of literals\n", decl->getNameAsString().c_str());
+        // printf("%s is in list of literals\n", decl->getNameAsString().c_str());
         return true;
       }
       return false;
@@ -97,28 +97,25 @@ public:
       FunctionDecl* callee = call->getDirectCallee();
       if (callee != nullptr) {
         // plus 1 for callee
-        add_node(MT::callExpr, "callExpr()", getNumChildren(call));
+        add_node(MT::callExpr, "callExpr()", getNumChildren(call) +1);
         add_node(MT::callee, "callee()", 1);
-        add_node(MT::functionDecl, "functionDecl()", 0);
+        Node* fxn = add_node(MT::functionDecl, "functionDecl()", 0);
         if (is_literal(callee)) {
-          set_is_literal(true);
-          set_name(callee->getNameAsString());
+          fxn->set_is_literal(true);
+          fxn->set_name(callee->getNameAsString());
         }
         else {
-          bind_to(callee->getNameAsString());
+          fxn->bind_to(callee->getNameAsString());
         }
-        update_tree(0);
       }
       else {
         add_node(MT::callExpr, "callExpr()", getNumChildren(call));
-        update_tree(getNumChildren(call));
       }
       return true;
     }
 
     bool VisitCompoundStmt(CompoundStmt* comp) {
       add_node(MT::compoundStmt, "compountStmt()", getNumChildren(comp));
-      update_tree(getNumChildren(comp));
       return true;
     }
 
@@ -130,30 +127,28 @@ public:
       FunctionDecl* kern = call->getDirectCallee();
       if (kern != nullptr) {
         // plus 1 for callee
-        add_node(MT::cudaKernelCallExpr, "cudaKernelCallExpr()", getNumChildren(call));
+        add_node(MT::cudaKernelCallExpr, "cudaKernelCallExpr()", getNumChildren(call) +1);
         add_node(MT::callee, "callee()", 1);
-        add_node(MT::functionDecl, "functionDecl()", 0);
+        Node* fxn = add_node(MT::functionDecl, "functionDecl()", 0);
         if (is_literal(kern)) {
-          set_is_literal(true);
-          set_name(kern->getNameAsString());
+          fxn->set_is_literal(true);
+          fxn->set_name(kern->getNameAsString());
         }
         else {
-          bind_to(kern->getNameAsString());
+          fxn->bind_to(kern->getNameAsString());
         }
-        update_tree(0);
       }
       else {
         add_node(MT::cudaKernelCallExpr, "cudaKernelCallExpr()", getNumChildren(call));
-        update_tree(getNumChildren(call));
       }
 
       return true;
     }
 
     bool VisitCXXConstructExpr(CXXConstructExpr* expr) {
-      if (expr->isElidable()) {
-        printf("is elidable\n");
-      }
+      // if (expr->isElidable()) {
+      //   printf("is elidable\n");
+      // }
       std::string ty = expr->getType().getAsString();
       //this needs to be put on the *child* of the cast, not the cast itself
       set_type_on_child(ty);
@@ -171,19 +166,21 @@ public:
       ValueDecl* decl = ref->getDecl();
       std::string name = decl->getNameAsString();
 
-      add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref) + 1);
-      set_ignore_casts(true);
       if (is_literal(ref)) {
-        set_is_literal(true);
+        Node* declref = add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref) +1);
+        declref->set_ignore_casts(true);
+        declref->set_is_literal(true);
         add_node(MT::to, "to()", 1);
-        add_node(MT::valueDecl, "valueDecl()", 0);
-        set_name(name);
+        Node* valuedecl = add_node(MT::valueDecl, "valueDecl()", 0);
+        valuedecl->set_name(name);
         std::string ty = decl->getType().getAsString();
-        set_type(ty);
-        update_tree(0);
+        valuedecl->set_type(ty);
+
       }
       else {
-        bind_to(name);
+        Node* declref = add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref));
+        declref->set_ignore_casts(true);
+        declref->bind_to(name);
       }
 
       // if it's already been given a type by nodes higher up (eg, cxxFunctionalCastExpr)
@@ -192,15 +189,14 @@ public:
       //   std::string type = decl->getType().getAsString();
       //   set_type(type);
       // }
-      update_tree(getNumChildren(ref));
+
       return true;
     }
 
     bool VisitIntegerLiteral(IntegerLiteral* lit) {
       add_node(MT::integerLiteral, "integerLiteral()", 1);
-      add_node(MT::equals, "equals()", 0);
-      add_arg((int) lit->getValue().getSExtValue());
-      update_tree(0);
+      Node* equals = add_node(MT::equals, "equals()", 0);
+      equals->add_arg((int) lit->getValue().getSExtValue());
       return true;
     }
 
@@ -215,13 +211,11 @@ public:
       if (ret->getRetValue()) {
         add_node(MT::returnStmt, "returnStmt()", 1);
         std::string type = ret->getRetValue()->getType().getAsString();
-        add_node(MT::hasReturnValue, "hasReturnValue()", getNumChildren(ret));
-        set_type(type);
-        update_tree(getNumChildren(ret));
+        Node* hasretval = add_node(MT::hasReturnValue, "hasReturnValue()", getNumChildren(ret));
+        hasretval->set_type(type);
       }
       else {
         add_node(MT::returnStmt, "returnStmt()", getNumChildren(ret));
-        update_tree(getNumChildren(ret));
       }
       return true;
     }
@@ -234,85 +228,71 @@ private:
   Node* current = root;
   // stack for keeping track of branches; int is expected number of children
   std::vector<std::pair<Node*, int>> branch_points;
-  int added_children = 0;
   bool pending_type = false;
   std::string pending_type_str = "";
 
-  void update_tree(int children) {
-    // if it's a leaf, set the current node to the last branch point and maybe pop it
-    if (children == 0) {
-      current = branch_points.back().first;
-      if (added_children == branch_points.back().second) {
-        branch_points.pop_back();
-        added_children = 0;
-      }
+  void dump_branch_points() {
+    int stack = 0;
+    for (std::pair<Node*, int> pt : branch_points) {
+      printf("branch point %d\n", stack);
+      pt.first->dump_node(1);
+      printf("    has %d children left\n", pt.second);
+      stack++;
     }
   }
 
-  void add_node(MatcherType sm, std::string code, int children) {
+  Node* add_node(MatcherType sm, std::string code, int children) {
     Node* temp = new Node(sm, code);
+    // printf("before node add\n");
+    // dump_branch_points();
     // if the tree is empty
     if (root == nullptr) {
+      printf("adding root %s\n", code.c_str());
       root = temp;
       current = root;
-      current->parent = nullptr;
-      bind_to("clang_rewrite_top_level_match");
+      current->bind_to("clang_rewrite_top_level_match");
       handle_pending();
       branch_points.push_back(std::pair<Node*, int>(current, children));
-      return;
+      return temp;
     }
     // if this has multiple children, push it onto the branch stack
     if (children > 1) {
-      current->add_child(current, temp);
-      temp->parent = current;
+      printf("node %s should have %d children\n", code.c_str(), children);
+      current->add_child(temp);
       current = temp;
       handle_pending();
       branch_points.push_back(std::pair<Node*, int>(current, children));
     }
-    // if it's a leaf, we've finished adding this child, increment;
-    // actually popping from branch_points is handled by update_tree because
-    // we might have other things to do to this node and that has to wait
+    // if it's a leaf, we've finished adding this child, decrement
     else if (children == 0) {
-      current->add_child(current, temp);
-      temp->parent = current;
+      printf("node %s has no more children\n", code.c_str());
+      current->add_child(temp);
       current = temp;
-      added_children++;
+      branch_points.back().second--;
       handle_pending();
+      if (branch_points.back().second == 0) {
+        branch_points.pop_back();
+      }
+      current = branch_points.back().first;
     }
     // children == 1; stick
     else {
-      current->add_child(current, temp);
-      temp->parent = current;
+      printf("node %s should have 1 child\n", code.c_str());
+      current->add_child(temp);
       current = temp;
       handle_pending();
     }
+    // printf("after node add\n");
+    // dump_branch_points();
+    return temp;
   }
 
   void handle_pending() {
     if (pending_type) {
-      set_type(pending_type_str);
+      current->set_type(pending_type_str);
       pending_type = false;
       pending_type_str = "";
     }
-  }
-
-  void set_ignore_casts(bool b) {
-    current->ignore_casts = b;
-  }
-
-  void bind_to(std::string name) {
-    current->bound = true;
-    current->bound_name = name;
-  }
-
-  void set_type(std::string type) {
-    if (!current->has_type) {
-      current->has_type = true;
-      current->type = type;
-    }
-    // else {
-    //   printf("WARNING: would overwrite %s with %s\n", current->type.c_str(), type.c_str());
-    // }
   }
 
   void set_type_on_child(std::string type) {
@@ -323,23 +303,6 @@ private:
     // else {
     //   printf("WARNING: would overwrite pending %s with %s\n", pending_type_str.c_str(), type.c_str());
     // }
-  }
-
-  bool has_type() {
-    return current->has_type;
-  }
-
-  void set_name(std::string name) {
-    current->has_name = true;
-    current->name = name;
-  }
-
-  void set_is_literal(bool b) {
-    current->is_literal = b;
-  }
-
-  void add_arg(VariantValue arg) {
-    current->args.push_back(arg);
   }
 };
 
@@ -432,7 +395,7 @@ public:
     // arg1->ignore_casts = true;
     // arg1->has_type = true;
     // arg1->type = "float *";
-    // testtree->add_child(testtree, arg1);
+    // testtree->add_child(arg1);
     // Node* arg2 = new Node(MT::declRefExpr, "declRefExpr");
     // arg2->has_name = true;
     // arg2->name = "arg2";
@@ -440,7 +403,7 @@ public:
     // arg2->has_type = true;
     // arg2->type = "float *";
     // arg2->is_literal = true;
-    // testtree->add_child(testtree, arg2);
+    // testtree->add_child(arg2);
     //
     // testtree->dump();
     //

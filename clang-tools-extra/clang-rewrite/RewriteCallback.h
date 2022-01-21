@@ -186,50 +186,72 @@ public:
 
     for (auto n : result.Nodes.getMap()) {
       llvm::outs() << n.first << " : \n";
-      SourceRange code_loc = n.second.getSourceRange();
-      code_loc.print(llvm::outs(), context->getSourceManager());
-      FullSourceLoc code_begin = context->getFullLoc(code_loc.getBegin());
+      const Stmt *stmt = result.Nodes.getNodeAs<Stmt>(n.first);
+      const NamedDecl *decl = result.Nodes.getNodeAs<NamedDecl>(n.first);
 
-      // some nodes (like declRefExpr) have begin == end, so we want to get the
-      // end of the *token*
-      // others (like callExpr) have ending pointing to the start of the last
-      // token (eg, ')' ), but we want to get that too
-      // so in general it's best to just get the loc of the end of the token
-      FullSourceLoc code_end = context->getFullLoc(Lexer::getLocForEndOfToken(
-          code_loc.getEnd(), 0, context->getSourceManager(),
-          context->getLangOpts()));
+      if (stmt) {
+        SourceRange code_loc = stmt->getSourceRange();
+        code_loc.print(llvm::outs(), context->getSourceManager());
+        printf("\n");
+        FullSourceLoc code_begin = context->getFullLoc(code_loc.getBegin());
 
-      if (!code_begin.isValid() || !code_end.isValid()) {
-        continue;
+        // some nodes (like declRefExpr) have begin == end, so we want to get the
+        // end of the *token*
+        // others (like callExpr) have ending pointing to the start of the last
+        // token (eg, ')' ), but we want to get that too
+        // so in general it's best to just get the loc of the end of the token
+        FullSourceLoc code_end = context->getFullLoc(Lexer::getLocForEndOfToken(
+            code_loc.getEnd(), 0, context->getSourceManager(),
+            context->getLangOpts()));
+
+        if (!code_begin.isValid() || !code_end.isValid()) {
+          continue;
+        }
+
+        FileID fid = code_begin.getFileID();
+        unsigned int begin_offset = code_begin.getFileOffset();
+        unsigned int end_offset = code_end.getFileOffset();
+
+        printf("begin offset %u\n", begin_offset);
+        printf("end offset   %u\n", end_offset);
+        printf("array length %u\n", end_offset - begin_offset);
+
+        llvm::Optional<llvm::MemoryBufferRef> buff =
+            context->getSourceManager().getBufferOrNone(fid);
+
+        char *code = new char[end_offset - begin_offset + 1];
+        if (buff.hasValue()) {
+          memcpy(code, &(buff->getBufferStart()[begin_offset]),
+                 (end_offset - begin_offset + 1) * sizeof(char));
+          code[end_offset - begin_offset] =
+              '\0'; // force null terminated for Reasons
+          printf("code??? %s\n", code);
+        } else {
+          printf("no buffer :<\n");
+        }
+
+        n.second.dump(llvm::outs(), *context);
+        llvm::outs() << "\n";
+        if (n.first != "clang_rewrite_top_level_match") {
+          bound_code[n.first] = std::string(code);
+        }
+      }
+      else if (decl) {
+        std::string name = decl->getNameAsString();
+        std::string qualified_name = decl->getQualifiedNameAsString();
+        printf("name: %s\n", name.c_str());
+        printf("qualified name: %s\n", qualified_name.c_str());
+
+        n.second.dump(llvm::outs(), *context);
+        llvm::outs() << "\n";
+        if (n.first != "clang_rewrite_top_level_match") {
+          bound_code[n.first] = name;
+        }
+      }
+      else {
+        printf("ERROR: not stmt or nameddecl???\n");
       }
 
-      FileID fid = code_begin.getFileID();
-      unsigned int begin_offset = code_begin.getFileOffset();
-      unsigned int end_offset = code_end.getFileOffset();
-
-      printf("begin offset %u\n", begin_offset);
-      printf("end offset   %u\n", end_offset);
-      printf("array length %u\n", end_offset - begin_offset);
-
-      llvm::Optional<llvm::MemoryBufferRef> buff =
-          context->getSourceManager().getBufferOrNone(fid);
-
-      char *code = new char[end_offset - begin_offset + 1];
-      if (buff.hasValue()) {
-        memcpy(code, &(buff->getBufferStart()[begin_offset]),
-               (end_offset - begin_offset + 1) * sizeof(char));
-        code[end_offset - begin_offset] =
-            '\0'; // force null terminated for Reasons
-        printf("code??? %s\n", code);
-      } else {
-        printf("no buffer :<\n");
-      }
-
-      n.second.dump(llvm::outs(), *context);
-      llvm::outs() << "\n";
-      if (n.first != "clang_rewrite_top_level_match") {
-        bound_code[n.first] = std::string(code);
-      }
     }
 
     for (CodeAction *action : matcher->actions) {
