@@ -449,8 +449,21 @@ VariantMatcher handle_callExpr(Node* root, std::string call_type, int level) {
 
   std::string callee_name = "";
   Node* callee = root->get_child_or_null(MT::callee);
-  if (callee) {        // functionDecl name
-    callee_name = callee->children[0]->name;
+  if (callee != nullptr) {        // functionDecl name
+    printf("callee not null\n");
+    Node* funcdecl = callee->get_child_or_null(MT::functionDecl);
+    if (funcdecl != nullptr) {
+      printf("funcdecl not null\n");
+      if (funcdecl->is_named()) {
+        callee_name = funcdecl->name;
+      }
+      else if (funcdecl->is_bound()) {
+        callee_name = funcdecl->bound_name;
+      }
+      else {
+        printf("WARNING: callee has no name\n");
+      }
+    }
   }
 
   if (root->children.size() > 0) {
@@ -488,7 +501,8 @@ VariantMatcher handle_callExpr(Node* root, std::string call_type, int level) {
         }
       }
       else {
-        if (!(child->bound && child->bound_name == callee_name)) {
+        if (!(child->bound && child->bound_name == callee_name) &&
+            !(child->has_name && child->name == callee_name)) {
           child_matchers.push_back(constructMatcher("hasArgument", argnum,
               make_matcher(child, level+6), level+5));
           argnum++;
