@@ -1,4 +1,5 @@
 set(LLVM_LINK_COMPONENTS support)
+# set(CMAKE_CXX_FLAGS "-g -fsanitize=address -fsanitize=undefined")
 
 add_clang_tool(clang-rewrite
   ClangRewrite.cpp

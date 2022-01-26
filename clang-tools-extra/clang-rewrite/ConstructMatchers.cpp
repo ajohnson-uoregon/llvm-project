@@ -283,8 +283,8 @@ VariantMatcher handle_compoundStmt(Node* root, int level) {
     child_matchers.push_back(constructMatcher("hasName", StringRef(root->name), level+5));
   }
 
-  if (root->children.size() > 0) {
-    for (Node* child : root->children) {
+  if (root->children) {
+    for (Node* child = root->children; child != nullptr; child = child->next_sibling) {
       child_matchers.push_back(constructMatcher("hasAnySubstatement",
           make_matcher(child, level+6), level+5));
     }
@@ -376,8 +376,8 @@ VariantMatcher handle_declRefExpr(Node* root, int level) {
     child_matchers.push_back(constructMatcher("hasName", StringRef(root->name), level+5));
   }
 
-  if (root->children.size() > 0) {
-    for (Node* child : root->children) {
+  if (root->children) {
+    for (Node* child = root->children; child != nullptr; child = child->next_sibling) {
       child_matchers.push_back(make_matcher(child, level+5));
     }
   }
@@ -466,9 +466,9 @@ VariantMatcher handle_callExpr(Node* root, std::string call_type, int level) {
     }
   }
 
-  if (root->children.size() > 0) {
+  if (root->children) {
     int argnum = 0; // SHRUG I guess the order works out?
-    for (Node* child : root->children) {
+    for (Node* child = root->children; child != nullptr; child = child->next_sibling) {
       if (child->matcher_type == MT::callee) {
         child_matchers.push_back(make_matcher(child, level+5));
       }
@@ -477,26 +477,32 @@ VariantMatcher handle_callExpr(Node* root, std::string call_type, int level) {
       else if (root->matcher_type == MT::cudaKernelCallExpr &&
                child->matcher_type == MT::callExpr) {
         Node* cuda_call_conf = child->get_child_or_null(MT::callee);
-        if (cuda_call_conf && cuda_call_conf->children[0]->name == "__cudaPushCallConfiguration") {
+        if (cuda_call_conf && cuda_call_conf->children->name == "__cudaPushCallConfiguration") {
           // tree *should* look like
           // CallExpr <- child
           //  callee <- children[0]
           //    functionDecl  for __cudaPushCallConfiguration
           //  declRefExpr to function <- children[1]
           //  declRefExprs to at least 2 args <- children[2-5]
-          if (child->children.size() >= 4) {
+          Node* temp_child = child->children; // callee
+          temp_child = temp_child->next_sibling; // declRefExpr to fxn
+          temp_child = temp_child->next_sibling; // first arg
+          if (temp_child) {
             child_matchers.push_back(constructMatcher("cudaGridDim",
-              make_matcher(child->children[2], level+6), level+5));
+              make_matcher(temp_child, level+6), level+5));
+            temp_child = temp_child->next_sibling; // second arg (guaranteed)
             child_matchers.push_back(constructMatcher("cudaBlockDim",
-              make_matcher(child->children[3], level+6), level+5));
+              make_matcher(temp_child, level+6), level+5));
+            temp_child = temp_child->next_sibling; // third arg or null
           }
-          if (child->children.size() > 4) {
+          if (temp_child) {
             child_matchers.push_back(constructMatcher("cudaSharedMemPerBlock",
-              make_matcher(child->children[4], level+6), level+5));
+              make_matcher(temp_child, level+6), level+5));
+            temp_child = temp_child->next_sibling; // fourth arg or null
           }
-          if (child->children.size() > 5) {
+          if (temp_child) {
             child_matchers.push_back(constructMatcher("cudaStream",
-              make_matcher(child->children[5], level+6), level+5));
+              make_matcher(temp_child, level+6), level+5));
           }
         }
       }
@@ -578,8 +584,8 @@ VariantMatcher handle_non_bindable_node(Node* root, StringRef name, int level) {
     printf("WARNING: binding on a non bindable node\n");
   }
 
-  if (root->children.size() > 0) {
-    for (Node* child : root->children) {
+  if (root->children) {
+    for (Node* child = root->children; child != nullptr; child = child->next_sibling) {
       child_matchers.push_back(make_matcher(child, level+5));
     }
   }
@@ -623,8 +629,8 @@ VariantMatcher handle_bindable_node(Node* root, StringRef name, int level) {
     child_matchers.push_back(constructMatcher("hasName", StringRef(root->name), level+5));
   }
 
-  if (root->children.size() > 0) {
-    for (Node* child : root->children) {
+  if (root->children) {
+    for (Node* child = root->children; child != nullptr; child = child->next_sibling) {
       child_matchers.push_back(make_matcher(child, level+5));
     }
   }

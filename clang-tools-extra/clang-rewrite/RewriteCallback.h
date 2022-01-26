@@ -235,6 +235,8 @@ public:
         if (n.first != "clang_rewrite_top_level_match") {
           bound_code[n.first] = std::string(code);
         }
+        
+        delete[] code;
       }
       else if (decl) {
         std::string name = decl->getNameAsString();
