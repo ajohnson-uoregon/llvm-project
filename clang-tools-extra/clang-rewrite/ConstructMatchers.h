@@ -4,10 +4,12 @@
 #include "clang/ASTMatchers/Dynamic/VariantValue.h"
 
 #include <string>
+#include <algorithm>
 
 using namespace clang::ast_matchers::dynamic;
 
 enum class MatcherType {
+  fakeNode,
   callee,
   callExpr,
   compoundStmt,
@@ -36,14 +38,24 @@ public:
   std::string type;
   bool ignore_casts = false;
   bool is_literal = false;
-  std::vector<Node*> children;
+  Node* children = nullptr; // start of linked list of children, managed by child->next_sibling
+  Node* next_sibling = nullptr; // null when last child in list
   std::vector<VariantValue> args;
   Node* parent = nullptr;
 
   Node(MatcherType m, std::string ms) : matcher_type(m), matcher_string(ms) {}
 
   void add_child(Node* child) {
-    this->children.push_back(child);
+    if (this->children == nullptr) {
+      this->children = child;
+    }
+    else {
+      Node* temp = this->children;
+      while (temp->next_sibling != nullptr) {
+        temp = temp->next_sibling;
+      }
+      temp->next_sibling = child;
+    }
     child->parent = this;
   }
 
@@ -87,7 +99,7 @@ public:
   }
 
   Node* get_child_or_null(MatcherType type) {
-    for (Node* child : this->children) {
+    for (Node* child = this->children; child != nullptr; child = child->next_sibling) {
       if (child->matcher_type == type) {
         return child;
       }
@@ -95,9 +107,97 @@ public:
     return nullptr;
   }
 
+  void clean_fake_nodes_help(Node* n) {
+    if (n == nullptr) {
+      return;
+    }
+    Node* prev_child = n->children;
+    Node* current_child = n->children;
+    Node* next_child;
+    if (n->children) {
+      next_child = n->children->next_sibling;
+    }
+    else {
+      next_child = nullptr;
+    }
+
+    while (current_child) {
+      if (current_child->matcher_type == MatcherType::fakeNode) {
+        Node* first_grandchild = current_child->children;
+        if (first_grandchild) {
+          // printf("first gc exists: ");
+          // first_grandchild->dump_node(0);
+          if (prev_child != current_child) {
+            // printf("not at start of children list, set prev_child->next_sibling to first gc\n");
+            prev_child->next_sibling = first_grandchild;
+          }
+          else {
+            // printf("at start of children list, set children to first gc\n");
+            n->children = first_grandchild;
+          }
+          Node* temp_gc = first_grandchild;
+          temp_gc->parent = n;
+          while (temp_gc->next_sibling) {
+            temp_gc->parent = n;
+            temp_gc = temp_gc->next_sibling;
+          }
+          temp_gc->next_sibling = next_child;
+        }
+        else {
+          // printf("has no grandchildren\n");
+          if (prev_child != current_child) {
+            // printf("not at start of children list, set prev_child->next_sibling to next_child\n");
+            prev_child->next_sibling = next_child;
+          }
+          else {
+            // printf("at start of children list, set children to next child\n");
+            n->children = next_child;
+          }
+
+        }
+
+        if (prev_child == current_child && first_grandchild) {
+          prev_child = first_grandchild;
+        }
+        else {
+          prev_child = n->children;
+        }
+        delete current_child;
+        if (first_grandchild) {
+          current_child = first_grandchild;
+        }
+        else {
+          current_child = n->children;
+        }
+
+        if (current_child) {
+          next_child = current_child->next_sibling;
+        }
+        else {
+          next_child = nullptr;
+        }
+
+        clean_fake_nodes_help(current_child);
+      }
+      else {
+        prev_child = current_child;
+        current_child = current_child->next_sibling;
+        if (current_child) {
+          next_child = current_child->next_sibling;
+        }
+
+        clean_fake_nodes_help(current_child);
+      }
+    }
+  }
+
+  void clean_fake_nodes() {
+    clean_fake_nodes_help(this);
+  }
+
   void dump_help(Node* n, int tab_depth) {
     for (int i = 0; i < tab_depth; i++) {
-      printf("    ");
+      printf("   |");
     }
     printf("%s;", n->matcher_string.c_str());
     if (n->ignore_casts) {
@@ -116,7 +216,7 @@ public:
       printf("  is literal;");
     }
     printf("\n");
-    for (Node* child : n->children) {
+    for (Node* child = n->children; child != nullptr; child = child->next_sibling) {
       dump_help(child, tab_depth+1);
     }
   }
@@ -149,9 +249,14 @@ public:
   }
 
   void clean_tree() {
-    for (Node* child : this->children) {
+    Node* child = this->children;
+    Node* temp = this->children;
+    while (child) {
+      temp = child->next_sibling;
       child->clean_tree();
+      child = temp;
     }
+
     delete this;
   }
 };

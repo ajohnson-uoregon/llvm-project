@@ -152,6 +152,12 @@ public:
       std::string ty = expr->getType().getAsString();
       //this needs to be put on the *child* of the cast, not the cast itself
       set_type_on_child(ty);
+      add_node(MT::fakeNode, "cxxConstructExpr", getNumChildren(expr));
+      return true;
+    }
+
+    bool VisitCXXDefaultArgExpr(CXXDefaultArgExpr* expr) {
+      add_node(MT::fakeNode, "cxxDefaultArgExpr", getNumChildren(expr));
       return true;
     }
 
@@ -159,6 +165,7 @@ public:
       std::string ty = cast->getTypeAsWritten().getAsString();
       //this needs to be put on the *child* of the cast, not the cast itself
       set_type_on_child(ty);
+      add_node(MT::fakeNode, "cxxFunctionalCastExpr", getNumChildren(cast));
       return true;
     }
 
@@ -204,6 +211,7 @@ public:
       std::string ty = expr->getType().getAsString();
       //this needs to be put on the *child* of the cast, not the cast itself
       set_type_on_child(ty);
+      add_node(MT::fakeNode, "ImplicitCastExpr", getNumChildren(expr));
       return true;
     }
 
@@ -248,10 +256,15 @@ private:
     // if the tree is empty
     if (root == nullptr) {
       printf("adding root %s\n", code.c_str());
+      if (sm == MT::fakeNode) {
+        printf("WARNING: root can't be a fake node\n");
+      }
       root = temp;
       current = root;
       current->bind_to("clang_rewrite_top_level_match");
-      handle_pending();
+      if (sm != MT::fakeNode) {
+        handle_pending();
+      }
       branch_points.push_back(std::pair<Node*, int>(current, children));
       return temp;
     }
@@ -260,7 +273,9 @@ private:
       printf("node %s should have %d children\n", code.c_str(), children);
       current->add_child(temp);
       current = temp;
-      handle_pending();
+      if (sm != MT::fakeNode) {
+        handle_pending();
+      }
       branch_points.push_back(std::pair<Node*, int>(current, children));
     }
     // if it's a leaf, we've finished adding this child, decrement
@@ -269,18 +284,27 @@ private:
       current->add_child(temp);
       current = temp;
       branch_points.back().second--;
-      handle_pending();
+      if (sm != MT::fakeNode) {
+        handle_pending();
+      }
       if (branch_points.back().second == 0) {
         branch_points.pop_back();
+        if (!branch_points.empty()) {
+          branch_points.back().second--;
+        }
       }
-      current = branch_points.back().first;
+      if (!branch_points.empty()) {
+        current = branch_points.back().first;
+      }
     }
     // children == 1; stick
     else {
       printf("node %s should have 1 child\n", code.c_str());
       current->add_child(temp);
       current = temp;
-      handle_pending();
+      if (sm != MT::fakeNode) {
+        handle_pending();
+      }
     }
     // printf("after node add\n");
     // dump_branch_points();
@@ -420,6 +444,10 @@ public:
     Node* matcher = visitor.get_matcher();
 
     printf("TREE STUFF\n");
+    matcher->dump();
+
+    printf("AFTER CLEANING\n");
+    matcher->clean_fake_nodes();
     matcher->dump();
 
     printf("ACTUAL MATCHER\n");
