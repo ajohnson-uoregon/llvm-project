@@ -507,8 +507,8 @@ VariantMatcher handle_callExpr(Node* root, std::string call_type, int level) {
         }
       }
       else {
-        if (!(child->bound && child->bound_name == callee_name) &&
-            !(child->has_name && child->name == callee_name)) {
+        if (!child->self_or_child_bound_to(callee_name) &&
+            !child->self_or_child_named(callee_name)) {
           child_matchers.push_back(constructMatcher("hasArgument", argnum,
               make_matcher(child, level+6), level+5));
           argnum++;
