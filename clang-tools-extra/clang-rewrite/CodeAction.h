@@ -95,6 +95,7 @@ public:
   }
 
   void replace_bound_code(std::map<std::string, std::string> bindings) {
+    edited_code_snippet = ""; // clear it out before doing anything
     FileID fid = createInMemoryFile(action_name, base_code_snippet);
     llvm::Optional<llvm::MemoryBufferRef> buff = Sources.getBufferOrNone(fid);
     Rewriter::RewriteOptions opts;

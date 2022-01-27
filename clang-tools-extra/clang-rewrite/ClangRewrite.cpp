@@ -109,6 +109,10 @@ int main(int argc, const char **argv) {
     literal_finder.addMatcher(literal_vector, &literals_callback);
 
     retval = InstTool.run(newFrontendActionFactory(&literal_finder).get());
+    if (retval) {
+      printf("Problems with finding literals.\n");
+      return retval;
+    }
 
     MatchFinder inst_finder;
     InsertPrematchCallback prematch_callback;
@@ -122,6 +126,10 @@ int main(int argc, const char **argv) {
     inst_finder.addMatcher(matcher, &matcher_callback);
 
     retval = InstTool.run(newFrontendActionFactory(&inst_finder).get());
+    if (retval) {
+      printf("Problems with creating matchers and tranformations.\n");
+      return retval;
+    }
   }
 
   RewriteCallback<StatementMatcher>::verbose = verbose;
@@ -170,6 +178,10 @@ int main(int argc, const char **argv) {
     delete callbacks[j];
   }
   delete[] callbacks;
+
+  if (retval) {
+    printf("Problems with rewriting file.\n");
+  }
 
   return retval;
 }

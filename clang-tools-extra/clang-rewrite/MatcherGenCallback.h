@@ -409,38 +409,6 @@ public:
       visitor.TraverseStmt(const_cast<CompoundStmt*>(body));
     }
 
-    // printf(":BIRBSCREM:\n");
-    // Node* testtree = new Node(MT::cudaKernelCallExpr, "cudaKernelCallExpr");
-    // testtree->bound = true;
-    // testtree->bound_name = "clang_rewrite_top_level_match";
-    // Node* arg1 = new Node(MT::declRefExpr, "declRefExpr");
-    // arg1->bound = true;
-    // arg1->bound_name = "arg1";
-    // arg1->ignore_casts = true;
-    // arg1->has_type = true;
-    // arg1->type = "float *";
-    // testtree->add_child(arg1);
-    // Node* arg2 = new Node(MT::declRefExpr, "declRefExpr");
-    // arg2->has_name = true;
-    // arg2->name = "arg2";
-    // arg2->ignore_casts = true;
-    // arg2->has_type = true;
-    // arg2->type = "float *";
-    // arg2->is_literal = true;
-    // testtree->add_child(arg2);
-    //
-    // testtree->dump();
-    //
-    // VariantMatcher testmatcher = make_matcher(testtree, 0);
-    //
-    // llvm::Optional<DynTypedMatcher> testdynmatcher = testmatcher.getSingleMatcher();
-    // if (testdynmatcher) {
-    //   printf("YAY IT WORKY\n");
-    // }
-    // else {
-    //   printf("OH NOES :<\n");
-    // }
-
     Node* matcher = visitor.get_matcher();
 
     printf("TREE STUFF\n");

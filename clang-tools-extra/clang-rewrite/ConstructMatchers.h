@@ -107,6 +107,30 @@ public:
     return nullptr;
   }
 
+  bool self_or_child_bound_to(std::string name) {
+    if (this->bound && this->bound_name == name) {
+      return true;
+    }
+    for (Node* child = this->children; child != nullptr; child = child->next_sibling) {
+      if (child->self_or_child_bound_to(name)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool self_or_child_named(std::string name) {
+    if (this->has_name && this->name == name) {
+      return true;
+    }
+    for (Node* child = this->children; child != nullptr; child = child->next_sibling) {
+      if (child->self_or_child_named(name)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   void clean_fake_nodes_help(Node* n) {
     if (n == nullptr) {
       return;

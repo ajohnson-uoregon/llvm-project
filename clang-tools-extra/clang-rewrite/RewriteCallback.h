@@ -184,6 +184,19 @@ public:
     context = result.Context;
     rw.setSourceMgr(context->getSourceManager(), context->getLangOpts());
 
+    const Stmt *smatch = result.Nodes.getNodeAs<Stmt>("clang_rewrite_top_level_match");
+    const Decl *dmatch = result.Nodes.getNodeAs<Decl>("clang_rewrite_top_level_match");
+
+    if ((!smatch || !context->getSourceManager().isInMainFile(
+                      smatch->getBeginLoc()))
+    && (!dmatch || !context->getSourceManager().isInMainFile(
+                      dmatch->getBeginLoc()))) {
+      // if (verbose) {
+        printf("no match or invalid type\n");
+      // }
+      return;
+    }
+
     for (auto n : result.Nodes.getMap()) {
       llvm::outs() << n.first << " : \n";
       const Stmt *stmt = result.Nodes.getNodeAs<Stmt>(n.first);
@@ -235,7 +248,7 @@ public:
         if (n.first != "clang_rewrite_top_level_match") {
           bound_code[n.first] = std::string(code);
         }
-        
+
         delete[] code;
       }
       else if (decl) {
@@ -260,18 +273,7 @@ public:
       action->replace_bound_code(bound_code);
     }
 
-    const Stmt *smatch = result.Nodes.getNodeAs<Stmt>("clang_rewrite_top_level_match");
-    const Decl *dmatch = result.Nodes.getNodeAs<Decl>("clang_rewrite_top_level_match");
 
-    if ((!smatch || !context->getSourceManager().isWrittenInMainFile(
-                      smatch->getBeginLoc()))
-    && (!dmatch || !context->getSourceManager().isWrittenInMainFile(
-                      dmatch->getBeginLoc()))) {
-      if (verbose) {
-        printf("no match or invalid type\n");
-      }
-      return;
-    }
     if (smatch) {
       // run stmt version
       run_helper(result, smatch);
