@@ -24,6 +24,7 @@ enum class MatcherType {
   returnStmt,
   to,
   valueDecl,
+  varDecl,
 };
 
 class Node {
@@ -64,8 +65,20 @@ public:
   }
 
   void bind_to(std::string name) {
-    this->bound = true;
-    this->bound_name = name;
+    // if the node is already bound, add sneaky copy with same matcher type bound
+    // to the other name; allows for multiple names to be bound to the same node,
+    // eg if the top level node (bound to "clang_rewrite_top_level_match") also
+    // needs to be bound to something
+    if (this->bound) {
+      Node* copy = new Node(this->matcher_type, this->matcher_string + "_copy");
+      copy->bound = true;
+      copy->bound_name = name;
+      this->add_child(copy);
+    }
+    else {
+      this->bound = true;
+      this->bound_name = name;
+    }
   }
 
   bool is_bound() {
@@ -73,8 +86,8 @@ public:
   }
 
   void set_type(std::string type) {
-      this->has_type = true;
-      this->type = type;
+    this->has_type = true;
+    this->type = type;
   }
 
   bool is_typed() {

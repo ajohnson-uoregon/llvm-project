@@ -200,6 +200,26 @@ public:
       return true;
     }
 
+    bool VisitVarDecl(VarDecl* decl) {
+      std::string name = decl->getNameAsString();
+
+      // TODO: dunno if the number of children is always 1 but let's hope so for now
+      if (is_literal(decl)) {
+        Node* d = add_node(MT::varDecl, "varDecl()", 1);
+        d->set_is_literal(true);
+        std::string type = decl->getType().getAsString();
+        d->set_type(type);
+        d->set_name(name);
+      }
+      else {
+        Node* d = add_node(MT::varDecl, "varDecl()", 1);
+        std::string type = decl->getType().getAsString();
+        d->set_type(type);
+        d->bind_to(name);
+      }
+      return true;
+    }
+
     bool VisitIntegerLiteral(IntegerLiteral* lit) {
       add_node(MT::integerLiteral, "integerLiteral()", 1);
       Node* equals = add_node(MT::equals, "equals()", 0);
