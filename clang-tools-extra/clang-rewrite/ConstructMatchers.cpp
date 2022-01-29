@@ -625,6 +625,12 @@ VariantMatcher handle_bindable_node(Node* root, StringRef name, int level) {
   //   child_matchers.push_back(constructMatcher("hasType",
   //     constructMatcher("asString", StringRef(root->type), level+6), level+5));
   // }
+
+  if (root->has_type && root->matcher_type == MatcherType::varDecl) {
+    child_matchers.push_back(constructMatcher("hasType",
+      constructMatcher("asString", StringRef(root->type), level+6), level+5));
+  }
+
   if (root->has_name) {
     child_matchers.push_back(constructMatcher("hasName", StringRef(root->name), level+5));
   }
@@ -724,6 +730,9 @@ VariantMatcher make_matcher(Node* root, int level) {
       break;
     case MT::valueDecl:
       return handle_bindable_node(root, "valueDecl", level);
+      break;
+    case MT::varDecl:
+      return handle_bindable_node(root, "varDecl", level);
       break;
     default:
       printf("ERROR: unimplemented matcher type %d\n", (int) root->matcher_type);
