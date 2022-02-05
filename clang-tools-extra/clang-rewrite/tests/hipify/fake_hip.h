@@ -280,6 +280,7 @@ void hipLaunchKernelGGL(F kernel, const dim3& numBlocks, const dim3& dimBlocks,
                         uint32_t sharedMemBytes, hipStream_t stream, Args... args);
 
 hipError_t hipGetDeviceProperties(hipDeviceProp_t* prop, int deviceId);
+hipError_t hipChooseDevice(int* device, const hipDeviceProp_t* prop);
 
 hipError_t hipMalloc(void** ptr, size_t size);
 hipError_t hipMemcpy(void* dst, const void* src, size_t sizeBytes, hipMemcpyKind kind);
