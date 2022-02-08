@@ -15,6 +15,7 @@ enum class MatcherType {
   compoundStmt,
   cudaKernelCallExpr,
   cxxConstructExpr,
+  cxxDefaultArgExpr,
   cxxFunctionalCastExpr,
   declRefExpr,
   equals,

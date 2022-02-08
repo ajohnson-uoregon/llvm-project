@@ -500,9 +500,17 @@ VariantMatcher handle_callExpr(Node* root, std::string call_type, int level) {
               make_matcher(temp_child, level+6), level+5));
             temp_child = temp_child->next_sibling; // fourth arg or null
           }
+          else {
+            child_matchers.push_back(constructMatcher("cudaSharedMemPerBlock",
+              constructMatcher("cxxDefaultArgExpr", constructMatcher("anything", level+7), level+6), level+5));
+          }
           if (temp_child) {
             child_matchers.push_back(constructMatcher("cudaStream",
               make_matcher(temp_child, level+6), level+5));
+          }
+          else {
+            child_matchers.push_back(constructMatcher("cudaStream",
+              constructMatcher("cxxDefaultArgExpr", constructMatcher("anything", level+7), level+6), level+5));
           }
         }
       }
@@ -515,6 +523,7 @@ VariantMatcher handle_callExpr(Node* root, std::string call_type, int level) {
         }
       }
     }
+    // child_matchers.push_back(constructMatcher("parameterCountIs", VariantValue(argnum), level+5));
   }
   if (child_matchers.size() < 1) {
     // guarantee child_matchers.size() >= 1 (also required to not make an
@@ -707,6 +716,9 @@ VariantMatcher make_matcher(Node* root, int level) {
     case MT::cudaKernelCallExpr:
       return handle_callExpr(root, "cudaKernelCallExpr", level);
       break;
+    // case MT::cxxDefaultArgExpr:
+    //   return handle_non_bindable_node(root, "cxxDefaultArgExpr", level);
+    //   break;
     case MT::declRefExpr: //TODO: figure out literals and to()
       return handle_declRefExpr(root, level);
       break;
