@@ -523,7 +523,7 @@ VariantMatcher handle_callExpr(Node* root, std::string call_type, int level) {
         }
       }
     }
-    // child_matchers.push_back(constructMatcher("parameterCountIs", VariantValue(argnum), level+5));
+    child_matchers.push_back(constructMatcher("argumentsGivenCountIs", VariantValue(argnum), level+5));
   }
   if (child_matchers.size() < 1) {
     // guarantee child_matchers.size() >= 1 (also required to not make an
