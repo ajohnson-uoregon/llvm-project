@@ -728,17 +728,35 @@ VariantMatcher make_matcher(Node* root, int level) {
     case MT::functionDecl:
       return handle_bindable_node(root, "functionDecl", level);
       break;
+    case MT::hasInitializer:
+      return handle_non_bindable_node(root, "hasInitializer", level);
+      break;
     case MT::hasReturnValue:
       return handle_non_bindable_node(root, "hasReturnValue", level);
       break;
+    case MT::hasType:
+      return handle_non_bindable_node(root, "hasType", level);
+      break;
+    case MT::ignoringParenImpCasts:
+      return handle_non_bindable_node(root, "ignoringParenImpCasts", level);
+      break;
     case MT::integerLiteral:
       return handle_non_bindable_node(root, "integerLiteral", level);
+      break;
+    case MT::pointerType:
+      return handle_bindable_node(root, "pointerType", level);
+      break;
+    case MT::pointee:
+      return handle_bindable_node(root, "pointee", level);
       break;
     case MT::returnStmt:
       return handle_bindable_node(root, "returnStmt", level);
       break;
     case MT::to:
       return handle_non_bindable_node(root, "to", level);
+      break;
+    case MT::type:
+      return handle_bindable_node(root, "type", level);
       break;
     case MT::valueDecl:
       return handle_bindable_node(root, "valueDecl", level);

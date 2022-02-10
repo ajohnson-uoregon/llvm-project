@@ -206,16 +206,55 @@ public:
       // TODO: dunno if the number of children is always 1 but let's hope so for now
       if (is_literal(decl)) {
         Node* d = add_node(MT::varDecl, "varDecl()", 1);
+        if (decl->hasInit()) {
+          add_node(MT::hasInitializer, "hasInitializer()", 1);
+        }
         d->set_is_literal(true);
         std::string type = decl->getType().getAsString();
         d->set_type(type);
         d->set_name(name);
       }
       else {
-        Node* d = add_node(MT::varDecl, "varDecl()", 1);
-        std::string type = decl->getType().getAsString();
-        d->set_type(type);
-        d->bind_to(name);
+        QualType ty = decl->getType();
+        while (ty->isPointerType()) {
+          printf("is pointer\n");
+          ty = ty->getPointeeType();
+        }
+        auto is_template_param = ty->isTemplateTypeParmType();
+        printf("is template type parameter type???? %s\n", is_template_param ? "true" : "false");
+
+        if (is_template_param) {
+          Node* d = add_node(MT::varDecl, "varDecl()", 2);
+          add_node(MT::hasType, "hasType()", 1);
+          ty = decl->getType();
+          while (ty->isPointerType()) {
+            add_node(MT::pointerType, "pointerType()", 1);
+            add_node(MT::pointee, "pointee()", 1);
+            ty = ty->getPointeeType();
+          }
+          Node* type_node = add_node(MT::type, "type", 0);
+          type_node->bind_to(ty.getAsString());
+
+          if (decl->hasInit()) {
+            add_node(MT::hasInitializer, "hasInitializer()", 1);
+            if (decl->getType()->isPointerType()) {
+              add_node(MT::ignoringParenImpCasts, "ignoringParenImpCasts()", 1);
+            }
+          }
+          d->bind_to(name);
+        }
+        else {
+          Node* d = add_node(MT::varDecl, "varDecl()", 1);
+          if (decl->hasInit()) {
+            add_node(MT::hasInitializer, "hasInitializer()", 1);
+            if (decl->getType()->isPointerType()) {
+              add_node(MT::ignoringParenImpCasts, "ignoringParenImpCasts()", 1);
+            }
+          }
+          std::string type = decl->getType().getAsString();
+          d->set_type(type);
+          d->bind_to(name);
+        }
       }
       return true;
     }

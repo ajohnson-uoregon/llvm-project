@@ -34,8 +34,8 @@ public:
       printf("ERROR: invalid matcher definition\n");
       return;
     }
-    printf("full literal decl\n");
-    lit->dump();
+    // printf("full literal decl\n");
+    // lit->dump();
 
     findStringChildren(lit->getInit(), clang_rewrite_literals);
 
