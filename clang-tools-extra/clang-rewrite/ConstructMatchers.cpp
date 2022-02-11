@@ -578,6 +578,92 @@ VariantMatcher handle_callExpr(Node* root, std::string call_type, int level) {
   } // child_matchers.size()
 }
 
+VariantMatcher handle_binaryOperator(Node* root, int level) {
+  std::vector<VariantValue> child_matchers;
+  child_matchers.insert(child_matchers.end(), root->args.begin(), root->args.end());
+
+  // if (root->has_type && root->is_literal) {
+  //   child_matchers.push_back(constructMatcher("hasType",
+  //     constructMatcher("asString", StringRef(root->type), level+6), level+5));
+  // }
+
+  if (root->has_name) {
+    child_matchers.push_back(constructMatcher("hasName", StringRef(root->name), level+5));
+  }
+
+  if (root->children) {
+    Node* opname = root->children;
+    child_matchers.push_back(make_matcher(opname, level+5));
+    //lhs always comes first
+    Node* lhs = opname->next_sibling;
+    if (lhs == nullptr) {
+      printf("ERROR: binop doesn't have operands???\n");
+    }
+    child_matchers.push_back(constructMatcher("hasLHS", make_matcher(lhs, level+6), level+5));
+
+    Node* rhs = lhs->next_sibling;
+    if (rhs == nullptr) {
+      printf("ERROR: binop only has one operand???\n");
+    }
+    child_matchers.push_back(constructMatcher("hasRHS", make_matcher(rhs, level+6), level+5));
+
+    if (rhs->next_sibling) {
+      printf("binop has more than two operands???\n");
+    }
+  }
+  if (child_matchers.size() < 1) {
+    // guarantee child_matchers.size() >= 1 (also required to not make an
+    // ambiguous matcher and actually match things)
+    child_matchers.push_back(constructMatcher("anything", level+5));
+  }
+
+  if (child_matchers.size() > 1) {
+    if (root->ignore_casts) {
+      if (root->bound) {
+        return constructMatcher("ignoringParenImpCasts",
+                constructBoundMatcher("binaryOperator", StringRef(root->bound_name),
+                  constructMatcher("allOf", child_matchers, level+3), level+2), level+1);
+      }
+      else {
+        return constructMatcher("ignoringParenImpCasts",
+                constructMatcher("binaryOperator",
+                  constructMatcher("allOf", child_matchers, level+3), level+2), level+1);
+      }
+    }
+    else { // no ignore casts
+      if (root->bound) {
+        return constructBoundMatcher("binaryOperator", StringRef(root->bound_name),
+                constructMatcher("allOf", child_matchers, level+2), level+1);
+      }
+      else {
+        return constructMatcher("binaryOperator",
+                constructMatcher("allOf", child_matchers, level+2), level+1);
+      }
+    } // ignore_casts
+  }
+  else { // child_matchers.size() == 1
+    if (root->ignore_casts) {
+      if (root->bound) {
+        return constructMatcher("ignoringParenImpCasts",
+                constructBoundMatcher("binaryOperator", StringRef(root->bound_name),
+                  child_matchers[0], level+2), level+1);
+      }
+      else {
+        return constructMatcher("ignoringParenImpCasts",
+                constructMatcher("binaryOperator", child_matchers[0], level+2), level+1);
+      }
+    }
+    else { // no ignore casts
+      if (root->bound) {
+        return constructBoundMatcher("binaryOperator", StringRef(root->bound_name), child_matchers[0], level+1);
+      }
+      else {
+        return constructMatcher("binaryOperator", child_matchers[0], level+1);
+      }
+    } // ignore_casts
+  } // child_matchers.size()
+}
+
 VariantMatcher handle_non_bindable_node(Node* root, StringRef name, int level) {
   std::vector<VariantValue> child_matchers;
   child_matchers.insert(child_matchers.end(), root->args.begin(), root->args.end());
@@ -704,6 +790,9 @@ VariantMatcher handle_bindable_node(Node* root, StringRef name, int level) {
 
 VariantMatcher make_matcher(Node* root, int level) {
   switch(root->matcher_type) {
+    case MT::binaryOperator:
+      return handle_binaryOperator(root, level);
+      break;
     case MT::callee:
       return handle_non_bindable_node(root, "callee", level);
       break;
@@ -730,6 +819,9 @@ VariantMatcher make_matcher(Node* root, int level) {
       break;
     case MT::hasInitializer:
       return handle_non_bindable_node(root, "hasInitializer", level);
+      break;
+    case MT::hasOperatorName:
+      return handle_non_bindable_node(root, "hasOperatorName", level);
       break;
     case MT::hasReturnValue:
       return handle_non_bindable_node(root, "hasReturnValue", level);

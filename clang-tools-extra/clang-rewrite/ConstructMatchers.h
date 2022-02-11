@@ -10,6 +10,7 @@ using namespace clang::ast_matchers::dynamic;
 
 enum class MatcherType {
   fakeNode,
+  binaryOperator,
   callee,
   callExpr,
   compoundStmt,
@@ -21,7 +22,10 @@ enum class MatcherType {
   equals,
   functionDecl,
   hasInitializer,
+  hasLHS,
+  hasOperatorName,
   hasReturnValue,
+  hasRHS,
   hasType,
   ignoringParenImpCasts,
   integerLiteral,

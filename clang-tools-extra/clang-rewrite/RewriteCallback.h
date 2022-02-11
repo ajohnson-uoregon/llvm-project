@@ -186,6 +186,7 @@ public:
 
     const Stmt *smatch = result.Nodes.getNodeAs<Stmt>("clang_rewrite_top_level_match");
     const Decl *dmatch = result.Nodes.getNodeAs<Decl>("clang_rewrite_top_level_match");
+    // const Type *tmatch = result.Nodes.getNodeAs<Type>
 
     if ((!smatch || !context->getSourceManager().isInMainFile(
                       smatch->getBeginLoc()))
@@ -199,8 +200,10 @@ public:
 
     for (auto n : result.Nodes.getMap()) {
       llvm::outs() << n.first << " : \n";
+      n.second.dump(llvm::outs(), *context);
       const Stmt *stmt = result.Nodes.getNodeAs<Stmt>(n.first);
       const NamedDecl *decl = result.Nodes.getNodeAs<NamedDecl>(n.first);
+      const Type *type = result.Nodes.getNodeAs<Type>(n.first);
 
       if (stmt) {
         SourceRange code_loc = stmt->getSourceRange();
@@ -263,8 +266,17 @@ public:
           bound_code[n.first] = name;
         }
       }
+      else if (type) {
+        std::string name = QualType(type, 0).getAsString();
+        printf("type name: %s\n", name.c_str());
+        n.second.dump(llvm::outs(), *context);
+        llvm::outs() << "\n";
+        if (n.first != "clang_rewrite_top_level_match") {
+          bound_code[n.first] = name;
+        }
+      }
       else {
-        printf("ERROR: not stmt or nameddecl???\n");
+        printf("ERROR: unknown node kind in NodeMap\n");
       }
 
     }
