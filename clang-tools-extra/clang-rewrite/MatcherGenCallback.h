@@ -89,6 +89,15 @@ public:
       return num_children;
     }
 
+    bool VisitBinaryOperator(BinaryOperator* binop) {
+      // plus one for opname
+      add_node(MT::binaryOperator, "binaryOperator()", getNumChildren(binop) +1);
+      Node* opname = add_node(MT::hasOperatorName, "hasOperatorName()", 0);
+      opname->add_arg(binop->getOpcodeStr());
+
+      return true;
+    }
+
     bool VisitCallExpr(CallExpr* call) {
       // short circuit to not double up, yay class inheritance
       if (isa<CUDAKernelCallExpr>(call)) {
@@ -260,7 +269,8 @@ public:
     }
 
     bool VisitIntegerLiteral(IntegerLiteral* lit) {
-      add_node(MT::integerLiteral, "integerLiteral()", 1);
+      Node* int_node = add_node(MT::integerLiteral, "integerLiteral()", 1);
+      int_node->set_ignore_casts(true);
       Node* equals = add_node(MT::equals, "equals()", 0);
       equals->add_arg((int) lit->getValue().getSExtValue());
       return true;
@@ -270,6 +280,7 @@ public:
       std::string ty = expr->getType().getAsString();
       //this needs to be put on the *child* of the cast, not the cast itself
       set_type_on_child(ty);
+      // set_ignore_casts_on_child();
       add_node(MT::fakeNode, "ImplicitCastExpr", getNumChildren(expr));
       return true;
     }
@@ -297,6 +308,7 @@ private:
   std::vector<std::pair<Node*, int>> branch_points;
   bool pending_type = false;
   std::string pending_type_str = "";
+  bool pending_ignore_casts = false;
 
   void dump_branch_points() {
     int stack = 0;
@@ -376,6 +388,10 @@ private:
       pending_type = false;
       pending_type_str = "";
     }
+    if (pending_ignore_casts) {
+      current->set_ignore_casts(true);
+      pending_ignore_casts = false;
+    }
   }
 
   void set_type_on_child(std::string type) {
@@ -386,6 +402,10 @@ private:
     // else {
     //   printf("WARNING: would overwrite pending %s with %s\n", pending_type_str.c_str(), type.c_str());
     // }
+  }
+
+  void set_ignore_casts_on_child() {
+    pending_ignore_casts = true;
   }
 };
 
