@@ -128,9 +128,14 @@ public:
     }
 
     const RewriteBuffer* rwbuff = rewrite.getRewriteBufferFor(fid);
-    llvm::raw_string_ostream out(edited_code_snippet);
-    rwbuff->write(out);
-    out.flush();
+    if (rwbuff) {
+      llvm::raw_string_ostream out(edited_code_snippet);
+      rwbuff->write(out);
+      out.flush();
+    }
+    else {
+      edited_code_snippet = base_code_snippet;
+    }
 
     printf("new code: %s\n", edited_code_snippet.c_str());
 
