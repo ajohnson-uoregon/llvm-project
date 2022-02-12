@@ -89,6 +89,36 @@ public:
       return num_children;
     }
 
+    const FunctionDecl* getEnclosingFunction(const DynTypedNode node) {
+      DynTypedNodeList parents = context->getParents(node);
+      const FunctionDecl* func;
+      for (const DynTypedNode node : parents) {
+        func = node.get<FunctionDecl>();
+        if (!func) {
+          return getEnclosingFunction(node);
+        }
+        else {
+          return func;
+        }
+      }
+      return nullptr;
+    }
+
+    const FunctionDecl* getEnclosingFunction(Stmt* stmt) {
+      DynTypedNodeList parents = context->getParents(*stmt);
+      const FunctionDecl* func;
+      for (const DynTypedNode node : parents) {
+        func = node.get<FunctionDecl>();
+        if (!func) {
+          return getEnclosingFunction(node);
+        }
+        else {
+          return func;
+        }
+      }
+      return nullptr;
+    }
+
     bool VisitBinaryOperator(BinaryOperator* binop) {
       // plus one for opname
       add_node(MT::binaryOperator, "binaryOperator()", getNumChildren(binop) +1);
@@ -194,9 +224,33 @@ public:
 
       }
       else {
-        Node* declref = add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref));
-        declref->set_ignore_casts(true);
-        declref->bind_to(name);
+        QualType ty = ref->getType();
+        while (ty->isPointerType()) {
+          printf("is pointer\n");
+          ty = ty->getPointeeType();
+        }
+        auto is_template_param = ty->isTemplateTypeParmType();
+
+        if (is_template_param) {
+          Node* declref = add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref) +1);
+          declref->set_ignore_casts(true);
+          declref->bind_to(name);
+
+          add_node(MT::hasType, "hasType()", 1);
+          ty = ref->getType();
+          while (ty->isPointerType()) {
+            add_node(MT::pointerType, "pointerType()", 1);
+            add_node(MT::pointee, "pointee()", 1);
+            ty = ty->getPointeeType();
+          }
+          Node* type_node = add_node(MT::type, "type", 0);
+          type_node->bind_to(ty.getAsString());
+        }
+        else {
+          Node* declref = add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref));
+          declref->set_ignore_casts(true);
+          declref->bind_to(name);
+        }
       }
 
       // if it's already been given a type by nodes higher up (eg, cxxFunctionalCastExpr)
@@ -287,10 +341,43 @@ public:
 
     bool VisitReturnStmt(ReturnStmt* ret) {
       if (ret->getRetValue()) {
-        add_node(MT::returnStmt, "returnStmt()", 1);
-        std::string type = ret->getRetValue()->getType().getAsString();
-        Node* hasretval = add_node(MT::hasReturnValue, "hasReturnValue()", getNumChildren(ret));
-        hasretval->set_type(type);
+        const FunctionDecl* func = getEnclosingFunction(ret);
+        if (func != nullptr) {
+          QualType ty = func->getDeclaredReturnType();
+          while (ty->isPointerType()) {
+            printf("is pointer\n");
+            ty = ty->getPointeeType();
+          }
+          auto is_template_param = ty->isTemplateTypeParmType();
+          if (is_template_param) {
+            Node* ret_node = add_node(MT::returnStmt, "returnStmt()", 2);
+            add_node(MT::hasExpectedReturnType, "hasExpectedReturnType()", 1);
+            ty = func->getDeclaredReturnType();
+            while (ty->isPointerType()) {
+              add_node(MT::pointerType, "pointerType()", 1);
+              add_node(MT::pointee, "pointee()", 1);
+              ty = ty->getPointeeType();
+            }
+            Node* type_node = add_node(MT::type, "type", 0);
+            type_node->bind_to(ty.getAsString());
+
+            std::string type = ret->getRetValue()->getType().getAsString();
+            add_node(MT::hasReturnValue, "hasReturnValue()", getNumChildren(ret));
+            ret_node->set_type(type);
+          }
+          else {
+            Node* ret_node = add_node(MT::returnStmt, "returnStmt()", 1);
+            std::string type = ret->getRetValue()->getType().getAsString();
+            add_node(MT::hasReturnValue, "hasReturnValue()", getNumChildren(ret));
+            ret_node->set_type(type);
+          }
+        }
+        else {
+          Node* ret_node = add_node(MT::returnStmt, "returnStmt()", 1);
+          std::string type = ret->getRetValue()->getType().getAsString();
+          add_node(MT::hasReturnValue, "hasReturnValue()", getNumChildren(ret));
+          ret_node->set_type(type);
+        }
       }
       else {
         add_node(MT::returnStmt, "returnStmt()", getNumChildren(ret));

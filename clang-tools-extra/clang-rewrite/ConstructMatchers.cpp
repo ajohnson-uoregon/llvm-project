@@ -817,6 +817,9 @@ VariantMatcher make_matcher(Node* root, int level) {
     case MT::functionDecl:
       return handle_bindable_node(root, "functionDecl", level);
       break;
+    case MT::hasExpectedReturnType:
+      return handle_non_bindable_node(root, "hasExpectedReturnType", level);
+      break;
     case MT::hasInitializer:
       return handle_non_bindable_node(root, "hasInitializer", level);
       break;

@@ -21,6 +21,7 @@ enum class MatcherType {
   declRefExpr,
   equals,
   functionDecl,
+  hasExpectedReturnType,
   hasInitializer,
   hasLHS,
   hasOperatorName,
