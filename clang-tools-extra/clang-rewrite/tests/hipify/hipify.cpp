@@ -1,7 +1,6 @@
-#include "clang_rewrite_hip.h"
-
 #include <vector>
 #include <string>
+
 
 std::vector<std::string> clang_rewrite_literal_names = {
 "CUDA_ARRAY3D_CUBEMAP",
@@ -1057,6 +1056,7 @@ std::vector<std::string> clang_rewrite_literal_names = {
 "make_cudaPos",
 };
 
+
 __global__ void kern(int arg0 = 0, int arg1 = 0, int arg2 = 0, int arg3 = 0, int arg4 = 0, int arg5 = 0, int arg6 = 0, int arg7 = 0, int arg8 = 0, int arg9 = 0, int arg10 = 0, int arg11 = 0, int arg12 = 0, int arg13 = 0, int arg14 = 0, int arg15 = 0, int arg16 = 0, int arg17 = 0, int arg18 = 0, int arg19 = 0, int arg20 = 0, int arg21 = 0, int arg22 = 0, int arg23 = 0, int arg24 = 0, int arg25 = 0, int arg26 = 0, int arg27 = 0, int arg28 = 0, int arg29 = 0, int arg30 = 0, int arg31 = 0, int arg32 = 0) {}
 
 template <int numblocks, int numthreads>
@@ -1073,7 +1073,7 @@ template <int numblocks, int numthreads>
 auto cuda_kernel_launch_0_2_replace() {
   [[clang::matcher_block]]
   {
-    hipLaunchKernelGGL(kern, numblocks, numthreads0, 0, );
+    hipLaunchKernelGGL(kern, numblocks, numthreads, 0, 0);
   }
 }
 
@@ -1091,7 +1091,7 @@ template <int numblocks, int numthreads, int shmem>
 auto cuda_kernel_launch_0_3_replace() {
   [[clang::matcher_block]]
   {
-    hipLaunchKernelGGL(kern, numblocks, numthreads, shmem0, );
+    hipLaunchKernelGGL(kern, numblocks, numthreads, shmem, 0);
   }
 }
 
@@ -2840,6 +2840,8 @@ auto cuda_kernel_launch_32_4_replace() {
     hipLaunchKernelGGL(kern, numblocks, numthreads, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27, arg28, arg29, arg30, arg31, arg32);
   }
 }
+
+
 
 [[clang::matcher("CUDA_ARRAY3D_CUBEMAP type")]]
 auto CUDA_ARRAY3D_CUBEMAP_type() {
@@ -17160,6 +17162,8 @@ auto surfaceReference_replace() {
     surfaceReference varname;
   }
 }
+
+
 
 template<CUDA_TEXTURE_DESC * arg1, CUtexObject arg2>
 [[clang::matcher("cuTexObjectGetTextureDesc 2 func")]]
