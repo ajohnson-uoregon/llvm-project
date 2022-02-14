@@ -4,11 +4,9 @@
 
 
 std::vector<std::string> clang_rewrite_literal_names = {
-"cudaAddressModeBorder",
 "cudaAddressModeClamp",
 "cudaAddressModeMirror",
 "cudaAddressModeWrap",
-"cudaArray",
 "cudaArrayCubemap",
 "cudaArrayDefault",
 "cudaArrayLayered",
@@ -275,7 +273,6 @@ std::vector<std::string> clang_rewrite_literal_names = {
 "cudaGraphicsRegisterFlagsSurfaceLoadStore",
 "cudaGraphicsRegisterFlagsTextureGather",
 "cudaGraphicsRegisterFlagsWriteDiscard",
-"cudaGraphicsResource",
 "cudaGraphicsResource_t",
 "cudaHostAllocDefault",
 "cudaHostAllocMapped",
@@ -322,7 +319,6 @@ std::vector<std::string> clang_rewrite_literal_names = {
 "cudaMemoryTypeDevice",
 "cudaMemoryTypeHost",
 "cudaMemsetParams",
-"cudaMipmappedArray",
 "cudaMipmappedArray_const_t",
 "cudaMipmappedArray_t",
 "cudaOccupancyDefault",
@@ -2352,22 +2348,6 @@ auto cuda_kernel_launch_32_4_replace() {
 
 
 
-[[clang::matcher("cudaAddressModeBorder type")]]
-auto cudaAddressModeBorder_type() {
-  [[clang::matcher_block]]
-  {
-    cudaAddressModeBorder varname;
-  }
-}
-
-[[clang::replace("cudaAddressModeBorder type")]]
-auto cudaAddressModeBorder_replace() {
-  [[clang::matcher_block]]
-  {
-    hipAddressModeBorder varname;
-  }
-}
-
 [[clang::matcher("cudaAddressModeClamp type")]]
 auto cudaAddressModeClamp_type() {
   [[clang::matcher_block]]
@@ -2413,22 +2393,6 @@ auto cudaAddressModeWrap_replace() {
   [[clang::matcher_block]]
   {
     hipAddressModeWrap varname;
-  }
-}
-
-[[clang::matcher("cudaArray type")]]
-auto cudaArray_type() {
-  [[clang::matcher_block]]
-  {
-    cudaArray varname;
-  }
-}
-
-[[clang::replace("cudaArray type")]]
-auto cudaArray_replace() {
-  [[clang::matcher_block]]
-  {
-    hipArray varname;
   }
 }
 
@@ -6688,22 +6652,6 @@ auto cudaGraphicsRegisterFlagsWriteDiscard_replace() {
   }
 }
 
-[[clang::matcher("cudaGraphicsResource type")]]
-auto cudaGraphicsResource_type() {
-  [[clang::matcher_block]]
-  {
-    cudaGraphicsResource varname;
-  }
-}
-
-[[clang::replace("cudaGraphicsResource type")]]
-auto cudaGraphicsResource_replace() {
-  [[clang::matcher_block]]
-  {
-    hipGraphicsResource varname;
-  }
-}
-
 [[clang::matcher("cudaGraphicsResource_t type")]]
 auto cudaGraphicsResource_t_type() {
   [[clang::matcher_block]]
@@ -7437,22 +7385,6 @@ auto cudaMemsetParams_replace() {
   [[clang::matcher_block]]
   {
     hipMemsetParams varname;
-  }
-}
-
-[[clang::matcher("cudaMipmappedArray type")]]
-auto cudaMipmappedArray_type() {
-  [[clang::matcher_block]]
-  {
-    cudaMipmappedArray varname;
-  }
-}
-
-[[clang::replace("cudaMipmappedArray type")]]
-auto cudaMipmappedArray_replace() {
-  [[clang::matcher_block]]
-  {
-    hipMipmappedArray varname;
   }
 }
 
@@ -10179,7 +10111,7 @@ auto cudaGraphicsGLRegisterBuffer3_func() {
   }
 }
 
-template<struct hipGraphicsResource **  arg1, GLuint  arg2, unsigned int  arg3>
+template<struct cudaGraphicsResource **  arg1, GLuint  arg2, unsigned int  arg3>
 [[clang::replace("cudaGraphicsGLRegisterBuffer 3 func")]]
 auto cudaGraphicsGLRegisterBuffer3_replace() {
   [[clang::matcher_block]]
