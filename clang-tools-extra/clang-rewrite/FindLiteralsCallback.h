@@ -40,9 +40,9 @@ public:
     findStringChildren(lit->getInit(), clang_rewrite_literals);
 
     printf("found literals:\n");
-    for (std::string s : clang_rewrite_literals) {
-      printf("  %s\n", s.c_str());
-    }
+    //for (std::string s : clang_rewrite_literals) {
+      //printf("  %s\n", s.c_str());
+    //}
   }
 
   // void findStringChildren(const VarDecl *decl, std::vector<std::string> &strings) {
