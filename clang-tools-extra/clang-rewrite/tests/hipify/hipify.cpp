@@ -1,15 +1,9 @@
-#inclue "hip_runtime.h"
+#include "hip/hip_runtime.h"
 #include <vector>
 #include <string>
 
 
 std::vector<std::string> clang_rewrite_literal_names = {
-"CUDA_IPC_HANDLE_SIZE",
-"CUevent_st",
-"CUgraphExec_st",
-"CUgraphNode_st",
-"CUgraph_st",
-"CUstream_st",
 "cudaAddressModeBorder",
 "cudaAddressModeClamp",
 "cudaAddressModeMirror",
@@ -294,9 +288,7 @@ std::vector<std::string> clang_rewrite_literal_names = {
 "cudaHostRegisterMapped",
 "cudaHostRegisterPortable",
 "cudaInvalidDeviceId",
-"cudaIpcEventHandle_st",
 "cudaIpcEventHandle_t",
-"cudaIpcMemHandle_st",
 "cudaIpcMemHandle_t",
 "cudaIpcMemLazyEnablePeerAccess",
 "cudaKernelNodeParams",
@@ -2359,102 +2351,6 @@ auto cuda_kernel_launch_32_4_replace() {
 }
 
 
-
-[[clang::matcher("CUDA_IPC_HANDLE_SIZE type")]]
-auto CUDA_IPC_HANDLE_SIZE_type() {
-  [[clang::matcher_block]]
-  {
-    CUDA_IPC_HANDLE_SIZE varname;
-  }
-}
-
-[[clang::replace("CUDA_IPC_HANDLE_SIZE type")]]
-auto CUDA_IPC_HANDLE_SIZE_replace() {
-  [[clang::matcher_block]]
-  {
-    HIP_IPC_HANDLE_SIZE varname;
-  }
-}
-
-[[clang::matcher("CUevent_st type")]]
-auto CUevent_st_type() {
-  [[clang::matcher_block]]
-  {
-    CUevent_st varname;
-  }
-}
-
-[[clang::replace("CUevent_st type")]]
-auto CUevent_st_replace() {
-  [[clang::matcher_block]]
-  {
-    ihipEvent_t varname;
-  }
-}
-
-[[clang::matcher("CUgraphExec_st type")]]
-auto CUgraphExec_st_type() {
-  [[clang::matcher_block]]
-  {
-    CUgraphExec_st varname;
-  }
-}
-
-[[clang::replace("CUgraphExec_st type")]]
-auto CUgraphExec_st_replace() {
-  [[clang::matcher_block]]
-  {
-    hipGraphExec varname;
-  }
-}
-
-[[clang::matcher("CUgraphNode_st type")]]
-auto CUgraphNode_st_type() {
-  [[clang::matcher_block]]
-  {
-    CUgraphNode_st varname;
-  }
-}
-
-[[clang::replace("CUgraphNode_st type")]]
-auto CUgraphNode_st_replace() {
-  [[clang::matcher_block]]
-  {
-    hipGraphNode varname;
-  }
-}
-
-[[clang::matcher("CUgraph_st type")]]
-auto CUgraph_st_type() {
-  [[clang::matcher_block]]
-  {
-    CUgraph_st varname;
-  }
-}
-
-[[clang::replace("CUgraph_st type")]]
-auto CUgraph_st_replace() {
-  [[clang::matcher_block]]
-  {
-    ihipGraph varname;
-  }
-}
-
-[[clang::matcher("CUstream_st type")]]
-auto CUstream_st_type() {
-  [[clang::matcher_block]]
-  {
-    CUstream_st varname;
-  }
-}
-
-[[clang::replace("CUstream_st type")]]
-auto CUstream_st_replace() {
-  [[clang::matcher_block]]
-  {
-    ihipStream_t varname;
-  }
-}
 
 [[clang::matcher("cudaAddressModeBorder type")]]
 auto cudaAddressModeBorder_type() {
@@ -7000,22 +6896,6 @@ auto cudaInvalidDeviceId_replace() {
   }
 }
 
-[[clang::matcher("cudaIpcEventHandle_st type")]]
-auto cudaIpcEventHandle_st_type() {
-  [[clang::matcher_block]]
-  {
-    cudaIpcEventHandle_st varname;
-  }
-}
-
-[[clang::replace("cudaIpcEventHandle_st type")]]
-auto cudaIpcEventHandle_st_replace() {
-  [[clang::matcher_block]]
-  {
-    hipIpcEventHandle_st varname;
-  }
-}
-
 [[clang::matcher("cudaIpcEventHandle_t type")]]
 auto cudaIpcEventHandle_t_type() {
   [[clang::matcher_block]]
@@ -7029,22 +6909,6 @@ auto cudaIpcEventHandle_t_replace() {
   [[clang::matcher_block]]
   {
     hipIpcEventHandle_t varname;
-  }
-}
-
-[[clang::matcher("cudaIpcMemHandle_st type")]]
-auto cudaIpcMemHandle_st_type() {
-  [[clang::matcher_block]]
-  {
-    cudaIpcMemHandle_st varname;
-  }
-}
-
-[[clang::replace("cudaIpcMemHandle_st type")]]
-auto cudaIpcMemHandle_st_replace() {
-  [[clang::matcher_block]]
-  {
-    hipIpcMemHandle_st varname;
   }
 }
 
