@@ -211,6 +211,7 @@ std::vector<std::string> clang_rewrite_literal_names = {
 "cudaSetDevice",
 "cudaSetDeviceFlags",
 "cudaSignalExternalSemaphoresAsync",
+"cudaSignalExternalSemaphoresAsync_v2",
 "cudaStreamAddCallback",
 "cudaStreamAttachMemAsync",
 "cudaStreamBeginCapture",
@@ -225,6 +226,7 @@ std::vector<std::string> clang_rewrite_literal_names = {
 "cudaStreamSynchronize",
 "cudaStreamWaitEvent",
 "cudaWaitExternalSemaphoresAsync",
+"cudaWaitExternalSemaphoresAsync_v2",
 "make_cudaExtent",
 "make_cudaPitchedPtr",
 "make_cudaPos",
@@ -5915,7 +5917,7 @@ auto cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags5_replace() {
     hipOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(arg1, arg2, arg3, arg4, arg5);
   }
 }
-
+/*
 template<int * arg1, int * arg2, typename T, T arg3>
 [[clang::matcher("cudaOccupancyMaxPotentialBlockSize 3 func")]]
 auto cudaOccupancyMaxPotentialBlockSize3_func() {
@@ -6041,7 +6043,7 @@ auto cudaOccupancyMaxPotentialBlockSizeWithFlags6_replace() {
     hipOccupancyMaxPotentialBlockSizeWithFlags(arg1, arg2, arg3, arg4, arg5, arg6);
   }
 }
-
+*/
 [[clang::matcher("cudaPeekAtLastError 0 func")]]
 auto cudaPeekAtLastError0_func() {
   [[clang::matcher_block]]

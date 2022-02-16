@@ -469,7 +469,6 @@ VariantMatcher handle_callExpr(Node* root, std::string call_type, int level) {
   if (root->children) {
     int argnum = 0; // SHRUG I guess the order works out?
     for (Node* child = root->children; child != nullptr; child = child->next_sibling) {
-
       // need to special case for cudaKernelCallExpr so the call to
       // __cudaPushCallConfiguration isn't treated as an argument
       if (root->matcher_type == MT::cudaKernelCallExpr &&

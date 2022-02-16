@@ -178,7 +178,7 @@ public:
 
   void run(const MatchFinder::MatchResult &result) override {
 
-    printf("HALLO WE RUN\n");
+    // printf("HALLO WE RUN\n");
     // printf("FOUND match for %s\n", matcher->getName().c_str());
 
     context = result.Context;
@@ -193,7 +193,7 @@ public:
     && (!dmatch || !context->getSourceManager().isInMainFile(
                       dmatch->getBeginLoc()))) {
       // if (verbose) {
-        printf("no match or invalid type\n");
+       // printf("no match or invalid type\n");
       // }
       return;
     }
