@@ -152,7 +152,7 @@ public:
       const RewriteBuffer *buff = rw.getRewriteBufferFor(
           rw.getSourceMgr().getFileID(match->getBeginLoc()));
       if (buff) {
-        std::error_code erc;
+        /*std::error_code erc;
         std::string newfname =
             rw.getSourceMgr().getFilename(match->getBeginLoc()).str();
         if (newfname.find(".") != std::string::npos) {
@@ -168,7 +168,7 @@ public:
         }
         raw_fd_ostream out(newfname, erc);
         buff->write(out);
-        out.close();
+        out.close();*/
         files_changed.push_back(
             rw.getSourceMgr().getFileID(match->getBeginLoc()));
         num_matched++;
