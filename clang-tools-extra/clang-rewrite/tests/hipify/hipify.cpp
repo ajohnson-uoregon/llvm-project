@@ -1,7 +1,7 @@
 #include "fake_hip_runtime_api.h"
 #include <vector>
 #include <string>
-
+#include <cuda_gl_interop.h>
 
 std::vector<std::string> clang_rewrite_literal_names = {
 "cudaArray_const_t",
@@ -3121,7 +3121,7 @@ template<CUDA_TEXTURE_DESC *  arg1, CUtexObject  arg2>
 auto cuTexObjectGetTextureDesc2_replace() {
   [[clang::matcher_block]]
   {
-    hipGetTextureObjectTextureDesc(arg1, arg2);
+      hipGetTextureObjectTextureDesc((hipTextureDesc*)arg1, (hipTextureObject_t)arg2);
   }
 }
 
@@ -3148,10 +3148,17 @@ template<int arg1, int arg2, int arg3, int arg4, enum cudaChannelFormatKind arg5
 auto cudaCreateChannelDesc5_func() {
   [[clang::matcher_block]]
   {
+#ifndef CUDART_VERSION
+#error CUDART_VERSION Undefined!
+#elif (CUDART_VERSION == 1104)
+      cudaCreateChannelDesc();
+#else
     cudaCreateChannelDesc(arg1, arg2, arg3, arg4, arg5);
+#endif
   }
 }
 
+/*
 template<int  arg1, int  arg2, int  arg3, int  arg4, enum hipChannelFormatKind  arg5>
 [[clang::replace("cudaCreateChannelDesc 5 func")]]
 auto cudaCreateChannelDesc5_replace() {
@@ -3160,6 +3167,7 @@ auto cudaCreateChannelDesc5_replace() {
     hipCreateChannelDesc(arg1, arg2, arg3, arg4, arg5);
   }
 }
+*/
 
 template<cudaSurfaceObject_t * arg1, const struct cudaResourceDesc * arg2>
 [[clang::matcher("cudaCreateSurfaceObject 2 func")]]
@@ -3377,7 +3385,7 @@ auto cudaDeviceGetCacheConfig1_replace() {
   }
 }
 
-template<int * arg1, enum cudaLimit arg2>
+template<size_t * arg1, enum cudaLimit arg2>
 [[clang::matcher("cudaDeviceGetLimit 2 func")]]
 auto cudaDeviceGetLimit2_func() {
   [[clang::matcher_block]]
@@ -3386,7 +3394,7 @@ auto cudaDeviceGetLimit2_func() {
   }
 }
 
-template<int *  arg1, enum hipLimit_t  arg2>
+template<size_t *  arg1, enum hipLimit_t  arg2>
 [[clang::replace("cudaDeviceGetLimit 2 func")]]
 auto cudaDeviceGetLimit2_replace() {
   [[clang::matcher_block]]
@@ -3467,7 +3475,6 @@ auto cudaDeviceGetStreamPriorityRange2_replace() {
   }
 }
 
-template<>
 [[clang::matcher("cudaDeviceReset 0 func")]]
 auto cudaDeviceReset0_func() {
   [[clang::matcher_block]]
@@ -3476,7 +3483,6 @@ auto cudaDeviceReset0_func() {
   }
 }
 
-template<>
 [[clang::replace("cudaDeviceReset 0 func")]]
 auto cudaDeviceReset0_replace() {
   [[clang::matcher_block]]
@@ -3521,7 +3527,6 @@ auto cudaDeviceSetSharedMemConfig1_replace() {
   }
 }
 
-template<>
 [[clang::matcher("cudaDeviceSynchronize 0 func")]]
 auto cudaDeviceSynchronize0_func() {
   [[clang::matcher_block]]
@@ -3530,7 +3535,6 @@ auto cudaDeviceSynchronize0_func() {
   }
 }
 
-template<>
 [[clang::replace("cudaDeviceSynchronize 0 func")]]
 auto cudaDeviceSynchronize0_replace() {
   [[clang::matcher_block]]
@@ -3701,7 +3705,7 @@ auto cudaEventSynchronize1_replace() {
   }
 }
 
-template<void ** arg1, cudaExternalMemory_t arg2, const struct cudaExternalMemoryBufferDesc * arg3>
+template<void ** arg1, cudaExternalMemory_t arg2, const cudaExternalMemoryBufferDesc * arg3>
 [[clang::matcher("cudaExternalMemoryGetMappedBuffer 3 func")]]
 auto cudaExternalMemoryGetMappedBuffer3_func() {
   [[clang::matcher_block]]
@@ -3710,7 +3714,7 @@ auto cudaExternalMemoryGetMappedBuffer3_func() {
   }
 }
 
-template<void **  arg1, hipExternalMemory_t  arg2, const struct hipExternalMemoryBufferDesc *  arg3>
+template<void **  arg1, hipExternalMemory_t  arg2, const hipExternalMemoryBufferDesc *  arg3>
 [[clang::replace("cudaExternalMemoryGetMappedBuffer 3 func")]]
 auto cudaExternalMemoryGetMappedBuffer3_replace() {
   [[clang::matcher_block]]
@@ -4007,7 +4011,6 @@ auto cudaGetErrorString1_replace() {
   }
 }
 
-template<>
 [[clang::matcher("cudaGetLastError 0 func")]]
 auto cudaGetLastError0_func() {
   [[clang::matcher_block]]
@@ -4016,7 +4019,6 @@ auto cudaGetLastError0_func() {
   }
 }
 
-template<>
 [[clang::replace("cudaGetLastError 0 func")]]
 auto cudaGetLastError0_replace() {
   [[clang::matcher_block]]
@@ -4061,7 +4063,7 @@ auto cudaGetSymbolAddress2_replace() {
   }
 }
 
-template<int * arg1, const void * arg2>
+template<size_t * arg1, const void * arg2>
 [[clang::matcher("cudaGetSymbolSize 2 func")]]
 auto cudaGetSymbolSize2_func() {
   [[clang::matcher_block]]
@@ -4070,7 +4072,7 @@ auto cudaGetSymbolSize2_func() {
   }
 }
 
-template<int *  arg1, const void *  arg2>
+template<size_t *  arg1, const void *  arg2>
 [[clang::replace("cudaGetSymbolSize 2 func")]]
 auto cudaGetSymbolSize2_replace() {
   [[clang::matcher_block]]
@@ -4295,16 +4297,33 @@ auto cudaGraphExecKernelNodeSetParams3_replace() {
   }
 }
 
-template<cudaGraph_t arg1, cudaGraphNode_t * arg2, int * arg3>
+/* CC
+ * you are using int* as the third argument type, Cuda doesn't know that. 
+ * Also some size_t* -> int* mismatches
+ * I also added pointer conversions such as CUtexObject (aka unsigned long long)
+ * to hipTextureObject_t' (aka __hip_texture *) 
+ * hipMalloc3DArray takes 4 arguments -> I added 0 as the flags, which is the default value with cudaMalloc3DArray
+ * cudaCreateChannelDesc takes no argument with Cuda 11.4, 5 with Cuda 10.2
+ * hipOccupancyMaxPotentialBlockSize needs a 5th argument -> I added 0 as the blockSizeLimit, which is the default value with cudaOccupancyMaxPotentialBlockSize
+ * Definition of hipCreateChannelDesc is missing -> I commented out the matcher
+ * Same for hipExternalMemoryGetMappedBuffer
+ * hipExternalMemoryHandleDesc is typedefed so we don't use it with struct
+ * I fixed template errors when template parameters and template types are mixed
+ * and other minor template errors
+ * hipSignalExternalSemaphoresAsync needs 4 arguments, I added 0 as the stream which is the default value with cudaSignalExternalSemaphoresAsync
+ * TODO: check what the correct interfaces are
+ */
+
+template<cudaGraph_t arg1, cudaGraphNode_t * arg2, size_t * arg3>
 [[clang::matcher("cudaGraphGetNodes 3 func")]]
 auto cudaGraphGetNodes3_func() {
   [[clang::matcher_block]]
   {
-    cudaGraphGetNodes(arg1, arg2, arg3);
+      cudaGraphGetNodes(arg1, arg2, arg3);
   }
 }
 
-template<hipGraph_t  arg1, hipGraphNode_t *  arg2, int *  arg3>
+template<hipGraph_t  arg1, hipGraphNode_t *  arg2, size_t *  arg3>
 [[clang::replace("cudaGraphGetNodes 3 func")]]
 auto cudaGraphGetNodes3_replace() {
   [[clang::matcher_block]]
@@ -4313,7 +4332,7 @@ auto cudaGraphGetNodes3_replace() {
   }
 }
 
-template<cudaGraph_t arg1, cudaGraphNode_t * arg2, int * arg3>
+template<cudaGraph_t arg1, cudaGraphNode_t * arg2, size_t * arg3>
 [[clang::matcher("cudaGraphGetRootNodes 3 func")]]
 auto cudaGraphGetRootNodes3_func() {
   [[clang::matcher_block]]
@@ -4322,7 +4341,7 @@ auto cudaGraphGetRootNodes3_func() {
   }
 }
 
-template<hipGraph_t  arg1, hipGraphNode_t *  arg2, int *  arg3>
+template<hipGraph_t  arg1, hipGraphNode_t *  arg2, size_t *  arg3>
 [[clang::replace("cudaGraphGetRootNodes 3 func")]]
 auto cudaGraphGetRootNodes3_replace() {
   [[clang::matcher_block]]
@@ -4489,7 +4508,7 @@ template<struct cudaGraphicsResource **  arg1, GLuint  arg2, unsigned int  arg3>
 auto cudaGraphicsGLRegisterBuffer3_replace() {
   [[clang::matcher_block]]
   {
-    hipGraphicsGLRegisterBuffer(arg1, arg2, arg3);
+      hipGraphicsGLRegisterBuffer((hipGraphicsResource **)arg1, arg2, arg3);
   }
 }
 
@@ -4529,7 +4548,7 @@ auto cudaGraphicsMapResources3_replace() {
   }
 }
 
-template<void ** arg1, int * arg2, cudaGraphicsResource_t arg3>
+template<void ** arg1, size_t * arg2, cudaGraphicsResource_t arg3>
 [[clang::matcher("cudaGraphicsResourceGetMappedPointer 3 func")]]
 auto cudaGraphicsResourceGetMappedPointer3_func() {
   [[clang::matcher_block]]
@@ -4538,7 +4557,7 @@ auto cudaGraphicsResourceGetMappedPointer3_func() {
   }
 }
 
-template<void **  arg1, int *  arg2, hipGraphicsResource_t  arg3>
+template<void **  arg1, size_t *  arg2, hipGraphicsResource_t  arg3>
 [[clang::replace("cudaGraphicsResourceGetMappedPointer 3 func")]]
 auto cudaGraphicsResourceGetMappedPointer3_replace() {
   [[clang::matcher_block]]
@@ -4691,7 +4710,7 @@ auto cudaHostUnregister1_replace() {
   }
 }
 
-template<cudaExternalMemory_t * arg1, const struct cudaExternalMemoryHandleDesc * arg2>
+template<cudaExternalMemory_t * arg1, const cudaExternalMemoryHandleDesc * arg2>
 [[clang::matcher("cudaImportExternalMemory 2 func")]]
 auto cudaImportExternalMemory2_func() {
   [[clang::matcher_block]]
@@ -4700,7 +4719,7 @@ auto cudaImportExternalMemory2_func() {
   }
 }
 
-template<hipExternalMemory_t *  arg1, const struct hipExternalMemoryHandleDesc *  arg2>
+template<hipExternalMemory_t *  arg1, const hipExternalMemoryHandleDesc *  arg2>
 [[clang::replace("cudaImportExternalMemory 2 func")]]
 auto cudaImportExternalMemory2_replace() {
   [[clang::matcher_block]]
@@ -4709,7 +4728,7 @@ auto cudaImportExternalMemory2_replace() {
   }
 }
 
-template<cudaExternalSemaphore_t * arg1, const struct cudaExternalSemaphoreHandleDesc * arg2>
+template<cudaExternalSemaphore_t * arg1, const cudaExternalSemaphoreHandleDesc * arg2>
 [[clang::matcher("cudaImportExternalSemaphore 2 func")]]
 auto cudaImportExternalSemaphore2_func() {
   [[clang::matcher_block]]
@@ -4718,7 +4737,7 @@ auto cudaImportExternalSemaphore2_func() {
   }
 }
 
-template<hipExternalSemaphore_t *  arg1, const struct hipExternalSemaphoreHandleDesc *  arg2>
+template<hipExternalSemaphore_t *  arg1, const hipExternalSemaphoreHandleDesc *  arg2>
 [[clang::replace("cudaImportExternalSemaphore 2 func")]]
 auto cudaImportExternalSemaphore2_replace() {
   [[clang::matcher_block]]
@@ -4903,7 +4922,7 @@ template<hipArray_t *  arg1, const struct hipChannelFormatDesc *  arg2, struct h
 auto cudaMalloc3DArray3_replace() {
   [[clang::matcher_block]]
   {
-    hipMalloc3DArray(arg1, arg2, arg3);
+      hipMalloc3DArray(arg1, arg2, arg3, 0);
   }
 }
 
@@ -5069,7 +5088,7 @@ auto cudaMallocMipmappedArray5_replace() {
   }
 }
 
-template<void ** arg1, int * arg2, int arg3, int arg4>
+template<void ** arg1, size_t * arg2, int arg3, int arg4>
 [[clang::matcher("cudaMallocPitch 4 func")]]
 auto cudaMallocPitch4_func() {
   [[clang::matcher_block]]
@@ -5078,7 +5097,7 @@ auto cudaMallocPitch4_func() {
   }
 }
 
-template<void **  arg1, int *  arg2, int  arg3, int  arg4>
+template<void **  arg1, size_t *  arg2, int  arg3, int  arg4>
 [[clang::replace("cudaMallocPitch 4 func")]]
 auto cudaMallocPitch4_replace() {
   [[clang::matcher_block]]
@@ -5105,7 +5124,7 @@ auto cudaMemAdvise4_replace() {
   }
 }
 
-template<int * arg1, int * arg2>
+template<size_t * arg1, size_t * arg2>
 [[clang::matcher("cudaMemGetInfo 2 func")]]
 auto cudaMemGetInfo2_func() {
   [[clang::matcher_block]]
@@ -5114,7 +5133,7 @@ auto cudaMemGetInfo2_func() {
   }
 }
 
-template<int *  arg1, int *  arg2>
+template<size_t *  arg1, size_t *  arg2>
 [[clang::replace("cudaMemGetInfo 2 func")]]
 auto cudaMemGetInfo2_replace() {
   [[clang::matcher_block]]
@@ -5177,7 +5196,7 @@ auto cudaMemRangeGetAttribute5_replace() {
   }
 }
 
-template<void ** arg1, int * arg2, enum cudaMemRangeAttribute * arg3, int arg4, const void * arg5, int arg6>
+template<void ** arg1, size_t * arg2, enum cudaMemRangeAttribute * arg3, int arg4, const void * arg5, int arg6>
 [[clang::matcher("cudaMemRangeGetAttributes 6 func")]]
 auto cudaMemRangeGetAttributes6_func() {
   [[clang::matcher_block]]
@@ -5186,7 +5205,7 @@ auto cudaMemRangeGetAttributes6_func() {
   }
 }
 
-template<void **  arg1, int *  arg2, enum hipMemRangeAttribute *  arg3, int  arg4, const void *  arg5, int  arg6>
+template<void **  arg1, size_t *  arg2, enum hipMemRangeAttribute *  arg3, int  arg4, const void *  arg5, int  arg6>
 [[clang::replace("cudaMemRangeGetAttributes 6 func")]]
 auto cudaMemRangeGetAttributes6_replace() {
   [[clang::matcher_block]]
@@ -5897,7 +5916,7 @@ auto cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags5_replace() {
   }
 }
 
-template<int * arg1, int * arg2, T arg3>
+template<int * arg1, int * arg2, typename T, T arg3>
 [[clang::matcher("cudaOccupancyMaxPotentialBlockSize 3 func")]]
 auto cudaOccupancyMaxPotentialBlockSize3_func() {
   [[clang::matcher_block]]
@@ -5906,7 +5925,7 @@ auto cudaOccupancyMaxPotentialBlockSize3_func() {
   }
 }
 
-template<int *  arg1, int *  arg2, T  arg3>
+template<int *  arg1, int *  arg2, typename T, T  arg3>
 [[clang::replace("cudaOccupancyMaxPotentialBlockSize 3 func")]]
 auto cudaOccupancyMaxPotentialBlockSize3_replace() {
   [[clang::matcher_block]]
@@ -5915,7 +5934,7 @@ auto cudaOccupancyMaxPotentialBlockSize3_replace() {
   }
 }
 
-template<int * arg1, int * arg2, T arg3, size_t arg4>
+template<int * arg1, int * arg2, typename T, T arg3, size_t arg4>
 [[clang::matcher("cudaOccupancyMaxPotentialBlockSize 4 func")]]
 auto cudaOccupancyMaxPotentialBlockSize4_func() {
   [[clang::matcher_block]]
@@ -5924,16 +5943,16 @@ auto cudaOccupancyMaxPotentialBlockSize4_func() {
   }
 }
 
-template<int *  arg1, int *  arg2, T  arg3, size_t  arg4>
+template<int *  arg1, int *  arg2, typename T, T  arg3, size_t  arg4>
 [[clang::replace("cudaOccupancyMaxPotentialBlockSize 4 func")]]
 auto cudaOccupancyMaxPotentialBlockSize4_replace() {
   [[clang::matcher_block]]
   {
-    hipOccupancyMaxPotentialBlockSize(arg1, arg2, arg3, arg4);
+      hipOccupancyMaxPotentialBlockSize(arg1, arg2, arg3, arg4, 0);
   }
 }
 
-template<int * arg1, int * arg2, T arg3, size_t arg4, int arg5>
+template<int * arg1, int * arg2, typename T, T arg3, size_t arg4, int arg5>
 [[clang::matcher("cudaOccupancyMaxPotentialBlockSize 5 func")]]
 auto cudaOccupancyMaxPotentialBlockSize5_func() {
   [[clang::matcher_block]]
@@ -5942,7 +5961,7 @@ auto cudaOccupancyMaxPotentialBlockSize5_func() {
   }
 }
 
-template<int *  arg1, int *  arg2, T  arg3, size_t  arg4, int  arg5>
+template<int *  arg1, int *  arg2, typename T, T  arg3, size_t  arg4, int  arg5>
 [[clang::replace("cudaOccupancyMaxPotentialBlockSize 5 func")]]
 auto cudaOccupancyMaxPotentialBlockSize5_replace() {
   [[clang::matcher_block]]
@@ -5951,7 +5970,7 @@ auto cudaOccupancyMaxPotentialBlockSize5_replace() {
   }
 }
 
-template<int * arg1, int * arg2, T arg3>
+template<int * arg1, int * arg2, typename T, T arg3>
 [[clang::matcher("cudaOccupancyMaxPotentialBlockSizeWithFlags 3 func")]]
 auto cudaOccupancyMaxPotentialBlockSizeWithFlags3_func() {
   [[clang::matcher_block]]
@@ -5960,7 +5979,7 @@ auto cudaOccupancyMaxPotentialBlockSizeWithFlags3_func() {
   }
 }
 
-template<int *  arg1, int *  arg2, T  arg3>
+template<int *  arg1, int *  arg2, typename T, T  arg3>
 [[clang::replace("cudaOccupancyMaxPotentialBlockSizeWithFlags 3 func")]]
 auto cudaOccupancyMaxPotentialBlockSizeWithFlags3_replace() {
   [[clang::matcher_block]]
@@ -5969,7 +5988,7 @@ auto cudaOccupancyMaxPotentialBlockSizeWithFlags3_replace() {
   }
 }
 
-template<int * arg1, int * arg2, T arg3, size_t arg4>
+template<int * arg1, int * arg2, typename T, T arg3, size_t arg4>
 [[clang::matcher("cudaOccupancyMaxPotentialBlockSizeWithFlags 4 func")]]
 auto cudaOccupancyMaxPotentialBlockSizeWithFlags4_func() {
   [[clang::matcher_block]]
@@ -5978,7 +5997,7 @@ auto cudaOccupancyMaxPotentialBlockSizeWithFlags4_func() {
   }
 }
 
-template<int *  arg1, int *  arg2, T  arg3, size_t  arg4>
+template<int *  arg1, int *  arg2, typename T, T  arg3, size_t  arg4>
 [[clang::replace("cudaOccupancyMaxPotentialBlockSizeWithFlags 4 func")]]
 auto cudaOccupancyMaxPotentialBlockSizeWithFlags4_replace() {
   [[clang::matcher_block]]
@@ -5987,7 +6006,7 @@ auto cudaOccupancyMaxPotentialBlockSizeWithFlags4_replace() {
   }
 }
 
-template<int * arg1, int * arg2, T arg3, size_t arg4, int arg5>
+template<int * arg1, int * arg2, typename T, T arg3, size_t arg4, int arg5>
 [[clang::matcher("cudaOccupancyMaxPotentialBlockSizeWithFlags 5 func")]]
 auto cudaOccupancyMaxPotentialBlockSizeWithFlags5_func() {
   [[clang::matcher_block]]
@@ -5996,7 +6015,7 @@ auto cudaOccupancyMaxPotentialBlockSizeWithFlags5_func() {
   }
 }
 
-template<int *  arg1, int *  arg2, T  arg3, size_t  arg4, int  arg5>
+template<int *  arg1, int *  arg2, typename T, T  arg3, size_t  arg4, int  arg5>
 [[clang::replace("cudaOccupancyMaxPotentialBlockSizeWithFlags 5 func")]]
 auto cudaOccupancyMaxPotentialBlockSizeWithFlags5_replace() {
   [[clang::matcher_block]]
@@ -6005,7 +6024,7 @@ auto cudaOccupancyMaxPotentialBlockSizeWithFlags5_replace() {
   }
 }
 
-template<int * arg1, int * arg2, T arg3, size_t arg4, int arg5, unsigned int arg6>
+template<int * arg1, int * arg2, typename T, T arg3, size_t arg4, int arg5, unsigned int arg6>
 [[clang::matcher("cudaOccupancyMaxPotentialBlockSizeWithFlags 6 func")]]
 auto cudaOccupancyMaxPotentialBlockSizeWithFlags6_func() {
   [[clang::matcher_block]]
@@ -6014,7 +6033,7 @@ auto cudaOccupancyMaxPotentialBlockSizeWithFlags6_func() {
   }
 }
 
-template<int *  arg1, int *  arg2, T  arg3, size_t  arg4, int  arg5, unsigned int  arg6>
+template<int *  arg1, int *  arg2, typename T, T  arg3, size_t  arg4, int  arg5, unsigned int  arg6>
 [[clang::replace("cudaOccupancyMaxPotentialBlockSizeWithFlags 6 func")]]
 auto cudaOccupancyMaxPotentialBlockSizeWithFlags6_replace() {
   [[clang::matcher_block]]
@@ -6023,7 +6042,6 @@ auto cudaOccupancyMaxPotentialBlockSizeWithFlags6_replace() {
   }
 }
 
-template<>
 [[clang::matcher("cudaPeekAtLastError 0 func")]]
 auto cudaPeekAtLastError0_func() {
   [[clang::matcher_block]]
@@ -6032,7 +6050,6 @@ auto cudaPeekAtLastError0_func() {
   }
 }
 
-template<>
 [[clang::replace("cudaPeekAtLastError 0 func")]]
 auto cudaPeekAtLastError0_replace() {
   [[clang::matcher_block]]
@@ -6113,7 +6130,7 @@ auto cudaSetDeviceFlags1_replace() {
   }
 }
 
-template<const cudaExternalSemaphore_t * arg1, const struct cudaExternalSemaphoreSignalParams * arg2, unsigned int arg3>
+template<const cudaExternalSemaphore_t * arg1, const  cudaExternalSemaphoreSignalParams * arg2, unsigned int arg3>
 [[clang::matcher("cudaSignalExternalSemaphoresAsync 3 func")]]
 auto cudaSignalExternalSemaphoresAsync3_func() {
   [[clang::matcher_block]]
@@ -6122,16 +6139,16 @@ auto cudaSignalExternalSemaphoresAsync3_func() {
   }
 }
 
-template<const hipExternalSemaphore_t *  arg1, const struct hipExternalSemaphoreSignalParams *  arg2, unsigned int  arg3>
+template<const hipExternalSemaphore_t *  arg1, const  hipExternalSemaphoreSignalParams *  arg2, unsigned int  arg3>
 [[clang::replace("cudaSignalExternalSemaphoresAsync 3 func")]]
 auto cudaSignalExternalSemaphoresAsync3_replace() {
   [[clang::matcher_block]]
   {
-    hipSignalExternalSemaphoresAsync(arg1, arg2, arg3);
+      hipSignalExternalSemaphoresAsync(arg1, arg2, arg3, 0);
   }
 }
 
-template<const cudaExternalSemaphore_t * arg1, const struct cudaExternalSemaphoreSignalParams * arg2, unsigned int arg3, cudaStream_t arg4>
+template<const cudaExternalSemaphore_t * arg1, const  cudaExternalSemaphoreSignalParams * arg2, unsigned int arg3, cudaStream_t arg4>
 [[clang::matcher("cudaSignalExternalSemaphoresAsync 4 func")]]
 auto cudaSignalExternalSemaphoresAsync4_func() {
   [[clang::matcher_block]]
@@ -6140,12 +6157,12 @@ auto cudaSignalExternalSemaphoresAsync4_func() {
   }
 }
 
-template<const hipExternalSemaphore_t *  arg1, const struct hipExternalSemaphoreSignalParams *  arg2, unsigned int  arg3, hipStream_t  arg4>
+template<const hipExternalSemaphore_t *  arg1, const  hipExternalSemaphoreSignalParams *  arg2, unsigned int  arg3, hipStream_t  arg4>
 [[clang::replace("cudaSignalExternalSemaphoresAsync 4 func")]]
 auto cudaSignalExternalSemaphoresAsync4_replace() {
   [[clang::matcher_block]]
   {
-    hipSignalExternalSemaphoresAsync(arg1, arg2, arg3, arg4);
+      hipSignalExternalSemaphoresAsync(arg1, (const hipExternalSemaphoreSignalParams *)arg2, arg3, arg4);
   }
 }
 
@@ -6419,7 +6436,7 @@ auto cudaStreamWaitEvent3_replace() {
   }
 }
 
-template<const cudaExternalSemaphore_t * arg1, const struct cudaExternalSemaphoreWaitParams * arg2, unsigned int arg3>
+template<const cudaExternalSemaphore_t * arg1, const cudaExternalSemaphoreWaitParams * arg2, unsigned int arg3>
 [[clang::matcher("cudaWaitExternalSemaphoresAsync 3 func")]]
 auto cudaWaitExternalSemaphoresAsync3_func() {
   [[clang::matcher_block]]
@@ -6428,16 +6445,16 @@ auto cudaWaitExternalSemaphoresAsync3_func() {
   }
 }
 
-template<const hipExternalSemaphore_t *  arg1, const struct hipExternalSemaphoreWaitParams *  arg2, unsigned int  arg3>
+template<const hipExternalSemaphore_t *  arg1, const hipExternalSemaphoreWaitParams *  arg2, unsigned int  arg3>
 [[clang::replace("cudaWaitExternalSemaphoresAsync 3 func")]]
 auto cudaWaitExternalSemaphoresAsync3_replace() {
   [[clang::matcher_block]]
   {
-    hipWaitExternalSemaphoresAsync(arg1, arg2, arg3);
+      hipWaitExternalSemaphoresAsync(arg1, arg2, arg3, 0);
   }
 }
 
-template<const cudaExternalSemaphore_t * arg1, const struct cudaExternalSemaphoreWaitParams * arg2, unsigned int arg3, cudaStream_t arg4>
+template<const cudaExternalSemaphore_t * arg1, const cudaExternalSemaphoreWaitParams * arg2, unsigned int arg3, cudaStream_t arg4>
 [[clang::matcher("cudaWaitExternalSemaphoresAsync 4 func")]]
 auto cudaWaitExternalSemaphoresAsync4_func() {
   [[clang::matcher_block]]
@@ -6446,7 +6463,7 @@ auto cudaWaitExternalSemaphoresAsync4_func() {
   }
 }
 
-template<const hipExternalSemaphore_t *  arg1, const struct hipExternalSemaphoreWaitParams *  arg2, unsigned int  arg3, hipStream_t  arg4>
+template<const hipExternalSemaphore_t *  arg1, const hipExternalSemaphoreWaitParams *  arg2, unsigned int  arg3, hipStream_t  arg4>
 [[clang::replace("cudaWaitExternalSemaphoresAsync 4 func")]]
 auto cudaWaitExternalSemaphoresAsync4_replace() {
   [[clang::matcher_block]]
