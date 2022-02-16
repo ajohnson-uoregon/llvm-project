@@ -1,4 +1,4 @@
-#include "hip/hip_runtime.h"
+#include "fake_hip_runtime_api.h"
 #include <vector>
 #include <string>
 
@@ -23,9 +23,7 @@ std::vector<std::string> clang_rewrite_literal_names = {
 "cudaExternalSemaphoreHandleDesc",
 "cudaExternalSemaphoreHandleType",
 "cudaExternalSemaphoreSignalParams",
-"cudaExternalSemaphoreSignalParams_v1",
 "cudaExternalSemaphoreWaitParams",
-"cudaExternalSemaphoreWaitParams_v1",
 "cudaExternalSemaphore_t",
 "cudaFuncAttribute",
 "cudaFuncAttributes",
@@ -271,7 +269,7 @@ auto cuda_kernel_launch_0_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream>
 [[clang::matcher("kernel_launch 0 args 4 params")]]
 auto cuda_kernel_launch_0_4() {
   [[clang::matcher_block]]
@@ -280,7 +278,7 @@ auto cuda_kernel_launch_0_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream>
 [[clang::replace("kernel_launch 0 args 4 params")]]
 auto cuda_kernel_launch_0_4_replace() {
   [[clang::matcher_block]]
@@ -325,7 +323,7 @@ auto cuda_kernel_launch_1_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1>
 [[clang::matcher("kernel_launch 1 args 4 params")]]
 auto cuda_kernel_launch_1_4() {
   [[clang::matcher_block]]
@@ -334,7 +332,7 @@ auto cuda_kernel_launch_1_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1>
 [[clang::replace("kernel_launch 1 args 4 params")]]
 auto cuda_kernel_launch_1_4_replace() {
   [[clang::matcher_block]]
@@ -379,7 +377,7 @@ auto cuda_kernel_launch_2_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2>
 [[clang::matcher("kernel_launch 2 args 4 params")]]
 auto cuda_kernel_launch_2_4() {
   [[clang::matcher_block]]
@@ -388,7 +386,7 @@ auto cuda_kernel_launch_2_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2>
 [[clang::replace("kernel_launch 2 args 4 params")]]
 auto cuda_kernel_launch_2_4_replace() {
   [[clang::matcher_block]]
@@ -433,7 +431,7 @@ auto cuda_kernel_launch_3_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3>
 [[clang::matcher("kernel_launch 3 args 4 params")]]
 auto cuda_kernel_launch_3_4() {
   [[clang::matcher_block]]
@@ -442,7 +440,7 @@ auto cuda_kernel_launch_3_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3>
 [[clang::replace("kernel_launch 3 args 4 params")]]
 auto cuda_kernel_launch_3_4_replace() {
   [[clang::matcher_block]]
@@ -487,7 +485,7 @@ auto cuda_kernel_launch_4_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4>
 [[clang::matcher("kernel_launch 4 args 4 params")]]
 auto cuda_kernel_launch_4_4() {
   [[clang::matcher_block]]
@@ -496,7 +494,7 @@ auto cuda_kernel_launch_4_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4>
 [[clang::replace("kernel_launch 4 args 4 params")]]
 auto cuda_kernel_launch_4_4_replace() {
   [[clang::matcher_block]]
@@ -541,7 +539,7 @@ auto cuda_kernel_launch_5_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5>
 [[clang::matcher("kernel_launch 5 args 4 params")]]
 auto cuda_kernel_launch_5_4() {
   [[clang::matcher_block]]
@@ -550,7 +548,7 @@ auto cuda_kernel_launch_5_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5>
 [[clang::replace("kernel_launch 5 args 4 params")]]
 auto cuda_kernel_launch_5_4_replace() {
   [[clang::matcher_block]]
@@ -595,7 +593,7 @@ auto cuda_kernel_launch_6_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6>
 [[clang::matcher("kernel_launch 6 args 4 params")]]
 auto cuda_kernel_launch_6_4() {
   [[clang::matcher_block]]
@@ -604,7 +602,7 @@ auto cuda_kernel_launch_6_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6>
 [[clang::replace("kernel_launch 6 args 4 params")]]
 auto cuda_kernel_launch_6_4_replace() {
   [[clang::matcher_block]]
@@ -649,7 +647,7 @@ auto cuda_kernel_launch_7_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7>
 [[clang::matcher("kernel_launch 7 args 4 params")]]
 auto cuda_kernel_launch_7_4() {
   [[clang::matcher_block]]
@@ -658,7 +656,7 @@ auto cuda_kernel_launch_7_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7>
 [[clang::replace("kernel_launch 7 args 4 params")]]
 auto cuda_kernel_launch_7_4_replace() {
   [[clang::matcher_block]]
@@ -703,7 +701,7 @@ auto cuda_kernel_launch_8_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8>
 [[clang::matcher("kernel_launch 8 args 4 params")]]
 auto cuda_kernel_launch_8_4() {
   [[clang::matcher_block]]
@@ -712,7 +710,7 @@ auto cuda_kernel_launch_8_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8>
 [[clang::replace("kernel_launch 8 args 4 params")]]
 auto cuda_kernel_launch_8_4_replace() {
   [[clang::matcher_block]]
@@ -757,7 +755,7 @@ auto cuda_kernel_launch_9_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9>
 [[clang::matcher("kernel_launch 9 args 4 params")]]
 auto cuda_kernel_launch_9_4() {
   [[clang::matcher_block]]
@@ -766,7 +764,7 @@ auto cuda_kernel_launch_9_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9>
 [[clang::replace("kernel_launch 9 args 4 params")]]
 auto cuda_kernel_launch_9_4_replace() {
   [[clang::matcher_block]]
@@ -811,7 +809,7 @@ auto cuda_kernel_launch_10_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10>
 [[clang::matcher("kernel_launch 10 args 4 params")]]
 auto cuda_kernel_launch_10_4() {
   [[clang::matcher_block]]
@@ -820,7 +818,7 @@ auto cuda_kernel_launch_10_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10>
 [[clang::replace("kernel_launch 10 args 4 params")]]
 auto cuda_kernel_launch_10_4_replace() {
   [[clang::matcher_block]]
@@ -865,7 +863,7 @@ auto cuda_kernel_launch_11_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11>
 [[clang::matcher("kernel_launch 11 args 4 params")]]
 auto cuda_kernel_launch_11_4() {
   [[clang::matcher_block]]
@@ -874,7 +872,7 @@ auto cuda_kernel_launch_11_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11>
 [[clang::replace("kernel_launch 11 args 4 params")]]
 auto cuda_kernel_launch_11_4_replace() {
   [[clang::matcher_block]]
@@ -919,7 +917,7 @@ auto cuda_kernel_launch_12_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12>
 [[clang::matcher("kernel_launch 12 args 4 params")]]
 auto cuda_kernel_launch_12_4() {
   [[clang::matcher_block]]
@@ -928,7 +926,7 @@ auto cuda_kernel_launch_12_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12>
 [[clang::replace("kernel_launch 12 args 4 params")]]
 auto cuda_kernel_launch_12_4_replace() {
   [[clang::matcher_block]]
@@ -973,7 +971,7 @@ auto cuda_kernel_launch_13_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13>
 [[clang::matcher("kernel_launch 13 args 4 params")]]
 auto cuda_kernel_launch_13_4() {
   [[clang::matcher_block]]
@@ -982,7 +980,7 @@ auto cuda_kernel_launch_13_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13>
 [[clang::replace("kernel_launch 13 args 4 params")]]
 auto cuda_kernel_launch_13_4_replace() {
   [[clang::matcher_block]]
@@ -1027,7 +1025,7 @@ auto cuda_kernel_launch_14_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14>
 [[clang::matcher("kernel_launch 14 args 4 params")]]
 auto cuda_kernel_launch_14_4() {
   [[clang::matcher_block]]
@@ -1036,7 +1034,7 @@ auto cuda_kernel_launch_14_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14>
 [[clang::replace("kernel_launch 14 args 4 params")]]
 auto cuda_kernel_launch_14_4_replace() {
   [[clang::matcher_block]]
@@ -1081,7 +1079,7 @@ auto cuda_kernel_launch_15_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15>
 [[clang::matcher("kernel_launch 15 args 4 params")]]
 auto cuda_kernel_launch_15_4() {
   [[clang::matcher_block]]
@@ -1090,7 +1088,7 @@ auto cuda_kernel_launch_15_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15>
 [[clang::replace("kernel_launch 15 args 4 params")]]
 auto cuda_kernel_launch_15_4_replace() {
   [[clang::matcher_block]]
@@ -1135,7 +1133,7 @@ auto cuda_kernel_launch_16_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16>
 [[clang::matcher("kernel_launch 16 args 4 params")]]
 auto cuda_kernel_launch_16_4() {
   [[clang::matcher_block]]
@@ -1144,7 +1142,7 @@ auto cuda_kernel_launch_16_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16>
 [[clang::replace("kernel_launch 16 args 4 params")]]
 auto cuda_kernel_launch_16_4_replace() {
   [[clang::matcher_block]]
@@ -1189,7 +1187,7 @@ auto cuda_kernel_launch_17_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17>
 [[clang::matcher("kernel_launch 17 args 4 params")]]
 auto cuda_kernel_launch_17_4() {
   [[clang::matcher_block]]
@@ -1198,7 +1196,7 @@ auto cuda_kernel_launch_17_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17>
 [[clang::replace("kernel_launch 17 args 4 params")]]
 auto cuda_kernel_launch_17_4_replace() {
   [[clang::matcher_block]]
@@ -1243,7 +1241,7 @@ auto cuda_kernel_launch_18_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18>
 [[clang::matcher("kernel_launch 18 args 4 params")]]
 auto cuda_kernel_launch_18_4() {
   [[clang::matcher_block]]
@@ -1252,7 +1250,7 @@ auto cuda_kernel_launch_18_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18>
 [[clang::replace("kernel_launch 18 args 4 params")]]
 auto cuda_kernel_launch_18_4_replace() {
   [[clang::matcher_block]]
@@ -1297,7 +1295,7 @@ auto cuda_kernel_launch_19_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19>
 [[clang::matcher("kernel_launch 19 args 4 params")]]
 auto cuda_kernel_launch_19_4() {
   [[clang::matcher_block]]
@@ -1306,7 +1304,7 @@ auto cuda_kernel_launch_19_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19>
 [[clang::replace("kernel_launch 19 args 4 params")]]
 auto cuda_kernel_launch_19_4_replace() {
   [[clang::matcher_block]]
@@ -1351,7 +1349,7 @@ auto cuda_kernel_launch_20_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20>
 [[clang::matcher("kernel_launch 20 args 4 params")]]
 auto cuda_kernel_launch_20_4() {
   [[clang::matcher_block]]
@@ -1360,7 +1358,7 @@ auto cuda_kernel_launch_20_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20>
 [[clang::replace("kernel_launch 20 args 4 params")]]
 auto cuda_kernel_launch_20_4_replace() {
   [[clang::matcher_block]]
@@ -1405,7 +1403,7 @@ auto cuda_kernel_launch_21_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21>
 [[clang::matcher("kernel_launch 21 args 4 params")]]
 auto cuda_kernel_launch_21_4() {
   [[clang::matcher_block]]
@@ -1414,7 +1412,7 @@ auto cuda_kernel_launch_21_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21>
 [[clang::replace("kernel_launch 21 args 4 params")]]
 auto cuda_kernel_launch_21_4_replace() {
   [[clang::matcher_block]]
@@ -1459,7 +1457,7 @@ auto cuda_kernel_launch_22_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22>
 [[clang::matcher("kernel_launch 22 args 4 params")]]
 auto cuda_kernel_launch_22_4() {
   [[clang::matcher_block]]
@@ -1468,7 +1466,7 @@ auto cuda_kernel_launch_22_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22>
 [[clang::replace("kernel_launch 22 args 4 params")]]
 auto cuda_kernel_launch_22_4_replace() {
   [[clang::matcher_block]]
@@ -1513,7 +1511,7 @@ auto cuda_kernel_launch_23_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23>
 [[clang::matcher("kernel_launch 23 args 4 params")]]
 auto cuda_kernel_launch_23_4() {
   [[clang::matcher_block]]
@@ -1522,7 +1520,7 @@ auto cuda_kernel_launch_23_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23>
 [[clang::replace("kernel_launch 23 args 4 params")]]
 auto cuda_kernel_launch_23_4_replace() {
   [[clang::matcher_block]]
@@ -1567,7 +1565,7 @@ auto cuda_kernel_launch_24_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24>
 [[clang::matcher("kernel_launch 24 args 4 params")]]
 auto cuda_kernel_launch_24_4() {
   [[clang::matcher_block]]
@@ -1576,7 +1574,7 @@ auto cuda_kernel_launch_24_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24>
 [[clang::replace("kernel_launch 24 args 4 params")]]
 auto cuda_kernel_launch_24_4_replace() {
   [[clang::matcher_block]]
@@ -1621,7 +1619,7 @@ auto cuda_kernel_launch_25_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25>
 [[clang::matcher("kernel_launch 25 args 4 params")]]
 auto cuda_kernel_launch_25_4() {
   [[clang::matcher_block]]
@@ -1630,7 +1628,7 @@ auto cuda_kernel_launch_25_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25>
 [[clang::replace("kernel_launch 25 args 4 params")]]
 auto cuda_kernel_launch_25_4_replace() {
   [[clang::matcher_block]]
@@ -1675,7 +1673,7 @@ auto cuda_kernel_launch_26_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26>
 [[clang::matcher("kernel_launch 26 args 4 params")]]
 auto cuda_kernel_launch_26_4() {
   [[clang::matcher_block]]
@@ -1684,7 +1682,7 @@ auto cuda_kernel_launch_26_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26>
 [[clang::replace("kernel_launch 26 args 4 params")]]
 auto cuda_kernel_launch_26_4_replace() {
   [[clang::matcher_block]]
@@ -1729,7 +1727,7 @@ auto cuda_kernel_launch_27_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27>
 [[clang::matcher("kernel_launch 27 args 4 params")]]
 auto cuda_kernel_launch_27_4() {
   [[clang::matcher_block]]
@@ -1738,7 +1736,7 @@ auto cuda_kernel_launch_27_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27>
 [[clang::replace("kernel_launch 27 args 4 params")]]
 auto cuda_kernel_launch_27_4_replace() {
   [[clang::matcher_block]]
@@ -1783,7 +1781,7 @@ auto cuda_kernel_launch_28_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28>
 [[clang::matcher("kernel_launch 28 args 4 params")]]
 auto cuda_kernel_launch_28_4() {
   [[clang::matcher_block]]
@@ -1792,7 +1790,7 @@ auto cuda_kernel_launch_28_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28>
 [[clang::replace("kernel_launch 28 args 4 params")]]
 auto cuda_kernel_launch_28_4_replace() {
   [[clang::matcher_block]]
@@ -1837,7 +1835,7 @@ auto cuda_kernel_launch_29_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29>
 [[clang::matcher("kernel_launch 29 args 4 params")]]
 auto cuda_kernel_launch_29_4() {
   [[clang::matcher_block]]
@@ -1846,7 +1844,7 @@ auto cuda_kernel_launch_29_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29>
 [[clang::replace("kernel_launch 29 args 4 params")]]
 auto cuda_kernel_launch_29_4_replace() {
   [[clang::matcher_block]]
@@ -1891,7 +1889,7 @@ auto cuda_kernel_launch_30_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30>
 [[clang::matcher("kernel_launch 30 args 4 params")]]
 auto cuda_kernel_launch_30_4() {
   [[clang::matcher_block]]
@@ -1900,7 +1898,7 @@ auto cuda_kernel_launch_30_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30>
 [[clang::replace("kernel_launch 30 args 4 params")]]
 auto cuda_kernel_launch_30_4_replace() {
   [[clang::matcher_block]]
@@ -1945,7 +1943,7 @@ auto cuda_kernel_launch_31_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30, int arg31>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30, int arg31>
 [[clang::matcher("kernel_launch 31 args 4 params")]]
 auto cuda_kernel_launch_31_4() {
   [[clang::matcher_block]]
@@ -1954,7 +1952,7 @@ auto cuda_kernel_launch_31_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30, int arg31>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30, int arg31>
 [[clang::replace("kernel_launch 31 args 4 params")]]
 auto cuda_kernel_launch_31_4_replace() {
   [[clang::matcher_block]]
@@ -1999,7 +1997,7 @@ auto cuda_kernel_launch_32_3_replace() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30, int arg31, int arg32>
+template <int numblocks, int numthreads, int shmem, cudaStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30, int arg31, int arg32>
 [[clang::matcher("kernel_launch 32 args 4 params")]]
 auto cuda_kernel_launch_32_4() {
   [[clang::matcher_block]]
@@ -2008,7 +2006,7 @@ auto cuda_kernel_launch_32_4() {
   }
 }
 
-template <int numblocks, int numthreads, int shmem, int stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30, int arg31, int arg32>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30, int arg31, int arg32>
 [[clang::replace("kernel_launch 32 args 4 params")]]
 auto cuda_kernel_launch_32_4_replace() {
   [[clang::matcher_block]]
@@ -2323,22 +2321,6 @@ auto cudaExternalSemaphoreSignalParams_replace() {
   }
 }
 
-[[clang::matcher("cudaExternalSemaphoreSignalParams_v1 type")]]
-auto cudaExternalSemaphoreSignalParams_v1_type() {
-  [[clang::matcher_block]]
-  {
-    cudaExternalSemaphoreSignalParams_v1 varname;
-  }
-}
-
-[[clang::replace("cudaExternalSemaphoreSignalParams_v1 type")]]
-auto cudaExternalSemaphoreSignalParams_v1_replace() {
-  [[clang::matcher_block]]
-  {
-    hipExternalSemaphoreSignalParams varname;
-  }
-}
-
 [[clang::matcher("cudaExternalSemaphoreWaitParams type")]]
 auto cudaExternalSemaphoreWaitParams_type() {
   [[clang::matcher_block]]
@@ -2349,22 +2331,6 @@ auto cudaExternalSemaphoreWaitParams_type() {
 
 [[clang::replace("cudaExternalSemaphoreWaitParams type")]]
 auto cudaExternalSemaphoreWaitParams_replace() {
-  [[clang::matcher_block]]
-  {
-    hipExternalSemaphoreWaitParams varname;
-  }
-}
-
-[[clang::matcher("cudaExternalSemaphoreWaitParams_v1 type")]]
-auto cudaExternalSemaphoreWaitParams_v1_type() {
-  [[clang::matcher_block]]
-  {
-    cudaExternalSemaphoreWaitParams_v1 varname;
-  }
-}
-
-[[clang::replace("cudaExternalSemaphoreWaitParams_v1 type")]]
-auto cudaExternalSemaphoreWaitParams_v1_replace() {
   [[clang::matcher_block]]
   {
     hipExternalSemaphoreWaitParams varname;
