@@ -230,6 +230,7 @@ std::vector<std::string> clang_rewrite_literal_names = {
 "make_cudaExtent",
 "make_cudaPitchedPtr",
 "make_cudaPos",
+"__cudaPushCallConfiguration",
 };
 
 
