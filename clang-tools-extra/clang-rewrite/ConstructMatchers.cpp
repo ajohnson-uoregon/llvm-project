@@ -469,12 +469,10 @@ VariantMatcher handle_callExpr(Node* root, std::string call_type, int level) {
   if (root->children) {
     int argnum = 0; // SHRUG I guess the order works out?
     for (Node* child = root->children; child != nullptr; child = child->next_sibling) {
-      if (child->matcher_type == MT::callee) {
-        child_matchers.push_back(make_matcher(child, level+5));
-      }
+
       // need to special case for cudaKernelCallExpr so the call to
       // __cudaPushCallConfiguration isn't treated as an argument
-      else if (root->matcher_type == MT::cudaKernelCallExpr &&
+      if (root->matcher_type == MT::cudaKernelCallExpr &&
                child->matcher_type == MT::callExpr) {
         Node* cuda_call_conf = child->get_child_or_null(MT::callee);
         if (cuda_call_conf && cuda_call_conf->children->name == "__cudaPushCallConfiguration") {
@@ -497,6 +495,7 @@ VariantMatcher handle_callExpr(Node* root, std::string call_type, int level) {
           }
           if (temp_child) {
             child_matchers.push_back(constructMatcher("cudaSharedMemPerBlock",
+              constructMatcher("unless", constructMatcher("cxxDefaultArgExpr", constructMatcher("anything", level+9), level+8), level+7),
               make_matcher(temp_child, level+6), level+5));
             temp_child = temp_child->next_sibling; // fourth arg or null
           }
@@ -506,6 +505,7 @@ VariantMatcher handle_callExpr(Node* root, std::string call_type, int level) {
           }
           if (temp_child) {
             child_matchers.push_back(constructMatcher("cudaStream",
+              constructMatcher("unless", constructMatcher("cxxDefaultArgExpr", constructMatcher("anything", level+9), level+8), level+7),
               make_matcher(temp_child, level+6), level+5));
           }
           else {
@@ -513,6 +513,9 @@ VariantMatcher handle_callExpr(Node* root, std::string call_type, int level) {
               constructMatcher("cxxDefaultArgExpr", constructMatcher("anything", level+7), level+6), level+5));
           }
         }
+      }
+      else if (child->matcher_type == MT::callee) {
+        child_matchers.push_back(make_matcher(child, level+5));
       }
       else {
         if (!child->self_or_child_bound_to(callee_name) &&
