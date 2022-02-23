@@ -16,9 +16,11 @@
 
 using namespace clang;
 using namespace clang::ast_matchers;
-
 using namespace clang::tooling;
 using namespace llvm;
+
+namespace clang {
+namespace rewrite_tool {
 
 DeclarationMatcher insert_before_match =
   functionDecl(allOf(
@@ -210,5 +212,7 @@ public:
   }
 };
 
+}
+} //namespaces
 
-#endif
+#endif //CLANG_NEW_CODE_CALLBACK_H

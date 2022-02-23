@@ -8,6 +8,9 @@
 
 using namespace clang::ast_matchers::dynamic;
 
+namespace clang {
+namespace rewrite_tool {
+
 enum class MatcherType {
   fakeNode,
   binaryOperator,
@@ -311,5 +314,8 @@ public:
 };
 
 VariantMatcher make_matcher(Node* root, int level);
+
+}
+} //namespace
 
 #endif // CLANG_CONSTRUCT_MATCHERS_H

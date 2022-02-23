@@ -18,8 +18,10 @@
 
 using namespace clang;
 using namespace clang::ast_matchers;
-
 using namespace llvm;
+
+namespace clang {
+namespace rewrite_tool {
 
 enum NewCodeKind {
   InsertPrematch,
@@ -158,4 +160,7 @@ public:
   }
 };
 
-#endif
+}
+} // namespaces
+
+#endif //CLANG_CODE_ACTION_H

@@ -8,8 +8,10 @@
 
 using namespace clang;
 using namespace clang::ast_matchers;
-
 using namespace llvm;
+
+namespace clang {
+namespace rewrite_tool {
 
 template <class T> class MatcherWrapper {
 public:
@@ -61,4 +63,7 @@ public:
   }
 };
 
-#endif
+}
+} //namespaces
+
+#endif //LLVM_CLANG_MATCHER_WRAPPER_H

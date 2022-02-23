@@ -12,6 +12,9 @@ using namespace clang;
 using namespace clang::ast_matchers;
 using namespace clang::ast_matchers::dynamic;
 
+namespace clang {
+namespace rewrite_tool {
+
 using ast_matchers::internal::Matcher;
 
 using MT = MatcherType;
@@ -881,3 +884,6 @@ VariantMatcher make_matcher(Node* root, int level) {
       break;
   }
 }
+
+}
+} //namespaces

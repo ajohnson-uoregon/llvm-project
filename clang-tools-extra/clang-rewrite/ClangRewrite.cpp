@@ -27,9 +27,9 @@
 
 using namespace clang;
 using namespace clang::ast_matchers;
-
 using namespace clang::tooling;
 using namespace llvm;
+using namespace clang::rewrite_tool;
 
 // Apply a custom category to all command-line options so that they are the
 // only ones displayed.

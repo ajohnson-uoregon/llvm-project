@@ -24,6 +24,9 @@ using namespace clang::ast_matchers;
 using namespace clang::tooling;
 using namespace llvm;
 
+namespace clang {
+namespace rewrite_tool {
+
 bool isLine(const Stmt *stmt) {
   if (isa<AsmStmt>(stmt) || isa<NullStmt>(stmt) || isa<ReturnStmt>(stmt) ||
       isa<ValueStmt>(stmt) // exprs
@@ -152,7 +155,7 @@ public:
       const RewriteBuffer *buff = rw.getRewriteBufferFor(
           rw.getSourceMgr().getFileID(match->getBeginLoc()));
       if (buff) {
-        /*std::error_code erc;
+        std::error_code erc;
         std::string newfname =
             rw.getSourceMgr().getFilename(match->getBeginLoc()).str();
         if (newfname.find(".") != std::string::npos) {
@@ -168,7 +171,7 @@ public:
         }
         raw_fd_ostream out(newfname, erc);
         buff->write(out);
-        out.close();*/
+        out.close();
         files_changed.push_back(
             rw.getSourceMgr().getFileID(match->getBeginLoc()));
         num_matched++;
@@ -578,34 +581,18 @@ private:
   }
 
   bool locValidForCodeInsertBefore(const MatchFinder::MatchResult &result) {
-    const Stmt *smatch = result.Nodes.getNodeAs<Stmt>("match");
-    const Stmt *sroot = result.Nodes.getNodeAs<Stmt>("root");
+    const Stmt *smatch = result.Nodes.getNodeAs<Stmt>("clang_rewrite_top_level_match");
 
-    const Decl *dmatch = result.Nodes.getNodeAs<Decl>("match");
-    const Decl *droot = result.Nodes.getNodeAs<Decl>("root");
+    const Decl *dmatch = result.Nodes.getNodeAs<Decl>("clang_rewrite_top_level_match");
 
     // sometimes the outermost part of the matcher *is* the match so we have no
     // root and need to make one
-    if (!sroot && !droot) {
-      if (smatch) {
-        sroot = smatch;
-      }
-      else if (dmatch) {
-        droot = dmatch;
-      }
-    }
 
-    if (smatch && sroot) {
-      return locValidForCodeInsertBeforeHelp(result, smatch, sroot);
+    if (smatch) {
+      return locValidForCodeInsertBeforeHelp(result, smatch, smatch);
     }
-    else if (smatch && droot) {
-      return locValidForCodeInsertBeforeHelp(result, smatch, droot);
-    }
-    else if (dmatch && sroot) {
-      return locValidForCodeInsertBeforeHelp(result, dmatch, sroot);
-    }
-    else if (dmatch && droot) {
-      return locValidForCodeInsertBeforeHelp(result, dmatch, droot);
+    else if (dmatch) {
+      return locValidForCodeInsertBeforeHelp(result, dmatch, dmatch);
     }
     else {
       printf("ERROR in locValidForCodeInsertBefore\n");
@@ -614,8 +601,8 @@ private:
   }
 
   bool locValidForCodeInsertAfter(const MatchFinder::MatchResult &result) {
-    const Stmt *smatch = result.Nodes.getNodeAs<Stmt>("match");
-    const Decl *dmatch = result.Nodes.getNodeAs<Decl>("match");
+    const Stmt *smatch = result.Nodes.getNodeAs<Stmt>("clang_rewrite_top_level_match");
+    const Decl *dmatch = result.Nodes.getNodeAs<Decl>("clang_rewrite_top_level_match");
     // check if will obviously be dead code (after return, break, continue)
     // anything more difficult left for future work/integration with unused code
     // pass
@@ -654,4 +641,7 @@ template <class T> int RewriteCallback<T>::num_matched = 0;
 template <class T> bool RewriteCallback<T>::verbose = false;
 template <class T> bool RewriteCallback<T>::rewrite_file = true;
 
-#endif
+}
+}// namespaces
+
+#endif //CLANG_REWRITE_CALLBACK_H

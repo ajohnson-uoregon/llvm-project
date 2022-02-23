@@ -28,24 +28,14 @@
 using namespace clang;
 using namespace clang::ast_matchers;
 using namespace clang::ast_matchers::dynamic;
-
 using namespace clang::tooling;
 
 using ast_matchers::internal::Matcher;
 
-using MT = MatcherType;
+namespace clang {
+namespace rewrite_tool {
 
-DynTypedMatcher rettest =
-  returnStmt(
-    hasReturnValue(
-      ignoringParenImpCasts(
-        allOf(
-          hasType(asString("int")),
-          expr().bind("x")
-        )
-      )
-    )
-  );
+using MT = MatcherType;
 
 class BuildMatcherVisitor : public RecursiveASTVisitor<BuildMatcherVisitor> {
 public:
@@ -619,4 +609,7 @@ public:
   }
 };
 
-#endif
+}
+} //namespaces
+
+#endif //CLANG_MATCHER_GEN_CALLBACK_H

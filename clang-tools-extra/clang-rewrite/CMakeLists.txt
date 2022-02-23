@@ -5,6 +5,12 @@ add_clang_tool(clang-rewrite
   ClangRewrite.cpp
   ConstructMatchers.cpp
   )
+
+add_clang_library(clangRewriteTool
+  ClangRewrite.cpp
+  ConstructMatchers.cpp
+)
+
 target_link_libraries(clang-rewrite
   PRIVATE
   clangTooling
