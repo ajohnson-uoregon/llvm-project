@@ -9,6 +9,13 @@ include_directories(
 
 add_extra_unittest(ClangRewriteTests
   RewriteTests.cpp
+  CodeActionTests.cpp
+  ConstructMatcherTests.cpp
+  FindLiteralsTests.cpp
+  MatcherGenCallbackTests.cpp
+  MatcherWrapperTests.cpp
+  NewCodeCallbackTests.cpp
+  RewriteCallbackTests.cpp
   )
 
 clang_target_link_libraries(ClangRewriteTests
@@ -22,5 +29,5 @@ clang_target_link_libraries(ClangRewriteTests
 
 target_link_libraries(ClangRewriteTests
   PRIVATE
-  clangRewrite
+  clangRewriteTool
   )
