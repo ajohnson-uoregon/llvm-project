@@ -93,24 +93,22 @@ public:
     // grab all matcher names, put in list
     std::vector<std::string> matcher_names;
     for (Attr* attr : func->attrs()) {
-      attr->printPretty(llvm::outs(), PrintingPolicy(context->getLangOpts()));
-      printf("\n");
       switch(attr->getKind()) {
         case attr::ReplaceCode:
           for (StringRef m : cast<ReplaceCodeAttr>(attr)->matchers()) {
-            llvm::outs() << m << "\n";
+            // llvm::outs() << m << "\n";
             matcher_names.push_back(m.str());
           }
           break;
         case attr::InsertCodeAfter:
           for (StringRef m : cast<InsertCodeAfterAttr>(attr)->matchers()) {
-            llvm::outs() << m << "\n";
+            // llvm::outs() << m << "\n";
             matcher_names.push_back(m.str());
           }
           break;
         case attr::InsertCodeBefore:
           for (StringRef m : cast<InsertCodeBeforeAttr>(attr)->matchers()) {
-            llvm::outs() << m << "\n";
+            // llvm::outs() << m << "\n";
             matcher_names.push_back(m.str());
           }
           break;
@@ -126,8 +124,8 @@ public:
       printf("ERROR: invalid body\n");
       return;
     }
-    printf("function body\n");
-    body->dump();
+    // printf("function body\n");
+    // body->dump();
 
     FullSourceLoc body_begin;
     FullSourceLoc body_end;

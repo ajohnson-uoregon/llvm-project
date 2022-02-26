@@ -57,8 +57,8 @@ cl::opt<bool> norewrite_file("no-rewrite-file",
                              cl::cat(RewriteCategory));
 
 cl::opt<std::string>
-    inst_file("inst-file",
-              cl::desc("File with code changes to be made at matched points."),
+    inst_file("spec-file",
+              cl::desc("Specification file; file with code changes to be made at matched points."),
               cl::cat(RewriteCategory));
 
 // CommonOptionsParser declares HelpMessage with a description of the common

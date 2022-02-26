@@ -824,6 +824,9 @@ VariantMatcher make_matcher(Node* root, int level) {
     case MT::cudaKernelCallExpr:
       return handle_callExpr(root, "cudaKernelCallExpr", level);
       break;
+    case MT::cxxOperatorCallExpr:
+      return handle_callExpr(root, "cxxOperatorCallExpr", level);
+      break;
     // case MT::cxxDefaultArgExpr:
     //   return handle_non_bindable_node(root, "cxxDefaultArgExpr", level);
     //   break;

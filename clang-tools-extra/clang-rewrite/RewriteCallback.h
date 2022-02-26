@@ -158,10 +158,10 @@ public:
         std::error_code erc;
         std::string newfname =
             rw.getSourceMgr().getFilename(match->getBeginLoc()).str();
-        if (newfname.find(".") != std::string::npos) {
+        if (newfname.rfind(".") != std::string::npos) {
           std::string temp = ".test";
           temp.append(std::to_string(num_matched));
-          newfname.insert(newfname.find("."), temp);
+          newfname.insert(newfname.rfind("."), temp);
         } else {
           newfname.append(".test").append(std::to_string(num_matched));
         }
@@ -312,9 +312,9 @@ public:
       std::error_code erc;
       std::string newfname =
           rw.getSourceMgr().getFileEntryForID(f)->getName().str();
-      if (newfname.find(".") != std::string::npos) {
+      if (newfname.rfind(".") != std::string::npos) {
         std::string temp = ".test_final";
-        newfname.insert(newfname.find("."), temp);
+        newfname.insert(newfname.rfind("."), temp);
       } else {
         newfname.append(".test_final");
       }

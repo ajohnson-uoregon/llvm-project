@@ -21,6 +21,7 @@ enum class MatcherType {
   cxxConstructExpr,
   cxxDefaultArgExpr,
   cxxFunctionalCastExpr,
+  cxxOperatorCallExpr,
   declRefExpr,
   equals,
   functionDecl,
