@@ -177,8 +177,12 @@ public:
     }
 
     // make action, put in vector of actions
+    std::vector<DynTypedNode> nodes;
+    for (Stmt* s : body->body()) {
+      nodes.push_back(DynTypedNode::create(*s));
+    }
     CodeAction *act =
-        new CodeAction(kind, matcher_names, std::string(code), action_name, context->getLangOpts());
+        new CodeAction(*context, nodes, kind, matcher_names, std::string(code), action_name);
     all_actions.push_back(act);
 
     delete[] code;

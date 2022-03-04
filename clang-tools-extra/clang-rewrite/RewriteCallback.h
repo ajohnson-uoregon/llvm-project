@@ -105,7 +105,7 @@ public:
   static bool verbose;
   static bool rewrite_file;
 
-  std::map<std::string, std::string> bound_code;
+  std::vector<Binding> bound_code;
 
   RewriteCallback(MatcherWrapper<T> *matcher) : matcher(matcher) {}
 
@@ -201,7 +201,22 @@ public:
       return;
     }
 
-    for (auto n : result.Nodes.getMap()) {
+    // std::map<DynTypedNode, std::vector<std::string>> reverse_Nodes;
+    for (std::pair<std::string, DynTypedNode> n : result.Nodes.getMap()) {
+      // if not found, add it
+    //   auto search = reverse_Nodes.find(n.second);
+    //   if (search == reverse_Nodes.end()) {
+    //     reverse_Nodes.insert({n.second, {n.first}});
+    //   }
+    //   else {
+    //     search->second.push_back(n.first);
+    //   }
+    // }
+    //
+    // for (auto n : reverse_Nodes) {
+      // for (auto s : n.second) {
+      //   llvm::outs() << s << ",";
+      // }
       llvm::outs() << n.first << " : \n";
       n.second.dump(llvm::outs(), *context);
       const Stmt *stmt = result.Nodes.getNodeAs<Stmt>(n.first);
@@ -249,10 +264,21 @@ public:
           printf("no buffer :<\n");
         }
 
-        n.second.dump(llvm::outs(), *context);
+        // n.second.dump(llvm::outs(), *context);
         llvm::outs() << "\n";
+        Binding b;
+        // for (auto s : n.second) {
+        //   if (s != "clang_rewrite_top_level_match") {
+        //     b.names.push_back(s);
+        //   }
+        // }
+        // b.value = std::string(code);
         if (n.first != "clang_rewrite_top_level_match") {
-          bound_code[n.first] = std::string(code);
+          std::pair<StringRef, StringRef> split = StringRef(n.first).split(";");
+          b.name = split.first.str();
+          b.qual_name = split.second.str();
+          b.value = std::string(code);
+          bound_code.push_back(b);
         }
 
         delete[] code;
@@ -265,8 +291,21 @@ public:
 
         n.second.dump(llvm::outs(), *context);
         llvm::outs() << "\n";
+        Binding b;
+
+        // for (auto s : n.second) {
+        //   if (s != "clang_rewrite_top_level_match") {
+        //     b.names.push_back(s);
+        //   }
+        // }
+        // b.value = name;
+        // bound_code.push_back(b);
         if (n.first != "clang_rewrite_top_level_match") {
-          bound_code[n.first] = name;
+          std::pair<StringRef, StringRef> split = StringRef(n.first).split(";");
+          b.name = split.first.str();
+          b.qual_name = split.second.str();
+          b.value = name;
+          bound_code.push_back(b);
         }
       }
       else if (type) {
@@ -274,8 +313,20 @@ public:
         printf("type name: %s\n", name.c_str());
         n.second.dump(llvm::outs(), *context);
         llvm::outs() << "\n";
+        Binding b;
+        // for (auto s : n.second) {
+        //   if (s != "clang_rewrite_top_level_match") {
+        //     b.names.push_back(s);
+        //   }
+        // }
+        // b.value = name;
+        // bound_code.push_back(b);
         if (n.first != "clang_rewrite_top_level_match") {
-          bound_code[n.first] = name;
+          std::pair<StringRef, StringRef> split = StringRef(n.first).split(";");
+          b.name = split.first.str();
+          b.qual_name = split.second.str();
+          b.value = name;
+          bound_code.push_back(b);
         }
       }
       else {

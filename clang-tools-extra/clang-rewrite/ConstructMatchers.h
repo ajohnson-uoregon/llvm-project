@@ -1,11 +1,15 @@
 #ifndef CLANG_CONSTRUCT_MATCHERS_H
 #define CLANG_CONSTRUCT_MATCHERS_H
 
+#include "clang/ASTMatchers/Dynamic/Registry.h"
+#include "clang/ASTMatchers/ASTMatchers.h"
+#include "clang/ASTMatchers/ASTMatchersInternal.h"
 #include "clang/ASTMatchers/Dynamic/VariantValue.h"
 
 #include <string>
 #include <algorithm>
 
+using namespace clang::ast_matchers;
 using namespace clang::ast_matchers::dynamic;
 
 namespace clang {
@@ -313,6 +317,43 @@ public:
     delete this;
   }
 };
+
+VariantMatcher constructMatcher(StringRef MatcherName, int tab,
+                                Diagnostics *Error = nullptr);
+VariantMatcher constructMatcher(StringRef MatcherName,
+                                const VariantValue &Arg1,
+                                int tab,
+                                Diagnostics *Error = nullptr);
+VariantMatcher constructMatcher(StringRef MatcherName,
+                                const VariantValue &Arg1,
+                                const VariantValue &Arg2,
+                                int tab,
+                                Diagnostics *Error = nullptr);
+VariantMatcher constructMatcher(StringRef MatcherName,
+                                std::vector<VariantValue> args,
+                                int tab,
+                                Diagnostics* Error = nullptr);
+
+VariantMatcher constructBoundMatcher(StringRef MatcherName,
+                                     StringRef BoundName,
+                                     int tab,
+                                     Diagnostics *Error = nullptr);
+VariantMatcher constructBoundMatcher(StringRef MatcherName,
+                                     StringRef BoundName,
+                                     const VariantValue &Arg1,
+                                     int tab,
+                                     Diagnostics *Error = nullptr);
+VariantMatcher constructBoundMatcher(StringRef MatcherName,
+                                     StringRef BoundName,
+                                     const VariantValue &Arg1,
+                                     const VariantValue &Arg2,
+                                     int tab,
+                                     Diagnostics *Error = nullptr);
+VariantMatcher constructBoundMatcher(StringRef MatcherName,
+                                     StringRef BoundName,
+                                     std::vector<VariantValue> args,
+                                     int tab,
+                                     Diagnostics* Error = nullptr);
 
 VariantMatcher make_matcher(Node* root, int level);
 

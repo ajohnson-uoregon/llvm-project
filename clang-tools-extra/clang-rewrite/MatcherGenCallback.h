@@ -218,9 +218,9 @@ public:
     bool VisitDeclRefExpr(DeclRefExpr* ref) {
       ValueDecl* decl = ref->getDecl();
       std::string name = decl->getNameAsString();
-      // std::string name = decl->getQualifiedNameAsString();
-      // printf("name: %s\n", name.c_str());
-      // printf("qual name %s\n", qualname.c_str());
+      std::string qualname = decl->getQualifiedNameAsString();
+      printf("name: %s\n", name.c_str());
+      printf("qual name %s\n", qualname.c_str());
 
       if (is_literal(ref)) {
         Node* declref = add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref) +1);
@@ -244,7 +244,7 @@ public:
         if (is_template_param) {
           Node* declref = add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref) +1);
           declref->set_ignore_casts(true);
-          declref->bind_to(name);
+          declref->bind_to(name + ";" + qualname);
 
           add_node(MT::hasType, "hasType()", 1);
           ty = ref->getType();
@@ -259,7 +259,7 @@ public:
         else {
           Node* declref = add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref));
           declref->set_ignore_casts(true);
-          declref->bind_to(name);
+          declref->bind_to(name + ";" + qualname);
         }
       }
 
@@ -275,6 +275,7 @@ public:
 
     bool VisitVarDecl(VarDecl* decl) {
       std::string name = decl->getNameAsString();
+      std::string qualname = decl->getQualifiedNameAsString();
 
       // TODO: dunno if the number of children is always 1 but let's hope so for now
       if (is_literal(decl)) {
@@ -314,7 +315,7 @@ public:
               add_node(MT::ignoringParenImpCasts, "ignoringParenImpCasts()", 1);
             }
           }
-          d->bind_to(name);
+          d->bind_to(name + ";" + qualname);
         }
         else {
           Node* d = add_node(MT::varDecl, "varDecl()", 1);
@@ -326,7 +327,7 @@ public:
           }
           std::string type = decl->getType().getAsString();
           d->set_type(type);
-          d->bind_to(name);
+          d->bind_to(name + ";" + qualname);
         }
       }
       return true;

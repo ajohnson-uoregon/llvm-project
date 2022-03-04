@@ -73,7 +73,7 @@ std::string VariantValue_asString(VariantValue val, bool dump_matcher) {
 
 // make matchers for non-bound nodes
 VariantMatcher constructMatcher(StringRef MatcherName, int tab,
-                                Diagnostics *Error = nullptr) {
+                                Diagnostics *Error) {
   Diagnostics DummyError;
   if (!Error) {
     Error = &DummyError;
@@ -93,7 +93,7 @@ VariantMatcher constructMatcher(StringRef MatcherName, int tab,
 VariantMatcher constructMatcher(StringRef MatcherName,
                                 const VariantValue &Arg1,
                                 int tab,
-                                Diagnostics *Error = nullptr) {
+                                Diagnostics *Error) {
   Diagnostics DummyError;
   if (!Error) {
     Error = &DummyError;
@@ -118,7 +118,7 @@ VariantMatcher constructMatcher(StringRef MatcherName,
                                 const VariantValue &Arg1,
                                 const VariantValue &Arg2,
                                 int tab,
-                                Diagnostics *Error = nullptr) {
+                                Diagnostics *Error) {
   Diagnostics DummyError;
   if (!Error) {
     Error = &DummyError;
@@ -146,7 +146,7 @@ VariantMatcher constructMatcher(StringRef MatcherName,
 VariantMatcher constructMatcher(StringRef MatcherName,
                                 std::vector<VariantValue> args,
                                 int tab,
-                                Diagnostics* Error = nullptr) {
+                                Diagnostics* Error) {
   Diagnostics DummyError;
   if (!Error) {
     Error = &DummyError;
@@ -174,7 +174,7 @@ VariantMatcher constructMatcher(StringRef MatcherName,
 VariantMatcher constructBoundMatcher(StringRef MatcherName,
                                      StringRef BoundName,
                                      int tab,
-                                     Diagnostics *Error = nullptr) {
+                                     Diagnostics *Error) {
   Diagnostics DummyError;
   if (!Error) {
     Error = &DummyError;
@@ -195,7 +195,7 @@ VariantMatcher constructBoundMatcher(StringRef MatcherName,
                                      StringRef BoundName,
                                      const VariantValue &Arg1,
                                      int tab,
-                                     Diagnostics *Error = nullptr) {
+                                     Diagnostics *Error) {
   Diagnostics DummyError;
   if (!Error) {
     Error = &DummyError;
@@ -221,7 +221,7 @@ VariantMatcher constructBoundMatcher(StringRef MatcherName,
                                      const VariantValue &Arg1,
                                      const VariantValue &Arg2,
                                      int tab,
-                                     Diagnostics *Error = nullptr) {
+                                     Diagnostics *Error) {
   Diagnostics DummyError;
   if (!Error) {
     Error = &DummyError;
@@ -250,7 +250,7 @@ VariantMatcher constructBoundMatcher(StringRef MatcherName,
                                      StringRef BoundName,
                                      std::vector<VariantValue> args,
                                      int tab,
-                                     Diagnostics* Error = nullptr) {
+                                     Diagnostics* Error) {
   Diagnostics DummyError;
   if (!Error) {
     Error = &DummyError;
