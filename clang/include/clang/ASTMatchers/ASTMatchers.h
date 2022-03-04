@@ -2720,6 +2720,44 @@ AST_MATCHER_P(DesignatedInitExpr, designatorCountIs, unsigned, N) {
   return Node.size() == N;
 }
 
+/// Matches the attribute(s) attached to a Stmt
+///
+/// Example: Matches [[likely]] and [[unlikely]]
+/// \code
+///   constexpr double pow(double x, long long n) noexcept {
+///     if (n > 0) [[likely]]
+///          return x * pow(x, n - 1);
+///     else [[unlikely]]
+///          return 1;
+///   }
+/// \endcode
+extern const internal::VariadicDynCastAllOfMatcher<Stmt, AttributedStmt>
+    attributedStmt;
+
+/// Matches the specified attribute.
+///
+/// Example:
+/// \code
+///   attributedStmt(isAttr(attr::Likely))
+/// \endcode
+/// would only match [[likely]] here:
+/// \code
+///   constexpr double pow(double x, long long n) noexcept {
+///     if (n > 0) [[likely]]
+///          return x * pow(x, n - 1);
+///     else [[unlikely]]
+///          return 1;
+///   }
+/// \endcode
+AST_MATCHER_P(AttributedStmt, isAttr, attr::Kind, AttrKind) {
+  for (const auto *Attr : Node.getAttrs()) {
+    if (Attr->getKind() == AttrKind) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /// Matches \c QualTypes in the clang AST.
 extern const internal::VariadicAllOfMatcher<QualType> qualType;
 
