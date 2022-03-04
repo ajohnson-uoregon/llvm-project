@@ -3975,6 +3975,12 @@ def Matcher : CodeModifyAttr {
   let Documentation = [Undocumented];
 }
 
+def MatcherBlock : StmtAttr {
+  let Spellings = [Clang<"matcher_block">];
+  let Subjects = SubjectList<[CompoundStmt], ErrorDiag, "compound stmts">;
+  let Documentation = [Undocumented];
+}
+
 def HLSLNumThreads: InheritableAttr {
   let Spellings = [Microsoft<"numthreads">];
   let Args = [IntArgument<"X">, IntArgument<"Y">, IntArgument<"Z">];
@@ -3982,3 +3988,4 @@ def HLSLNumThreads: InheritableAttr {
   let LangOpts = [HLSL];
   let Documentation = [NumThreadsDocs];
 }
+

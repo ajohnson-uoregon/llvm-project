@@ -290,6 +290,11 @@ static Attr *handleUnlikely(Sema &S, Stmt *St, const ParsedAttr &A,
   return ::new (S.Context) UnlikelyAttr(S.Context, A);
 }
 
+static Attr *handleMatcherBlock(Sema &S, Stmt *St, const ParsedAttr &A,
+                            SourceRange Range) {
+  return ::new (S.Context) MatcherBlockAttr(S.Context, A);
+}
+
 #define WANT_STMT_MERGE_LOGIC
 #include "clang/Sema/AttrParsedAttrImpl.inc"
 #undef WANT_STMT_MERGE_LOGIC
@@ -485,6 +490,8 @@ static Attr *ProcessStmtAttribute(Sema &S, Stmt *St, const ParsedAttr &A,
     return handleLikely(S, St, A, Range);
   case ParsedAttr::AT_Unlikely:
     return handleUnlikely(S, St, A, Range);
+  case ParsedAttr::AT_MatcherBlock:
+    return handleMatcherBlock(S, St, A, Range);
   default:
     // N.B., ClangAttrEmitter.cpp emits a diagnostic helper that ensures a
     // declaration attribute is not written on a statement, but this code is
