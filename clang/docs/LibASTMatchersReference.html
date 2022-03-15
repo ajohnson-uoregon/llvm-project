@@ -1284,6 +1284,21 @@ Example matches __atomic_load_n(ptr, 1)
 </pre></td></tr>
 
 
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Stmt.html">Stmt</a>&gt;</td><td class="name" onclick="toggle('attributedStmt0')"><a name="attributedStmt0Anchor">attributedStmt</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1AttributedStmt.html">AttributedStmt</a>&gt;...</td></tr>
+<tr><td colspan="4" class="doc" id="attributedStmt0"><pre>Matches the attribute(s) attached to a Stmt
+
+Given:
+  constexpr double pow(double x, long long n) noexcept {
+    if (n &gt; 0) [[likely]]
+         return x * pow(x, n - 1);
+    else [[unlikely]]
+         return 1;
+  }
+attributedStmt() matches "[[likely]] return ...;" and
+"[[unlikely]] return 1;"
+</pre></td></tr>
+
+
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Stmt.html">Stmt</a>&gt;</td><td class="name" onclick="toggle('autoreleasePoolStmt0')"><a name="autoreleasePoolStmt0Anchor">autoreleasePoolStmt</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCAutoreleasePoolStmt.html">ObjCAutoreleasePoolStmt</a>&gt;...</td></tr>
 <tr><td colspan="4" class="doc" id="autoreleasePoolStmt0"><pre>Matches an Objective-C autorelease pool statement.
 
@@ -2858,6 +2873,17 @@ Example matches Y (matcher = cxxRecordDecl(unless(hasName("X"))))
   class Y {};
 
 Usable as: Any Matcher
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1AttributedStmt.html">AttributedStmt</a>&gt;</td><td class="name" onclick="toggle('hasAttr1')"><a name="hasAttr1Anchor">hasAttr</a></td><td>attr::Kind AttrKind</td></tr>
+<tr><td colspan="4" class="doc" id="hasAttr1"><pre>Matches declaration that has a given attribute.
+
+Given
+  __attribute__((device)) void f() { ... }
+decl(hasAttr(clang::attr::CUDADevice)) matches the function declaration of
+f. If the matcher is used from clang-query, attr::Kind parameter should be
+passed as a quoted string. e.g., hasAttr("attr::CUDADevice").
 </pre></td></tr>
 
 
@@ -6283,6 +6309,17 @@ atomicType(hasValueType(isInteger()))
  matches "_Atomic(int) i"
 
 Usable as: Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1AtomicType.html">AtomicType</a>&gt;
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1AttributedStmt.html">AttributedStmt</a>&gt;</td><td class="name" onclick="toggle('hasSubStmt0')"><a name="hasSubStmt0Anchor">hasSubStmt</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Stmt.html">Stmt</a>&gt; InnerMatcher</td></tr>
+<tr><td colspan="4" class="doc" id="hasSubStmt0"><pre>Matches the statement an attribute is attached to.
+
+Example:
+  attributedStmt(hasSubStmt(returnStmt()))
+would match "return 1;" here:
+  else [[unlikely]]
+    return 1;
 </pre></td></tr>
 
 
@@ -10070,5 +10107,3 @@ Example matches true (matcher = hasCondition(cxxBoolLiteral(equals(true))))
 </div>
 </body>
 </html>
-
-

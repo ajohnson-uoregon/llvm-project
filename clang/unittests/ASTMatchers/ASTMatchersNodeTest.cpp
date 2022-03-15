@@ -2602,6 +2602,37 @@ TEST(ASTMatchersTest, Finder_DynamicOnlyAcceptsSomeMatchers) {
   EXPECT_FALSE(Finder.addDynamicMatcher(hasName("x"), nullptr));
 }
 
+TEST(ASTMatchersTest, AttributedStmtBasic) {
+  StringRef Code = "int foo() { [[likely]] return 1; }";
+  EXPECT_TRUE(
+      matchesConditionally(Code, attributedStmt(), true, {"-std=c++20"}));
+}
+
+TEST(ASTMatchersTest, AttributedStmt_hasAttr) {
+  StringRef Code = "int foo() { [[unlikely]] return 1; }";
+  EXPECT_TRUE(matchesConditionally(
+      Code, attributedStmt(hasAttr(attr::Unlikely)), true, {"-std=c++20"}));
+  EXPECT_FALSE(matchesConditionally(
+      Code, attributedStmt(hasAttr(attr::Builtin)), true, {"-std=c++20"}));
+}
+
+TEST(ASTMatchersTest, AttributedStmt_hasSubStmt) {
+  StringRef Code = "int foo() { [[likely]] return 1; }";
+  EXPECT_TRUE(matchesConditionally(
+      Code, attributedStmt(hasSubStmt(returnStmt())), true, {"-std=c++20"}));
+  EXPECT_FALSE(matchesConditionally(Code, attributedStmt(hasSubStmt(ifStmt())),
+                                    true, {"-std=c++20"}));
+}
+
+TEST(ASTMatchersTest, AttributedStmt_multipleAttrs) {
+  StringRef Code = "int foo();\n int main() {\n  [[clang::nomerge]] [[likely]] "
+                   "return foo();\n }";
+  EXPECT_TRUE(matchesConditionally(Code, attributedStmt(hasAttr(attr::Likely)),
+                                   true, {"-std=c++20"}));
+  EXPECT_TRUE(matchesConditionally(Code, attributedStmt(hasAttr(attr::NoMerge)),
+                                   true, {"-std=c++20"}));
+}
+
 TEST(MatchFinderAPI, MatchesDynamic) {
   StringRef SourceCode = "struct A { void f() {} };";
   auto Matcher = functionDecl(isDefinition()).bind("method");

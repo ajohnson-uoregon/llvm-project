@@ -2722,7 +2722,7 @@ AST_MATCHER_P(DesignatedInitExpr, designatorCountIs, unsigned, N) {
 
 /// Matches the attribute(s) attached to a Stmt
 ///
-/// Example: Matches [[likely]] and [[unlikely]]
+/// Given:
 /// \code
 ///   constexpr double pow(double x, long long n) noexcept {
 ///     if (n > 0) [[likely]]
@@ -2731,31 +2731,27 @@ AST_MATCHER_P(DesignatedInitExpr, designatorCountIs, unsigned, N) {
 ///          return 1;
 ///   }
 /// \endcode
+/// attributedStmt() matches "[[likely]] return ...;" and
+/// "[[unlikely]] return 1;"
 extern const internal::VariadicDynCastAllOfMatcher<Stmt, AttributedStmt>
     attributedStmt;
 
-/// Matches the specified attribute.
+/// Matches the statement an attribute is attached to.
 ///
 /// Example:
 /// \code
-///   attributedStmt(isAttr(attr::Likely))
+///   attributedStmt(hasSubStmt(returnStmt()))
 /// \endcode
-/// would only match [[likely]] here:
+/// would match "return 1;" here:
 /// \code
-///   constexpr double pow(double x, long long n) noexcept {
-///     if (n > 0) [[likely]]
-///          return x * pow(x, n - 1);
-///     else [[unlikely]]
-///          return 1;
-///   }
+///   else [[unlikely]]
+///     return 1;
 /// \endcode
-AST_MATCHER_P(AttributedStmt, isAttr, attr::Kind, AttrKind) {
-  for (const auto *Attr : Node.getAttrs()) {
-    if (Attr->getKind() == AttrKind) {
-      return true;
-    }
-  }
-  return false;
+AST_MATCHER_P(AttributedStmt, hasSubStmt, internal::Matcher<Stmt>,
+              InnerMatcher) {
+  const Stmt *Statement = Node.getSubStmt();
+  return Statement != nullptr &&
+         InnerMatcher.matches(*Statement, Finder, Builder);
 }
 
 /// Matches \c QualTypes in the clang AST.
@@ -7909,12 +7905,11 @@ AST_MATCHER_P(CaseStmt, hasCaseConstant, internal::Matcher<Expr>,
 /// decl(hasAttr(clang::attr::CUDADevice)) matches the function declaration of
 /// f. If the matcher is used from clang-query, attr::Kind parameter should be
 /// passed as a quoted string. e.g., hasAttr("attr::CUDADevice").
-AST_MATCHER_P(Decl, hasAttr, attr::Kind, AttrKind) {
-  for (const auto *Attr : Node.attrs()) {
-    if (Attr->getKind() == AttrKind)
-      return true;
-  }
-  return false;
+AST_POLYMORPHIC_MATCHER_P(hasAttr,
+                          AST_POLYMORPHIC_SUPPORTED_TYPES(Decl, AttributedStmt),
+                          attr::Kind, AttrKind) {
+  return llvm::any_of(Node.getAttrs(),
+                      [&](const Attr *A) { return A->getKind() == AttrKind; });
 }
 
 /// Matches the return value expression of a return statement
