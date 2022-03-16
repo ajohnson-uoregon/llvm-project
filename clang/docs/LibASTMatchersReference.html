@@ -3062,6 +3062,17 @@ cxxCatchStmt(isCatchAll()) matches catch(...) but not catch(int).
 </pre></td></tr>
 
 
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXConstructExpr.html">CXXConstructExpr</a>&gt;</td><td class="name" onclick="toggle('argumentCountAsWrittenIs1')"><a name="argumentCountAsWrittenIs1Anchor">argumentCountAsWrittenIs</a></td><td>unsigned N</td></tr>
+<tr><td colspan="4" class="doc" id="argumentCountAsWrittenIs1"><pre>Checks that a call expression or a constructor call expression has
+a specific number of arguments (EXCLUDING absent default arguments).
+
+Example: callExpr(argumentCountAsWrittenIs(2)) matches f(0, 0) but not f(0)
+  void f(int x, int y = 0);
+  f(0, 0);
+  f(0);
+</pre></td></tr>
+
+
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXConstructExpr.html">CXXConstructExpr</a>&gt;</td><td class="name" onclick="toggle('argumentCountIs1')"><a name="argumentCountIs1Anchor">argumentCountIs</a></td><td>unsigned N</td></tr>
 <tr><td colspan="4" class="doc" id="argumentCountIs1"><pre>Checks that a call expression or a constructor call expression has
 a specific number of arguments (including absent default arguments).
@@ -3719,6 +3730,17 @@ Example 2: matches s1 &lt; s2
 </pre></td></tr>
 
 
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXUnresolvedConstructExpr.html">CXXUnresolvedConstructExpr</a>&gt;</td><td class="name" onclick="toggle('argumentCountAsWrittenIs2')"><a name="argumentCountAsWrittenIs2Anchor">argumentCountAsWrittenIs</a></td><td>unsigned N</td></tr>
+<tr><td colspan="4" class="doc" id="argumentCountAsWrittenIs2"><pre>Checks that a call expression or a constructor call expression has
+a specific number of arguments (EXCLUDING absent default arguments).
+
+Example: callExpr(argumentCountAsWrittenIs(2)) matches f(0, 0) but not f(0)
+  void f(int x, int y = 0);
+  f(0, 0);
+  f(0);
+</pre></td></tr>
+
+
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXUnresolvedConstructExpr.html">CXXUnresolvedConstructExpr</a>&gt;</td><td class="name" onclick="toggle('argumentCountIs2')"><a name="argumentCountIs2Anchor">argumentCountIs</a></td><td>unsigned N</td></tr>
 <tr><td colspan="4" class="doc" id="argumentCountIs2"><pre>Checks that a call expression or a constructor call expression has
 a specific number of arguments (including absent default arguments).
@@ -3726,6 +3748,17 @@ a specific number of arguments (including absent default arguments).
 Example matches f(0, 0) (matcher = callExpr(argumentCountIs(2)))
   void f(int x, int y);
   f(0, 0);
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CallExpr.html">CallExpr</a>&gt;</td><td class="name" onclick="toggle('argumentCountAsWrittenIs0')"><a name="argumentCountAsWrittenIs0Anchor">argumentCountAsWrittenIs</a></td><td>unsigned N</td></tr>
+<tr><td colspan="4" class="doc" id="argumentCountAsWrittenIs0"><pre>Checks that a call expression or a constructor call expression has
+a specific number of arguments (EXCLUDING absent default arguments).
+
+Example: callExpr(argumentCountAsWrittenIs(2)) matches f(0, 0) but not f(0)
+  void f(int x, int y = 0);
+  f(0, 0);
+  f(0);
 </pre></td></tr>
 
 
@@ -4883,6 +4916,17 @@ Given
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCInterfaceDecl.html">ObjCInterfaceDecl</a>&gt;</td><td class="name" onclick="toggle('isSameOrDerivedFrom3')"><a name="isSameOrDerivedFrom3Anchor">isSameOrDerivedFrom</a></td><td>std::string BaseName</td></tr>
 <tr><td colspan="4" class="doc" id="isSameOrDerivedFrom3"><pre>Overloaded method as shortcut for
 isSameOrDerivedFrom(hasName(...)).
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCMessageExpr.html">ObjCMessageExpr</a>&gt;</td><td class="name" onclick="toggle('argumentCountAsWrittenIs3')"><a name="argumentCountAsWrittenIs3Anchor">argumentCountAsWrittenIs</a></td><td>unsigned N</td></tr>
+<tr><td colspan="4" class="doc" id="argumentCountAsWrittenIs3"><pre>Checks that a call expression or a constructor call expression has
+a specific number of arguments (EXCLUDING absent default arguments).
+
+Example: callExpr(argumentCountAsWrittenIs(2)) matches f(0, 0) but not f(0)
+  void f(int x, int y = 0);
+  f(0, 0);
+  f(0);
 </pre></td></tr>
 
 
