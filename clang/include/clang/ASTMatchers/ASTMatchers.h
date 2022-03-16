@@ -3989,6 +3989,42 @@ AST_POLYMORPHIC_MATCHER_P_OVERLOAD(
   return false;
 }
 
+/// Matches the type of a return statement as declared by the enclosing
+/// function.
+///
+/// Example: returnStmt(hasExpectedReturnType(asString("int *"))) will match
+/// return 0; in
+/// \code
+///   int* foo() {
+///     return 0;
+///   }
+/// \endcode
+/// despite the return value being an IntegerLiteral.
+
+AST_MATCHER_P(ReturnStmt, hasExpectedReturnType, internal::Matcher<QualType>,
+              InnerMatcher) {
+  const auto &Parents = Finder->getASTContext().getParents(Node);
+
+  llvm::SmallVector<DynTypedNode, 8> Stack(Parents.begin(), Parents.end());
+  const FunctionDecl *FuncDeclNode;
+  while (!Stack.empty()) {
+    const auto &CurNode = Stack.back();
+    Stack.pop_back();
+    FuncDeclNode = CurNode.get<FunctionDecl>();
+    if (FuncDeclNode != nullptr) {
+      break;
+    } else {
+      for (const auto &Parent : Finder->getASTContext().getParents(CurNode))
+        Stack.push_back(Parent);
+    }
+  }
+  if (FuncDeclNode == nullptr) {
+    return false;
+  } else {
+    return InnerMatcher.matches(FuncDeclNode->getReturnType(), Finder, Builder);
+  }
+}
+
 /// Matches if the type location of a node matches the inner matcher.
 ///
 /// Examples:
