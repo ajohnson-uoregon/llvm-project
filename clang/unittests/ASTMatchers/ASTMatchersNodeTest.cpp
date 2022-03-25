@@ -184,9 +184,9 @@ TEST(ASTMatchersTestCUDA, CUDAKernelCallExpr) {
 
 TEST(ASTMatchersTestCUDA, HasAttrCUDA) {
   EXPECT_TRUE(matchesWithCuda("__attribute__((device)) void f() {}",
-                              hasAttr(clang::attr::CUDADevice)));
+                              decl(hasAttr(clang::attr::CUDADevice))));
   EXPECT_FALSE(notMatchesWithCuda("__attribute__((global)) void f() {}",
-                                  hasAttr(clang::attr::CUDAGlobal)));
+                                  decl(hasAttr(clang::attr::CUDAGlobal))));
 }
 
 TEST_P(ASTMatchersTest, ValueDecl) {
