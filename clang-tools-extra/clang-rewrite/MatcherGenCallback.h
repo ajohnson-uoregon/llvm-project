@@ -513,7 +513,7 @@ DeclarationMatcher matcher =
     hasAttr(attr::Matcher),
     hasBody(compoundStmt(
       hasAnySubstatement(attributedStmt(allOf(
-        isAttr(attr::MatcherBlock),
+        hasAttr(attr::MatcherBlock),
         hasSubStmt(compoundStmt(anything()).bind("body"))
       )))
     ))

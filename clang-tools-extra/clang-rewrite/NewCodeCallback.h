@@ -27,7 +27,7 @@ DeclarationMatcher insert_before_match =
     hasAttr(attr::InsertCodeBefore),
     hasBody(compoundStmt(
       hasAnySubstatement(attributedStmt(allOf(
-        isAttr(attr::MatcherBlock),
+        hasAttr(attr::MatcherBlock),
         hasSubStmt(compoundStmt(anything()).bind("body"))
       )))
     ))
@@ -38,7 +38,7 @@ DeclarationMatcher insert_after_match =
     hasAttr(attr::InsertCodeAfter),
     hasBody(compoundStmt(
       hasAnySubstatement(attributedStmt(allOf(
-        isAttr(attr::MatcherBlock),
+        hasAttr(attr::MatcherBlock),
         hasSubStmt(compoundStmt(anything()).bind("body"))
       )))
     ))
@@ -49,7 +49,7 @@ DeclarationMatcher replace_match =
     hasAttr(attr::ReplaceCode),
     hasBody(compoundStmt(
       hasAnySubstatement(attributedStmt(allOf(
-        isAttr(attr::MatcherBlock),
+        hasAttr(attr::MatcherBlock),
         hasSubStmt(compoundStmt(anything()).bind("body"))
       )))
     ))

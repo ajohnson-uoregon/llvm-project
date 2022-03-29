@@ -4,6 +4,7 @@
 #include "clang/ASTMatchers/Dynamic/Registry.h"
 
 #include "ConstructMatchers.h"
+#include "LocalASTMatchers.h"
 
 #include <vector>
 #include <string>
@@ -542,7 +543,7 @@ VariantMatcher handle_callExpr(Node* root, std::string call_type, int level) {
         }
       }
     }
-    child_matchers.push_back(constructMatcher("argumentsGivenCountIs", VariantValue(argnum), level+5));
+    child_matchers.push_back(constructMatcher("argumentCountAsWrittenIs", VariantValue(argnum), level+5));
   }
   if (child_matchers.size() < 1) {
     // guarantee child_matchers.size() >= 1 (also required to not make an
