@@ -7937,6 +7937,20 @@ AST_MATCHER_P(ReturnStmt, hasReturnValue, internal::Matcher<Expr>,
 extern const internal::VariadicDynCastAllOfMatcher<Stmt, CUDAKernelCallExpr>
     cudaKernelCallExpr;
 
+/// Matches the kernel launch config (in <<<>>>) on CUDA kernel calls.
+///
+/// Example: cudaKernelCallExpr(hasKernelConfig()) will match <<<i,j>>> in
+/// \code
+///   kernel<<<i,j>>>();
+/// \endcode
+AST_MATCHER_P(CUDAKernelCallExpr, hasKernelConfig, internal::Matcher<CallExpr>,
+              InnerMatcher) {
+  if (const CallExpr *Config = Node.getConfig()) {
+    return InnerMatcher.matches(*Config, Finder, Builder);
+  }
+  return false;
+}
+
 /// Matches expressions that resolve to a null pointer constant, such as
 /// GNU's __null, C++11's nullptr, or C's NULL macro.
 ///
