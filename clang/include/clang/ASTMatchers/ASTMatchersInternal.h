@@ -35,6 +35,7 @@
 #define LLVM_CLANG_ASTMATCHERS_ASTMATCHERSINTERNAL_H
 
 #include "clang/AST/ASTTypeTraits.h"
+#include "clang/AST/Attr.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclFriend.h"
@@ -2166,6 +2167,21 @@ template <>
 inline const CompoundStmt *
 CompoundStmtMatcher<StmtExpr>::get(const StmtExpr &Node) {
   return Node.getSubStmt();
+}
+
+template <typename Ty> struct HasAttrMatcher {
+  static bool hasAttr(const Ty &Node, attr::Kind AttrKind) {
+    return llvm::any_of(Node.getAttrs(), [&](const Attr *A) {
+      return A->getKind() == AttrKind;
+    });
+  }
+};
+
+template <>
+inline bool HasAttrMatcher<Decl>::hasAttr(const Decl &Node,
+                                          attr::Kind AttrKind) {
+  return llvm::any_of(Node.attrs(),
+                      [&](const Attr *A) { return A->getKind() == AttrKind; });
 }
 
 /// If \p Loc is (transitively) expanded from macro \p MacroName, returns the

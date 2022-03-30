@@ -7908,8 +7908,7 @@ AST_MATCHER_P(CaseStmt, hasCaseConstant, internal::Matcher<Expr>,
 AST_POLYMORPHIC_MATCHER_P(hasAttr,
                           AST_POLYMORPHIC_SUPPORTED_TYPES(Decl, AttributedStmt),
                           attr::Kind, AttrKind) {
-  return llvm::any_of(Node.getAttrs(),
-                      [&](const Attr *A) { return A->getKind() == AttrKind; });
+  return internal::HasAttrMatcher<NodeType>::hasAttr(Node, AttrKind);
 }
 
 /// Matches the return value expression of a return statement
