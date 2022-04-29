@@ -6,6 +6,7 @@
 #include <vector>
 #include "clang/Tooling/Tooling.h"
 #include "llvm/Support/FileSystem.h"
+#include "clang/Basic/Builtins.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Basic/FileManager.h"
@@ -17,6 +18,7 @@
 #include "llvm/Support/MemoryBufferRef.h"
 
 #include "ConstructMatchers.h"
+#include "ClangRewriteUtils.h"
 
 using namespace clang;
 using namespace clang::ast_matchers;
@@ -39,21 +41,52 @@ typedef struct Binding {
 
 class ReplaceBindingsCallback : public MatchFinder::MatchCallback {
 public:
+  FileID fid;
   ASTContext* context;
+
+  ReplaceBindingsCallback(FileID fid) : fid(fid) {}
+
+  ~ReplaceBindingsCallback() {}
 
   void run(const MatchFinder::MatchResult &result) override {
     printf("found match for binding\n");
     context = result.Context;
 
     const Expr* expr = result.Nodes.getNodeAs<Expr>("match");
+    const NamedDecl* decl = result.Nodes.getNodeAs<NamedDecl>("match");
+
+    bool expr_valid = true;
+    bool decl_valid = true;
 
     if (!expr ||
-        !context->getSourceManager().isWrittenInMainFile(expr->getBeginLoc())) {
-      printf("ERROR: invalid binding match loc\n");
+        !context->getSourceManager().isInFileID(expr->getBeginLoc(), fid)) {
+      printf("ERROR: invalid expr binding match loc\n");
+      expr_valid = false;
     }
 
-    FullSourceLoc begin = context->getFullLoc(expr->getBeginLoc());
-    FullSourceLoc end = context->getFullLoc(expr->getEndLoc());
+    if (!decl ||
+        !context->getSourceManager().isInFileID(decl->getBeginLoc(), fid)) {
+      printf("ERROR: invalid decl binding match loc\n");
+      decl_valid = false;
+    }
+
+    if (!expr_valid && !decl_valid) {
+      printf("ERROR: no valid binding match loc\n");
+      return;
+    }
+
+    FullSourceLoc begin;
+    FullSourceLoc end;
+
+    if (expr_valid) {
+      begin = context->getFullLoc(expr->getBeginLoc());
+      end = context->getFullLoc(expr->getEndLoc());
+    }
+    else if (decl_valid) {
+      begin = context->getFullLoc(decl->getBeginLoc());
+      end = context->getFullLoc(decl->getEndLoc());
+    }
+
     unsigned int begin_line = begin.getSpellingLineNumber();
     unsigned int begin_col = begin.getSpellingColumnNumber();
     unsigned int end_line = end.getSpellingLineNumber();
@@ -66,7 +99,7 @@ public:
 
 class CodeAction {
 public:
-  ASTContext& context;
+  ASTContext* context;
   std::vector<DynTypedNode> nodes;
   std::string base_code_snippet; // the code as it appears in the spec
   std::string edited_code_snippet; // the code after bound snippets have been copy-pasted in
@@ -85,14 +118,21 @@ public:
     new llvm::vfs::OverlayFileSystem(llvm::vfs::getRealFileSystem());
   FileManager Files;
 
-  CodeAction(ASTContext& context, std::vector<DynTypedNode> nodes, NewCodeKind kind,
-             std::vector<std::string> matcher_names, std::string code, std::string action_name)
-      : context(context), nodes(nodes), base_code_snippet(code), kind(kind),
+  // ASTContext (LangOptions &LOpts, SourceManager &SM, IdentifierTable &idents,
+  //   SelectorTable &sels, Builtin::Context &builtins, TranslationUnitKind TUKind)
+
+  CodeAction(SourceManager& SM, LangOptions LangOpts, IdentifierTable& idents,
+      SelectorTable& selectors, Builtin::Context builtins, TranslationUnitKind TUKind,
+      std::vector<DynTypedNode> nodes, NewCodeKind kind,
+      std::vector<std::string> matcher_names, std::string code, std::string action_name)
+      :
+        nodes(nodes), base_code_snippet(code), kind(kind),
         matcher_names(matcher_names), action_name(action_name),
-        rewrite(context.getSourceManager(), context.getLangOpts()),
+        rewrite(SM, LangOpts),
         Diagnostics(IntrusiveRefCntPtr<DiagnosticIDs>(new DiagnosticIDs), &*DiagOpts),
         Files(FileSystemOptions(), OverlayFileSystem)
   {
+    context = new ASTContext(LangOpts, SM, idents, selectors, builtins, TUKind);
     OverlayFileSystem->pushOverlay(InMemoryFileSystem);
     snippet_file = createInMemoryFile(action_name, base_code_snippet);
     // llvm::Optional<llvm::MemoryBufferRef> buff = Sources.getBufferOrNone(snippet_file);
@@ -151,7 +191,7 @@ public:
 
     auto Entry = Files.getOptionalFileRef(Name);
     assert(Entry);
-    return context.getSourceManager().createFileID(*Entry, SourceLocation(), SrcMgr::C_User);
+    return context->getSourceManager().createFileID(*Entry, SourceLocation(), SrcMgr::C_User);
   }
 
   void dump_bindings(std::vector<Binding>& bindings) {
@@ -224,7 +264,7 @@ public:
 
     for (Binding b : bindings) {
       printf("LOOKING for things named %s\n", b.name.c_str());
-      ReplaceBindingsCallback cb;
+      ReplaceBindingsCallback cb(snippet_file);
       MatchFinder finder;
       VariantMatcher declmatcher =
         constructBoundMatcher("namedDecl", "match",
@@ -264,7 +304,7 @@ public:
       // for (DynTypedNode n : nodes) {
       //   finder.match(n, context);
       // }
-      finder.matchAST(context);
+      finder.matchAST(*context);
     }
 
     // iterator token_iter = tokens.begin();

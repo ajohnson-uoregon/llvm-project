@@ -182,7 +182,9 @@ public:
       nodes.push_back(DynTypedNode::create(*s));
     }
     CodeAction *act =
-        new CodeAction(*context, nodes, kind, matcher_names, std::string(code), action_name);
+        new CodeAction(context->getSourceManager(), context->getLangOpts(),
+        context->Idents, context->Selectors, context->BuiltinInfo, context->TUKind,
+        nodes, kind, matcher_names, std::string(code), action_name);
     all_actions.push_back(act);
 
     delete[] code;

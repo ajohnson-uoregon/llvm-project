@@ -13,6 +13,7 @@
 #include "clang/Rewrite/Core/RewriteBuffer.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 
+#include "ClangRewriteUtils.h"
 #include "CodeAction.h"
 #include "RewriteCallback.h"
 #include "MatcherWrapper.h"
@@ -84,13 +85,28 @@ int main(int argc, const char **argv) {
     llvm::errs() << ExpectedParser.takeError();
     return 1;
   }
+
   CommonOptionsParser &OptionsParser = ExpectedParser.get();
+  std::vector<std::string> sources = OptionsParser.getSourcePathList();
+  std::vector<std::string> spec_files;
+  std::vector<std::string> all_files = sources;
+  if (!inst_file.empty()) {
+    spec_files.push_back(inst_file);
+  }
+  all_files.insert(all_files.end(), spec_files.begin(), spec_files.end());
   ClangTool Tool(OptionsParser.getCompilations(),
-                 OptionsParser.getSourcePathList());
+                 all_files);
 
   // for (std::string path : OptionsParser.getSourcePathList()) {
   //   printf("source path %s\n", path.c_str());
   // }
+
+  for (std::string file : sources) {
+    llvm::ErrorOr<const FileEntry*> entry = Tool.getFiles().getFile(file);
+    if (entry) {
+      source_file_entries.push_back(*entry);
+    }
+  }
 
   if (norewrite_file) {
     rewrite_file = false;
@@ -101,14 +117,14 @@ int main(int argc, const char **argv) {
   int retval;
   // TODO: multiple inst files
   if (!inst_file.empty()) {
-    ClangTool InstTool(OptionsParser.getCompilations(), {inst_file});
+    // Tool(OptionsParser.getCompilations(), {inst_file});
 
     MatchFinder literal_finder;
     FindLiteralsCallback literals_callback;
 
     literal_finder.addMatcher(literal_vector, &literals_callback);
 
-    retval = InstTool.run(newFrontendActionFactory(&literal_finder).get());
+    retval = Tool.run(newFrontendActionFactory(&literal_finder).get());
     if (retval) {
       printf("Problems with finding literals.\n");
       return retval;
@@ -125,7 +141,7 @@ int main(int argc, const char **argv) {
     inst_finder.addMatcher(replace_match, &replace_callback);
     inst_finder.addMatcher(matcher, &matcher_callback);
 
-    retval = InstTool.run(newFrontendActionFactory(&inst_finder).get());
+    retval = Tool.run(newFrontendActionFactory(&inst_finder).get());
     if (retval) {
       printf("Problems with creating matchers and tranformations.\n");
       return retval;

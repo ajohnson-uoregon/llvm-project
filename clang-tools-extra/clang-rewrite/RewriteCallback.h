@@ -12,6 +12,7 @@
 
 #include "CodeAction.h"
 #include "MatcherWrapper.h"
+#include "ClangRewriteUtils.h"
 
 #include <algorithm>
 #include <fstream>
@@ -191,10 +192,12 @@ public:
     const Decl *dmatch = result.Nodes.getNodeAs<Decl>("clang_rewrite_top_level_match");
     // const Type *tmatch = result.Nodes.getNodeAs<Type>
 
-    if ((!smatch || !context->getSourceManager().isInMainFile(
-                      smatch->getBeginLoc()))
-    && (!dmatch || !context->getSourceManager().isInMainFile(
-                      dmatch->getBeginLoc()))) {
+    if ((!smatch ||
+         !isInOneOfFileIDs(smatch->getBeginLoc(), source_file_entries,
+                           context->getSourceManager()))
+    && (!dmatch || 
+        !isInOneOfFileIDs(dmatch->getBeginLoc(), source_file_entries,
+                          context->getSourceManager()))) {
       // if (verbose) {
        // printf("no match or invalid type\n");
       // }
