@@ -21,7 +21,7 @@ namespace ast_matchers {
 /// \endcode
 /// despite the return value being an IntegerLiteral.
 
-AST_MATCHER_P(ReturnStmt, hasExpectedReturnType, internal::Matcher<QualType>,
+/*AST_MATCHER_P(ReturnStmt, hasExpectedReturnType, internal::Matcher<QualType>,
               InnerMatcher) {
   const auto &Parents = Finder->getASTContext().getParents(Node);
 
@@ -43,7 +43,7 @@ AST_MATCHER_P(ReturnStmt, hasExpectedReturnType, internal::Matcher<QualType>,
   } else {
     return InnerMatcher.matches(FuncDeclNode->getReturnType(), Finder, Builder);
   }
-}
+}*/
 
 /// Matches the first argument (grid dim) in <<<>>> on CUDA kernel calls.
 ///
