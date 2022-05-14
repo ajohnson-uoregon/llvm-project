@@ -2404,22 +2404,6 @@ auto cudaFuncCache_replace() {
   }
 }
 
-[[clang::matcher("cudaFunction_t type")]]
-auto cudaFunction_t_type() {
-  [[clang::matcher_block]]
-  {
-    cudaFunction_t varname;
-  }
-}
-
-[[clang::replace("cudaFunction_t type")]]
-auto cudaFunction_t_replace() {
-  [[clang::matcher_block]]
-  {
-    hipFunction_t varname;
-  }
-}
-
 [[clang::matcher("cudaGLDeviceList type")]]
 auto cudaGLDeviceList_type() {
   [[clang::matcher_block]]
@@ -2433,22 +2417,6 @@ auto cudaGLDeviceList_replace() {
   [[clang::matcher_block]]
   {
     hipGLDeviceList varname;
-  }
-}
-
-[[clang::matcher("cudaGraphExecUpdateResult type")]]
-auto cudaGraphExecUpdateResult_type() {
-  [[clang::matcher_block]]
-  {
-    cudaGraphExecUpdateResult varname;
-  }
-}
-
-[[clang::replace("cudaGraphExecUpdateResult type")]]
-auto cudaGraphExecUpdateResult_replace() {
-  [[clang::matcher_block]]
-  {
-    hipGraphExecUpdateResult varname;
   }
 }
 
@@ -4189,24 +4157,6 @@ auto cudaGraphAddMemcpyNode5_replace() {
   [[clang::matcher_block]]
   {
     hipGraphAddMemcpyNode(arg1, arg2, arg3, arg4, arg5);
-  }
-}
-
-template<cudaGraphNode_t * arg1, cudaGraph_t arg2, const cudaGraphNode_t * arg3, size_t arg4, void * arg5, void * arg6, size_t arg7, cudaMemcpyKind arg8>
-[[clang::matcher("cudaGraphAddMemcpyNode1D 8 func")]]
-auto cudaGraphAddMemcpyNode1D8_func() {
-  [[clang::matcher_block]]
-  {
-    cudaGraphAddMemcpyNode1D(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-  }
-}
-
-template<hipGraphNode_t *  arg1, hipGraph_t  arg2, const hipGraphNode_t *  arg3, size_t  arg4, void *  arg5, void *  arg6, size_t  arg7, hipMemcpyKind  arg8>
-[[clang::replace("cudaGraphAddMemcpyNode1D 8 func")]]
-auto cudaGraphAddMemcpyNode1D8_replace() {
-  [[clang::matcher_block]]
-  {
-    hipGraphAddMemcpyNode1D(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
   }
 }
 

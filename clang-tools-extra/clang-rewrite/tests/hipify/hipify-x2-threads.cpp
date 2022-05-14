@@ -245,13 +245,13 @@ auto cuda_kernel_launch_0_2() {
   }
 }
 
-template <int numblocks, int numthreads3D>
+template <int numblocks, int numthreads>
 [[clang::replace("kernel_launch 0 args 2 params")]]
 auto cuda_kernel_launch_0_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0);
   }
 }
@@ -265,13 +265,13 @@ auto cuda_kernel_launch_0_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem>
+template <int numblocks, int numthreads, int shmem>
 [[clang::replace("kernel_launch 0 args 3 params")]]
 auto cuda_kernel_launch_0_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0);
   }
 }
@@ -285,13 +285,13 @@ auto cuda_kernel_launch_0_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream>
 [[clang::replace("kernel_launch 0 args 4 params")]]
 auto cuda_kernel_launch_0_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream);
   }
 }
@@ -305,13 +305,13 @@ auto cuda_kernel_launch_1_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1>
+template <int numblocks, int numthreads, int arg1>
 [[clang::replace("kernel_launch 1 args 2 params")]]
 auto cuda_kernel_launch_1_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1);
   }
 }
@@ -325,13 +325,13 @@ auto cuda_kernel_launch_1_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1>
+template <int numblocks, int numthreads, int shmem, int arg1>
 [[clang::replace("kernel_launch 1 args 3 params")]]
 auto cuda_kernel_launch_1_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1);
   }
 }
@@ -345,13 +345,13 @@ auto cuda_kernel_launch_1_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1>
 [[clang::replace("kernel_launch 1 args 4 params")]]
 auto cuda_kernel_launch_1_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1);
   }
 }
@@ -365,13 +365,13 @@ auto cuda_kernel_launch_2_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2>
+template <int numblocks, int numthreads, int arg1, int arg2>
 [[clang::replace("kernel_launch 2 args 2 params")]]
 auto cuda_kernel_launch_2_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2);
   }
 }
@@ -385,13 +385,13 @@ auto cuda_kernel_launch_2_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2>
 [[clang::replace("kernel_launch 2 args 3 params")]]
 auto cuda_kernel_launch_2_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2);
   }
 }
@@ -405,13 +405,13 @@ auto cuda_kernel_launch_2_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2>
 [[clang::replace("kernel_launch 2 args 4 params")]]
 auto cuda_kernel_launch_2_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2);
   }
 }
@@ -425,13 +425,13 @@ auto cuda_kernel_launch_3_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3>
 [[clang::replace("kernel_launch 3 args 2 params")]]
 auto cuda_kernel_launch_3_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3);
   }
 }
@@ -445,13 +445,13 @@ auto cuda_kernel_launch_3_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3>
 [[clang::replace("kernel_launch 3 args 3 params")]]
 auto cuda_kernel_launch_3_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3);
   }
 }
@@ -465,13 +465,13 @@ auto cuda_kernel_launch_3_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3>
 [[clang::replace("kernel_launch 3 args 4 params")]]
 auto cuda_kernel_launch_3_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3);
   }
 }
@@ -485,13 +485,13 @@ auto cuda_kernel_launch_4_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4>
 [[clang::replace("kernel_launch 4 args 2 params")]]
 auto cuda_kernel_launch_4_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4);
   }
 }
@@ -505,13 +505,13 @@ auto cuda_kernel_launch_4_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4>
 [[clang::replace("kernel_launch 4 args 3 params")]]
 auto cuda_kernel_launch_4_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4);
   }
 }
@@ -525,13 +525,13 @@ auto cuda_kernel_launch_4_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4>
 [[clang::replace("kernel_launch 4 args 4 params")]]
 auto cuda_kernel_launch_4_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4);
   }
 }
@@ -545,13 +545,13 @@ auto cuda_kernel_launch_5_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5>
 [[clang::replace("kernel_launch 5 args 2 params")]]
 auto cuda_kernel_launch_5_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5);
   }
 }
@@ -565,13 +565,13 @@ auto cuda_kernel_launch_5_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5>
 [[clang::replace("kernel_launch 5 args 3 params")]]
 auto cuda_kernel_launch_5_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5);
   }
 }
@@ -585,13 +585,13 @@ auto cuda_kernel_launch_5_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5>
 [[clang::replace("kernel_launch 5 args 4 params")]]
 auto cuda_kernel_launch_5_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5);
   }
 }
@@ -605,13 +605,13 @@ auto cuda_kernel_launch_6_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6>
 [[clang::replace("kernel_launch 6 args 2 params")]]
 auto cuda_kernel_launch_6_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6);
   }
 }
@@ -625,13 +625,13 @@ auto cuda_kernel_launch_6_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6>
 [[clang::replace("kernel_launch 6 args 3 params")]]
 auto cuda_kernel_launch_6_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6);
   }
 }
@@ -645,13 +645,13 @@ auto cuda_kernel_launch_6_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6>
 [[clang::replace("kernel_launch 6 args 4 params")]]
 auto cuda_kernel_launch_6_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6);
   }
 }
@@ -665,13 +665,13 @@ auto cuda_kernel_launch_7_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7>
 [[clang::replace("kernel_launch 7 args 2 params")]]
 auto cuda_kernel_launch_7_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
   }
 }
@@ -685,13 +685,13 @@ auto cuda_kernel_launch_7_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7>
 [[clang::replace("kernel_launch 7 args 3 params")]]
 auto cuda_kernel_launch_7_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
   }
 }
@@ -705,13 +705,13 @@ auto cuda_kernel_launch_7_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7>
 [[clang::replace("kernel_launch 7 args 4 params")]]
 auto cuda_kernel_launch_7_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
   }
 }
@@ -725,13 +725,13 @@ auto cuda_kernel_launch_8_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8>
 [[clang::replace("kernel_launch 8 args 2 params")]]
 auto cuda_kernel_launch_8_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
   }
 }
@@ -745,13 +745,13 @@ auto cuda_kernel_launch_8_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8>
 [[clang::replace("kernel_launch 8 args 3 params")]]
 auto cuda_kernel_launch_8_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
   }
 }
@@ -765,13 +765,13 @@ auto cuda_kernel_launch_8_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8>
 [[clang::replace("kernel_launch 8 args 4 params")]]
 auto cuda_kernel_launch_8_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
   }
 }
@@ -785,13 +785,13 @@ auto cuda_kernel_launch_9_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9>
 [[clang::replace("kernel_launch 9 args 2 params")]]
 auto cuda_kernel_launch_9_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
   }
 }
@@ -805,13 +805,13 @@ auto cuda_kernel_launch_9_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9>
 [[clang::replace("kernel_launch 9 args 3 params")]]
 auto cuda_kernel_launch_9_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
   }
 }
@@ -825,13 +825,13 @@ auto cuda_kernel_launch_9_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9>
 [[clang::replace("kernel_launch 9 args 4 params")]]
 auto cuda_kernel_launch_9_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
   }
 }
@@ -845,13 +845,13 @@ auto cuda_kernel_launch_10_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10>
 [[clang::replace("kernel_launch 10 args 2 params")]]
 auto cuda_kernel_launch_10_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
   }
 }
@@ -865,13 +865,13 @@ auto cuda_kernel_launch_10_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10>
 [[clang::replace("kernel_launch 10 args 3 params")]]
 auto cuda_kernel_launch_10_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
   }
 }
@@ -885,13 +885,13 @@ auto cuda_kernel_launch_10_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10>
 [[clang::replace("kernel_launch 10 args 4 params")]]
 auto cuda_kernel_launch_10_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
   }
 }
@@ -905,13 +905,13 @@ auto cuda_kernel_launch_11_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11>
 [[clang::replace("kernel_launch 11 args 2 params")]]
 auto cuda_kernel_launch_11_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
   }
 }
@@ -925,13 +925,13 @@ auto cuda_kernel_launch_11_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11>
 [[clang::replace("kernel_launch 11 args 3 params")]]
 auto cuda_kernel_launch_11_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
   }
 }
@@ -945,13 +945,13 @@ auto cuda_kernel_launch_11_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11>
 [[clang::replace("kernel_launch 11 args 4 params")]]
 auto cuda_kernel_launch_11_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
   }
 }
@@ -965,13 +965,13 @@ auto cuda_kernel_launch_12_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12>
 [[clang::replace("kernel_launch 12 args 2 params")]]
 auto cuda_kernel_launch_12_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
   }
 }
@@ -985,13 +985,13 @@ auto cuda_kernel_launch_12_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12>
 [[clang::replace("kernel_launch 12 args 3 params")]]
 auto cuda_kernel_launch_12_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
   }
 }
@@ -1005,13 +1005,13 @@ auto cuda_kernel_launch_12_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12>
 [[clang::replace("kernel_launch 12 args 4 params")]]
 auto cuda_kernel_launch_12_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
   }
 }
@@ -1025,13 +1025,13 @@ auto cuda_kernel_launch_13_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13>
 [[clang::replace("kernel_launch 13 args 2 params")]]
 auto cuda_kernel_launch_13_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13);
   }
 }
@@ -1045,13 +1045,13 @@ auto cuda_kernel_launch_13_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13>
 [[clang::replace("kernel_launch 13 args 3 params")]]
 auto cuda_kernel_launch_13_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13);
   }
 }
@@ -1065,13 +1065,13 @@ auto cuda_kernel_launch_13_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13>
 [[clang::replace("kernel_launch 13 args 4 params")]]
 auto cuda_kernel_launch_13_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13);
   }
 }
@@ -1085,13 +1085,13 @@ auto cuda_kernel_launch_14_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14>
 [[clang::replace("kernel_launch 14 args 2 params")]]
 auto cuda_kernel_launch_14_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
   }
 }
@@ -1105,13 +1105,13 @@ auto cuda_kernel_launch_14_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14>
 [[clang::replace("kernel_launch 14 args 3 params")]]
 auto cuda_kernel_launch_14_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
   }
 }
@@ -1125,13 +1125,13 @@ auto cuda_kernel_launch_14_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14>
 [[clang::replace("kernel_launch 14 args 4 params")]]
 auto cuda_kernel_launch_14_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
   }
 }
@@ -1145,13 +1145,13 @@ auto cuda_kernel_launch_15_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15>
 [[clang::replace("kernel_launch 15 args 2 params")]]
 auto cuda_kernel_launch_15_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15);
   }
 }
@@ -1165,13 +1165,13 @@ auto cuda_kernel_launch_15_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15>
 [[clang::replace("kernel_launch 15 args 3 params")]]
 auto cuda_kernel_launch_15_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15);
   }
 }
@@ -1185,13 +1185,13 @@ auto cuda_kernel_launch_15_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15>
 [[clang::replace("kernel_launch 15 args 4 params")]]
 auto cuda_kernel_launch_15_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15);
   }
 }
@@ -1205,13 +1205,13 @@ auto cuda_kernel_launch_16_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16>
 [[clang::replace("kernel_launch 16 args 2 params")]]
 auto cuda_kernel_launch_16_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16);
   }
 }
@@ -1225,13 +1225,13 @@ auto cuda_kernel_launch_16_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16>
 [[clang::replace("kernel_launch 16 args 3 params")]]
 auto cuda_kernel_launch_16_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16);
   }
 }
@@ -1245,13 +1245,13 @@ auto cuda_kernel_launch_16_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16>
 [[clang::replace("kernel_launch 16 args 4 params")]]
 auto cuda_kernel_launch_16_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16);
   }
 }
@@ -1265,13 +1265,13 @@ auto cuda_kernel_launch_17_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17>
 [[clang::replace("kernel_launch 17 args 2 params")]]
 auto cuda_kernel_launch_17_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17);
   }
 }
@@ -1285,13 +1285,13 @@ auto cuda_kernel_launch_17_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17>
 [[clang::replace("kernel_launch 17 args 3 params")]]
 auto cuda_kernel_launch_17_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17);
   }
 }
@@ -1305,13 +1305,13 @@ auto cuda_kernel_launch_17_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17>
 [[clang::replace("kernel_launch 17 args 4 params")]]
 auto cuda_kernel_launch_17_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17);
   }
 }
@@ -1325,13 +1325,13 @@ auto cuda_kernel_launch_18_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18>
 [[clang::replace("kernel_launch 18 args 2 params")]]
 auto cuda_kernel_launch_18_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18);
   }
 }
@@ -1345,13 +1345,13 @@ auto cuda_kernel_launch_18_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18>
 [[clang::replace("kernel_launch 18 args 3 params")]]
 auto cuda_kernel_launch_18_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18);
   }
 }
@@ -1365,13 +1365,13 @@ auto cuda_kernel_launch_18_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18>
 [[clang::replace("kernel_launch 18 args 4 params")]]
 auto cuda_kernel_launch_18_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18);
   }
 }
@@ -1385,13 +1385,13 @@ auto cuda_kernel_launch_19_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19>
 [[clang::replace("kernel_launch 19 args 2 params")]]
 auto cuda_kernel_launch_19_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19);
   }
 }
@@ -1405,13 +1405,13 @@ auto cuda_kernel_launch_19_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19>
 [[clang::replace("kernel_launch 19 args 3 params")]]
 auto cuda_kernel_launch_19_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19);
   }
 }
@@ -1425,13 +1425,13 @@ auto cuda_kernel_launch_19_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19>
 [[clang::replace("kernel_launch 19 args 4 params")]]
 auto cuda_kernel_launch_19_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19);
   }
 }
@@ -1445,13 +1445,13 @@ auto cuda_kernel_launch_20_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20>
 [[clang::replace("kernel_launch 20 args 2 params")]]
 auto cuda_kernel_launch_20_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20);
   }
 }
@@ -1465,13 +1465,13 @@ auto cuda_kernel_launch_20_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20>
 [[clang::replace("kernel_launch 20 args 3 params")]]
 auto cuda_kernel_launch_20_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20);
   }
 }
@@ -1485,13 +1485,13 @@ auto cuda_kernel_launch_20_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20>
 [[clang::replace("kernel_launch 20 args 4 params")]]
 auto cuda_kernel_launch_20_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20);
   }
 }
@@ -1505,13 +1505,13 @@ auto cuda_kernel_launch_21_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21>
 [[clang::replace("kernel_launch 21 args 2 params")]]
 auto cuda_kernel_launch_21_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21);
   }
 }
@@ -1525,13 +1525,13 @@ auto cuda_kernel_launch_21_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21>
 [[clang::replace("kernel_launch 21 args 3 params")]]
 auto cuda_kernel_launch_21_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21);
   }
 }
@@ -1545,13 +1545,13 @@ auto cuda_kernel_launch_21_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21>
 [[clang::replace("kernel_launch 21 args 4 params")]]
 auto cuda_kernel_launch_21_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21);
   }
 }
@@ -1565,13 +1565,13 @@ auto cuda_kernel_launch_22_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22>
 [[clang::replace("kernel_launch 22 args 2 params")]]
 auto cuda_kernel_launch_22_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22);
   }
 }
@@ -1585,13 +1585,13 @@ auto cuda_kernel_launch_22_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22>
 [[clang::replace("kernel_launch 22 args 3 params")]]
 auto cuda_kernel_launch_22_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22);
   }
 }
@@ -1605,13 +1605,13 @@ auto cuda_kernel_launch_22_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22>
 [[clang::replace("kernel_launch 22 args 4 params")]]
 auto cuda_kernel_launch_22_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22);
   }
 }
@@ -1625,13 +1625,13 @@ auto cuda_kernel_launch_23_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23>
 [[clang::replace("kernel_launch 23 args 2 params")]]
 auto cuda_kernel_launch_23_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23);
   }
 }
@@ -1645,13 +1645,13 @@ auto cuda_kernel_launch_23_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23>
 [[clang::replace("kernel_launch 23 args 3 params")]]
 auto cuda_kernel_launch_23_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23);
   }
 }
@@ -1665,13 +1665,13 @@ auto cuda_kernel_launch_23_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23>
 [[clang::replace("kernel_launch 23 args 4 params")]]
 auto cuda_kernel_launch_23_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23);
   }
 }
@@ -1685,13 +1685,13 @@ auto cuda_kernel_launch_24_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24>
 [[clang::replace("kernel_launch 24 args 2 params")]]
 auto cuda_kernel_launch_24_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24);
   }
 }
@@ -1705,13 +1705,13 @@ auto cuda_kernel_launch_24_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24>
 [[clang::replace("kernel_launch 24 args 3 params")]]
 auto cuda_kernel_launch_24_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24);
   }
 }
@@ -1725,13 +1725,13 @@ auto cuda_kernel_launch_24_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24>
 [[clang::replace("kernel_launch 24 args 4 params")]]
 auto cuda_kernel_launch_24_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24);
   }
 }
@@ -1745,13 +1745,13 @@ auto cuda_kernel_launch_25_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25>
 [[clang::replace("kernel_launch 25 args 2 params")]]
 auto cuda_kernel_launch_25_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25);
   }
 }
@@ -1765,13 +1765,13 @@ auto cuda_kernel_launch_25_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25>
 [[clang::replace("kernel_launch 25 args 3 params")]]
 auto cuda_kernel_launch_25_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25);
   }
 }
@@ -1785,13 +1785,13 @@ auto cuda_kernel_launch_25_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25>
 [[clang::replace("kernel_launch 25 args 4 params")]]
 auto cuda_kernel_launch_25_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25);
   }
 }
@@ -1805,13 +1805,13 @@ auto cuda_kernel_launch_26_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26>
 [[clang::replace("kernel_launch 26 args 2 params")]]
 auto cuda_kernel_launch_26_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26);
   }
 }
@@ -1825,13 +1825,13 @@ auto cuda_kernel_launch_26_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26>
 [[clang::replace("kernel_launch 26 args 3 params")]]
 auto cuda_kernel_launch_26_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26);
   }
 }
@@ -1845,13 +1845,13 @@ auto cuda_kernel_launch_26_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26>
 [[clang::replace("kernel_launch 26 args 4 params")]]
 auto cuda_kernel_launch_26_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26);
   }
 }
@@ -1865,13 +1865,13 @@ auto cuda_kernel_launch_27_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27>
 [[clang::replace("kernel_launch 27 args 2 params")]]
 auto cuda_kernel_launch_27_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27);
   }
 }
@@ -1885,13 +1885,13 @@ auto cuda_kernel_launch_27_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27>
 [[clang::replace("kernel_launch 27 args 3 params")]]
 auto cuda_kernel_launch_27_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27);
   }
 }
@@ -1905,13 +1905,13 @@ auto cuda_kernel_launch_27_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27>
 [[clang::replace("kernel_launch 27 args 4 params")]]
 auto cuda_kernel_launch_27_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27);
   }
 }
@@ -1925,13 +1925,13 @@ auto cuda_kernel_launch_28_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28>
 [[clang::replace("kernel_launch 28 args 2 params")]]
 auto cuda_kernel_launch_28_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27, arg28);
   }
 }
@@ -1945,13 +1945,13 @@ auto cuda_kernel_launch_28_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28>
 [[clang::replace("kernel_launch 28 args 3 params")]]
 auto cuda_kernel_launch_28_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27, arg28);
   }
 }
@@ -1965,13 +1965,13 @@ auto cuda_kernel_launch_28_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28>
 [[clang::replace("kernel_launch 28 args 4 params")]]
 auto cuda_kernel_launch_28_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27, arg28);
   }
 }
@@ -1985,13 +1985,13 @@ auto cuda_kernel_launch_29_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29>
 [[clang::replace("kernel_launch 29 args 2 params")]]
 auto cuda_kernel_launch_29_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27, arg28, arg29);
   }
 }
@@ -2005,13 +2005,13 @@ auto cuda_kernel_launch_29_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29>
 [[clang::replace("kernel_launch 29 args 3 params")]]
 auto cuda_kernel_launch_29_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27, arg28, arg29);
   }
 }
@@ -2025,13 +2025,13 @@ auto cuda_kernel_launch_29_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29>
 [[clang::replace("kernel_launch 29 args 4 params")]]
 auto cuda_kernel_launch_29_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27, arg28, arg29);
   }
 }
@@ -2045,13 +2045,13 @@ auto cuda_kernel_launch_30_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30>
 [[clang::replace("kernel_launch 30 args 2 params")]]
 auto cuda_kernel_launch_30_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27, arg28, arg29, arg30);
   }
 }
@@ -2065,13 +2065,13 @@ auto cuda_kernel_launch_30_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30>
 [[clang::replace("kernel_launch 30 args 3 params")]]
 auto cuda_kernel_launch_30_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27, arg28, arg29, arg30);
   }
 }
@@ -2085,13 +2085,13 @@ auto cuda_kernel_launch_30_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30>
 [[clang::replace("kernel_launch 30 args 4 params")]]
 auto cuda_kernel_launch_30_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27, arg28, arg29, arg30);
   }
 }
@@ -2105,13 +2105,13 @@ auto cuda_kernel_launch_31_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30, int arg31>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30, int arg31>
 [[clang::replace("kernel_launch 31 args 2 params")]]
 auto cuda_kernel_launch_31_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27, arg28, arg29, arg30, arg31);
   }
 }
@@ -2125,13 +2125,13 @@ auto cuda_kernel_launch_31_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30, int arg31>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30, int arg31>
 [[clang::replace("kernel_launch 31 args 3 params")]]
 auto cuda_kernel_launch_31_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27, arg28, arg29, arg30, arg31);
   }
 }
@@ -2145,13 +2145,13 @@ auto cuda_kernel_launch_31_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30, int arg31>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30, int arg31>
 [[clang::replace("kernel_launch 31 args 4 params")]]
 auto cuda_kernel_launch_31_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27, arg28, arg29, arg30, arg31);
   }
 }
@@ -2165,13 +2165,13 @@ auto cuda_kernel_launch_32_2() {
   }
 }
 
-template <int numblocks, int numthreads3D, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30, int arg31, int arg32>
+template <int numblocks, int numthreads, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30, int arg31, int arg32>
 [[clang::replace("kernel_launch 32 args 2 params")]]
 auto cuda_kernel_launch_32_2_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, 0, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27, arg28, arg29, arg30, arg31, arg32);
   }
 }
@@ -2185,13 +2185,13 @@ auto cuda_kernel_launch_32_3() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30, int arg31, int arg32>
+template <int numblocks, int numthreads, int shmem, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30, int arg31, int arg32>
 [[clang::replace("kernel_launch 32 args 3 params")]]
 auto cuda_kernel_launch_32_3_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, 0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27, arg28, arg29, arg30, arg31, arg32);
   }
 }
@@ -2205,13 +2205,13 @@ auto cuda_kernel_launch_32_4() {
   }
 }
 
-template <int numblocks, int numthreads3D, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30, int arg31, int arg32>
+template <int numblocks, int numthreads, int shmem, hipStream_t stream, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11, int arg12, int arg13, int arg14, int arg15, int arg16, int arg17, int arg18, int arg19, int arg20, int arg21, int arg22, int arg23, int arg24, int arg25, int arg26, int arg27, int arg28, int arg29, int arg30, int arg31, int arg32>
 [[clang::replace("kernel_launch 32 args 4 params")]]
 auto cuda_kernel_launch_32_4_replace() {
   [[clang::matcher_block]]
   {
     bool numthreadsIs1D = std::numeric_limits<decltype(numthreads)>::is_integer;
-    auto numthreads3D = nthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
+    auto numthreads3D = numthreadsIs1D ? dim3(numthreads * 2 ) : numthreads;
     hipLaunchKernelGGL(kern, numblocks, numthreads3D, shmem, stream, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27, arg28, arg29, arg30, arg31, arg32);
   }
 }
@@ -2603,22 +2603,6 @@ auto cudaFuncCache_replace() {
   }
 }
 
-[[clang::matcher("cudaFunction_t type")]]
-auto cudaFunction_t_type() {
-  [[clang::matcher_block]]
-  {
-    cudaFunction_t varname;
-  }
-}
-
-[[clang::replace("cudaFunction_t type")]]
-auto cudaFunction_t_replace() {
-  [[clang::matcher_block]]
-  {
-    hipFunction_t varname;
-  }
-}
-
 [[clang::matcher("cudaGLDeviceList type")]]
 auto cudaGLDeviceList_type() {
   [[clang::matcher_block]]
@@ -2632,22 +2616,6 @@ auto cudaGLDeviceList_replace() {
   [[clang::matcher_block]]
   {
     hipGLDeviceList varname;
-  }
-}
-
-[[clang::matcher("cudaGraphExecUpdateResult type")]]
-auto cudaGraphExecUpdateResult_type() {
-  [[clang::matcher_block]]
-  {
-    cudaGraphExecUpdateResult varname;
-  }
-}
-
-[[clang::replace("cudaGraphExecUpdateResult type")]]
-auto cudaGraphExecUpdateResult_replace() {
-  [[clang::matcher_block]]
-  {
-    hipGraphExecUpdateResult varname;
   }
 }
 
@@ -4388,24 +4356,6 @@ auto cudaGraphAddMemcpyNode5_replace() {
   [[clang::matcher_block]]
   {
     hipGraphAddMemcpyNode(arg1, arg2, arg3, arg4, arg5);
-  }
-}
-
-template<cudaGraphNode_t * arg1, cudaGraph_t arg2, const cudaGraphNode_t * arg3, size_t arg4, void * arg5, void * arg6, size_t arg7, cudaMemcpyKind arg8>
-[[clang::matcher("cudaGraphAddMemcpyNode1D 8 func")]]
-auto cudaGraphAddMemcpyNode1D8_func() {
-  [[clang::matcher_block]]
-  {
-    cudaGraphAddMemcpyNode1D(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-  }
-}
-
-template<hipGraphNode_t *  arg1, hipGraph_t  arg2, const hipGraphNode_t *  arg3, size_t  arg4, void *  arg5, void *  arg6, size_t  arg7, hipMemcpyKind  arg8>
-[[clang::replace("cudaGraphAddMemcpyNode1D 8 func")]]
-auto cudaGraphAddMemcpyNode1D8_replace() {
-  [[clang::matcher_block]]
-  {
-    hipGraphAddMemcpyNode1D(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
   }
 }
 
