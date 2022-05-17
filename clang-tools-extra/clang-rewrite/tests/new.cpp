@@ -386,6 +386,53 @@ auto replace(int a, int b) {
 //   }
 // }
 
+[[clang::matcher("loop")]]
+auto loops() {
+  for (int i = 0; i < N; i++) {
+    LOOP_BODY(i);
+  }
+}
+
+[[clang::replace("loop")]]
+auto l() {
+  for (int i = 0; i < N; i += 4) {
+    if (i < N) {
+      LOOP_BODY(i);
+    }
+    if (i+1 < N) {
+      LOOP_BODY(i+1);
+    }
+    ...
+  }
+}
+
+[[clang::matcher("loop")]]
+auto loops() {
+  [[clang::matcher_block]] {
+  for (int i = 0; i < N; i++) {
+    LOOP_BODY(i);
+  }
+  }
+}
+
+[[clang::replace("loop")]]
+auto l() {
+  int i, N;
+  std::string LOOP_BODY;
+  [[clang::matcher_block]] {
+  clang_rewrite_unroll(i, N, LOOP_BODY, 4);
+  }
+}
+
+
+clang_rewrite_unroll(int i, int N, std::string LOOP_BODY, int unroll_factor) {
+  os << "for (int i; i < N; i += unroll_factor) {";
+  for (int u = 0; u < unroll_factor; u++) {
+    os << LOOP_BODY(i+u);
+  }
+  os << "}"
+}
+
 int main() {
   // return42();
   return 0;
