@@ -88,13 +88,12 @@ int main(int argc, const char **argv) {
 
   CommonOptionsParser &OptionsParser = ExpectedParser.get();
   std::vector<std::string> sources = OptionsParser.getSourcePathList();
-  std::vector<std::string> spec_files;
   std::vector<std::string> all_files = sources;
   if (!inst_file.empty()) {
     spec_files.push_back(inst_file);
   }
   all_files.insert(all_files.end(), spec_files.begin(), spec_files.end());
-  ClangTool Tool(OptionsParser.getCompilations(),
+  Tool = new ClangTool(OptionsParser.getCompilations(),
                  all_files);
 
   // for (std::string path : OptionsParser.getSourcePathList()) {
@@ -102,7 +101,7 @@ int main(int argc, const char **argv) {
   // }
 
   for (std::string file : sources) {
-    llvm::ErrorOr<const FileEntry*> entry = Tool.getFiles().getFile(file);
+    llvm::ErrorOr<const FileEntry*> entry = Tool->getFiles().getFile(file);
     if (entry) {
       source_file_entries.push_back(*entry);
     }
@@ -124,7 +123,7 @@ int main(int argc, const char **argv) {
 
     literal_finder.addMatcher(literal_vector, &literals_callback);
 
-    retval = Tool.run(newFrontendActionFactory(&literal_finder).get());
+    retval = Tool->run(newFrontendActionFactory(&literal_finder).get());
     if (retval) {
       printf("Problems with finding literals.\n");
       return retval;
@@ -141,7 +140,7 @@ int main(int argc, const char **argv) {
     inst_finder.addMatcher(replace_match, &replace_callback);
     inst_finder.addMatcher(matcher, &matcher_callback);
 
-    retval = Tool.run(newFrontendActionFactory(&inst_finder).get());
+    retval = Tool->run(newFrontendActionFactory(&inst_finder).get());
     if (retval) {
       printf("Problems with creating matchers and tranformations.\n");
       return retval;
@@ -182,7 +181,7 @@ int main(int argc, const char **argv) {
     }
     i++;
   }
-  retval = Tool.run(newFrontendActionFactory(&Finder).get());
+  retval = Tool->run(newFrontendActionFactory(&Finder).get());
 
   for (MatcherWrapper<ast_matchers::internal::DynTypedMatcher> *m : user_matchers) {
     delete m;

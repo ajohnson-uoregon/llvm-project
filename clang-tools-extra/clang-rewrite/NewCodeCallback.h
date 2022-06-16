@@ -177,14 +177,13 @@ public:
     }
 
     // make action, put in vector of actions
-    std::vector<DynTypedNode> nodes;
-    for (Stmt* s : body->body()) {
-      nodes.push_back(DynTypedNode::create(*s));
-    }
+    // std::vector<DynTypedNode> nodes;
+    // for (Stmt* s : body->body()) {
+    //   nodes.push_back(DynTypedNode::create(*s));
+    // }
     CodeAction *act =
-        new CodeAction(context->getSourceManager(), context->getLangOpts(),
-        context->Idents, context->Selectors, context->BuiltinInfo, context->TUKind,
-        nodes, kind, matcher_names, std::string(code), action_name);
+        new CodeAction(std::string(code), action_name, kind, matcher_names,
+          fid, SourceRange(body_begin, body_end));
     all_actions.push_back(act);
 
     delete[] code;

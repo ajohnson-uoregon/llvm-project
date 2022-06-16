@@ -1,6 +1,10 @@
 #ifndef CLANG_REWRITE_CALLBACK_H
 #define CLANG_REWRITE_CALLBACK_H
 
+#include "clang/Frontend/FrontendActions.h"
+#include "clang/Tooling/CommonOptionsParser.h"
+#include "clang/Tooling/Tooling.h"
+
 #include "clang/AST/ASTContext.h"
 // #include "clang/AST/DeclTemplate.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
@@ -94,6 +98,96 @@ bool isBlock(const Decl* decl) {
 // - RequiresExprBodyDecl
 // - TranslationUnitDecl
 // - TemplateParamObjectDecl
+
+class ReplaceBindingsCallback : public MatchFinder::MatchCallback {
+public:
+  ASTContext* context;
+  CodeAction* action;
+
+  ReplaceBindingsCallback(CodeAction* action) : action(action) {}
+
+  ~ReplaceBindingsCallback() {}
+
+  void run(const MatchFinder::MatchResult &result) override {
+    // printf("RUNNING THE THING\n");
+    printf("found match for binding\n");
+    context = result.Context;
+
+    const Expr* expr = result.Nodes.getNodeAs<Expr>("match");
+    const NamedDecl* decl = result.Nodes.getNodeAs<NamedDecl>("match");
+
+    bool expr_valid = true;
+    bool decl_valid = true;
+
+    if (!expr ||
+        !context->getSourceManager().isInFileID(expr->getBeginLoc(), action->spec_file))
+         {
+      // printf("ERROR: invalid expr binding match loc\n");
+      expr_valid = false;
+    }
+
+    if (!decl ||
+        !context->getSourceManager().isInFileID(decl->getBeginLoc(), action->spec_file)) {
+      // printf("ERROR: invalid decl binding match loc\n");
+      decl_valid = false;
+    }
+
+    if (!expr_valid && !decl_valid) {
+      printf("ERROR: no valid binding match loc\n");
+      return;
+    }
+
+    SourceRange match_range;
+    if (expr_valid) {
+      match_range = SourceRange(expr->getBeginLoc(), expr->getEndLoc());
+    }
+    else if (decl_valid) {
+      match_range = SourceRange(decl->getBeginLoc(), decl->getEndLoc());
+    }
+
+    if (!action->snippet_range.fullyContains(match_range)) {
+      // printf("ERROR: match not in action's snippet\n");
+      return;
+    }
+
+
+    FullSourceLoc begin;
+    FullSourceLoc end;
+
+    if (expr_valid) {
+      begin = context->getFullLoc(expr->getBeginLoc());
+      end = context->getFullLoc(expr->getEndLoc());
+    }
+    else if (decl_valid) {
+      begin = context->getFullLoc(decl->getBeginLoc());
+      end = context->getFullLoc(decl->getEndLoc());
+    }
+
+    unsigned int begin_line = begin.getSpellingLineNumber();
+    unsigned int begin_col = begin.getSpellingColumnNumber();
+    unsigned int end_line = end.getSpellingLineNumber();
+    unsigned int end_col = end.getSpellingColumnNumber();
+
+    printf("FOUND match for binding at %d:%d - %d:%d\n",
+           begin_line, begin_col, end_line, end_col);
+  }
+};
+
+class DumpCallback : public MatchFinder::MatchCallback {
+public:
+  void run(const MatchFinder::MatchResult &result) override {
+
+    const TranslationUnitDecl* tudecl = result.Nodes.getNodeAs<TranslationUnitDecl>("tudecl");
+
+    if (!tudecl) {
+      printf("ERROR: bad tudecl\n");
+      return;
+    }
+    else {
+      tudecl->dump();
+    }
+  }
+};
 
 template <class T>
 class RewriteCallback : public MatchFinder::MatchCallback {
@@ -195,7 +289,7 @@ public:
     if ((!smatch ||
          !isInOneOfFileIDs(smatch->getBeginLoc(), source_file_entries,
                            context->getSourceManager()))
-    && (!dmatch || 
+    && (!dmatch ||
         !isInOneOfFileIDs(dmatch->getBeginLoc(), source_file_entries,
                           context->getSourceManager()))) {
       // if (verbose) {
@@ -338,8 +432,16 @@ public:
 
     }
 
+
+    // MatchFinder testy;
+    // DumpCallback dumpcb;
+    // testy.addMatcher(translationUnitDecl(anything()).bind("tudecl"), &dumpcb);
+    // testy.matchAST(*context);
+
+
+
     for (CodeAction *action : matcher->actions) {
-      action->replace_bound_code(bound_code);
+      replace_bound_code(action, bound_code);
     }
 
 
@@ -382,6 +484,99 @@ public:
     }
 
     files_changed.clear();
+  }
+
+  void replace_bound_code(CodeAction* action, std::vector<Binding> bindings) {
+    printf("REPLACE BOUND CODE\n");
+    MatchFinder finder;
+    ReplaceBindingsCallback cb(action);
+
+    for (Binding b: bindings) {
+      printf("LOOKING for things named %s or %s\n", b.name.c_str(), b.qual_name.c_str());
+
+      if (!b.name.empty()) {
+        VariantMatcher declmatcher =
+          constructBoundMatcher("namedDecl", "match",
+            constructMatcher("hasName",
+              StringRef(b.name),
+            1),
+          0);
+
+        llvm::Optional<DynTypedMatcher> dynmatcher = declmatcher.getSingleMatcher();
+        if (dynmatcher) {
+          finder.addDynamicMatcher(*dynmatcher, &cb);
+        }
+        else {
+          printf("ERROR: bad decl matcher\n");
+          return;
+        }
+
+        VariantMatcher refmatcher =
+          constructBoundMatcher("declRefExpr", "match",
+            constructMatcher("to",
+              constructMatcher("namedDecl",
+                constructMatcher("hasName",
+                  StringRef(b.name),
+                3),
+              2),
+            1),
+          0);
+
+        dynmatcher = refmatcher.getSingleMatcher();
+        if (dynmatcher) {
+          finder.addDynamicMatcher(*dynmatcher, &cb);
+        }
+        else {
+          printf("ERROR: bad ref matcher\n");
+          return;
+        }
+      }
+
+      if (!b.qual_name.empty()) {
+        VariantMatcher declmatcher =
+          constructBoundMatcher("namedDecl", "match",
+            constructMatcher("hasName",
+              StringRef(b.qual_name),
+            1),
+          0);
+
+        llvm::Optional<DynTypedMatcher> dynmatcher = declmatcher.getSingleMatcher();
+        if (dynmatcher) {
+          finder.addDynamicMatcher(*dynmatcher, &cb);
+        }
+        else {
+          printf("ERROR: bad qual decl matcher\n");
+          return;
+        }
+
+        VariantMatcher refmatcher =
+          constructBoundMatcher("declRefExpr", "match",
+            constructMatcher("to",
+              constructMatcher("namedDecl",
+                constructMatcher("hasName",
+                  StringRef(b.qual_name),
+                3),
+              2),
+            1),
+          0);
+
+        dynmatcher = refmatcher.getSingleMatcher();
+        if (dynmatcher) {
+          finder.addDynamicMatcher(*dynmatcher, &cb);
+        }
+        else {
+          printf("ERROR: bad qual ref matcher\n");
+          return;
+        }
+      }
+    }
+
+    printf("RUNNING MATCH FINDER\n");
+    // finder.matchAST(*context);
+    int retval = Tool->run(newFrontendActionFactory(&finder).get());
+    if (retval) {
+      printf("OH NOES\n");
+    }
   }
 
 private:

@@ -39,132 +39,80 @@ typedef struct Binding {
   std::string value;
 } Binding;
 
-class ReplaceBindingsCallback : public MatchFinder::MatchCallback {
-public:
-  FileID fid;
-  ASTContext* context;
-
-  ReplaceBindingsCallback(FileID fid) : fid(fid) {}
-
-  ~ReplaceBindingsCallback() {}
-
-  void run(const MatchFinder::MatchResult &result) override {
-    printf("found match for binding\n");
-    context = result.Context;
-
-    const Expr* expr = result.Nodes.getNodeAs<Expr>("match");
-    const NamedDecl* decl = result.Nodes.getNodeAs<NamedDecl>("match");
-
-    bool expr_valid = true;
-    bool decl_valid = true;
-
-    if (!expr ||
-        !context->getSourceManager().isInFileID(expr->getBeginLoc(), fid)) {
-      printf("ERROR: invalid expr binding match loc\n");
-      expr_valid = false;
-    }
-
-    if (!decl ||
-        !context->getSourceManager().isInFileID(decl->getBeginLoc(), fid)) {
-      printf("ERROR: invalid decl binding match loc\n");
-      decl_valid = false;
-    }
-
-    if (!expr_valid && !decl_valid) {
-      printf("ERROR: no valid binding match loc\n");
-      return;
-    }
-
-    FullSourceLoc begin;
-    FullSourceLoc end;
-
-    if (expr_valid) {
-      begin = context->getFullLoc(expr->getBeginLoc());
-      end = context->getFullLoc(expr->getEndLoc());
-    }
-    else if (decl_valid) {
-      begin = context->getFullLoc(decl->getBeginLoc());
-      end = context->getFullLoc(decl->getEndLoc());
-    }
-
-    unsigned int begin_line = begin.getSpellingLineNumber();
-    unsigned int begin_col = begin.getSpellingColumnNumber();
-    unsigned int end_line = end.getSpellingLineNumber();
-    unsigned int end_col = end.getSpellingColumnNumber();
-
-    printf("FOUND match for binding at %d:%d - %d:%d\n",
-           begin_line, begin_col, end_line, end_col);
-  }
-};
-
 class CodeAction {
 public:
-  ASTContext* context;
-  std::vector<DynTypedNode> nodes;
+  // ASTContext* context;
+  // std::vector<DynTypedNode> nodes;
   std::string base_code_snippet; // the code as it appears in the spec
   std::string edited_code_snippet; // the code after bound snippets have been copy-pasted in
   NewCodeKind kind;
   std::vector<std::string> matcher_names;
   std::string action_name;
+  FileID spec_file;
+  SourceRange snippet_range;
 
-  Rewriter rewrite;
-  FileID snippet_file;
-
-  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
-  DiagnosticsEngine Diagnostics;
-  IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> InMemoryFileSystem =
-    new llvm::vfs::InMemoryFileSystem();
-  IntrusiveRefCntPtr<llvm::vfs::OverlayFileSystem> OverlayFileSystem =
-    new llvm::vfs::OverlayFileSystem(llvm::vfs::getRealFileSystem());
-  FileManager Files;
+  // Rewriter rewrite;
+  // FileID snippet_file;
+  //
+  // IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
+  // DiagnosticsEngine Diagnostics;
+  // IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> InMemoryFileSystem =
+  //   new llvm::vfs::InMemoryFileSystem();
+  // IntrusiveRefCntPtr<llvm::vfs::OverlayFileSystem> OverlayFileSystem =
+  //   new llvm::vfs::OverlayFileSystem(llvm::vfs::getRealFileSystem());
+  // FileManager Files;
 
   // ASTContext (LangOptions &LOpts, SourceManager &SM, IdentifierTable &idents,
   //   SelectorTable &sels, Builtin::Context &builtins, TranslationUnitKind TUKind)
 
-  CodeAction(SourceManager& SM, LangOptions LangOpts, IdentifierTable& idents,
-      SelectorTable& selectors, Builtin::Context builtins, TranslationUnitKind TUKind,
-      std::vector<DynTypedNode> nodes, NewCodeKind kind,
-      std::vector<std::string> matcher_names, std::string code, std::string action_name)
-      :
-        nodes(nodes), base_code_snippet(code), kind(kind),
-        matcher_names(matcher_names), action_name(action_name),
-        rewrite(SM, LangOpts),
-        Diagnostics(IntrusiveRefCntPtr<DiagnosticIDs>(new DiagnosticIDs), &*DiagOpts),
-        Files(FileSystemOptions(), OverlayFileSystem)
-  {
-    context = new ASTContext(LangOpts, SM, idents, selectors, builtins, TUKind);
-    OverlayFileSystem->pushOverlay(InMemoryFileSystem);
-    snippet_file = createInMemoryFile(action_name, base_code_snippet);
-    // llvm::Optional<llvm::MemoryBufferRef> buff = Sources.getBufferOrNone(snippet_file);
-    //
-    // if (buff.hasValue()) {
-    //   Lexer my_lexer(snippet_file, buff.getValue(), Sources, LangOpts);
-    //   bool more_to_lex = true;
-    //   Token tok;
-    //   printf("code: %s\n", base_code_snippet.c_str());
-    //   while (more_to_lex) {
-    //     more_to_lex = !my_lexer.LexFromRawLexer(tok);
-    //     tokens.push_back(tok);
-    //     printf("token %s ", tok.getName());
-    //     if (tok.isAnyIdentifier()) {
-    //       std::string ident = tok.getRawIdentifier().str();
-    //       printf("ident %s ", ident.c_str());
-    //     }
-    //     printf("\n");
-    //   }
-    // }
-    // else {
-    //   printf("ERROR: bad code snippet in action\n");
-    // }
-  }
+  CodeAction(std::string code, std::string action_name, NewCodeKind kind,
+      std::vector<std::string> matcher_names, FileID spec_file, SourceRange range)
+      : base_code_snippet(code), kind(kind), matcher_names(matcher_names),
+        action_name(action_name), spec_file(spec_file), snippet_range(range) {}
+  // CodeAction(SourceManager& SM, LangOptions LangOpts, IdentifierTable& idents,
+  //     SelectorTable& selectors, Builtin::Context builtins, TranslationUnitKind TUKind,
+  //     std::vector<DynTypedNode> nodes, NewCodeKind kind,
+  //     std::vector<std::string> matcher_names, std::string code, std::string action_name)
+  //     :
+  //       nodes(nodes), base_code_snippet(code), kind(kind),
+  //       matcher_names(matcher_names), action_name(action_name),
+  //       rewrite(SM, LangOpts),
+  //       Diagnostics(IntrusiveRefCntPtr<DiagnosticIDs>(new DiagnosticIDs), &*DiagOpts),
+  //       Files(FileSystemOptions(), OverlayFileSystem)
+  // {
+  //   context = new ASTContext(LangOpts, SM, idents, selectors, builtins, TUKind);
+  //   OverlayFileSystem->pushOverlay(InMemoryFileSystem);
+  //   snippet_file = createInMemoryFile(action_name, base_code_snippet);
+  //   // llvm::Optional<llvm::MemoryBufferRef> buff = Sources.getBufferOrNone(snippet_file);
+  //   //
+  //   // if (buff.hasValue()) {
+  //   //   Lexer my_lexer(snippet_file, buff.getValue(), Sources, LangOpts);
+  //   //   bool more_to_lex = true;
+  //   //   Token tok;
+  //   //   printf("code: %s\n", base_code_snippet.c_str());
+  //   //   while (more_to_lex) {
+  //   //     more_to_lex = !my_lexer.LexFromRawLexer(tok);
+  //   //     tokens.push_back(tok);
+  //   //     printf("token %s ", tok.getName());
+  //   //     if (tok.isAnyIdentifier()) {
+  //   //       std::string ident = tok.getRawIdentifier().str();
+  //   //       printf("ident %s ", ident.c_str());
+  //   //     }
+  //   //     printf("\n");
+  //   //   }
+  //   // }
+  //   // else {
+  //   //   printf("ERROR: bad code snippet in action\n");
+  //   // }
+  // }
 
   ~CodeAction() {}
 
-  void add_node(DynTypedNode n) {
-    if (std::find(nodes.begin(), nodes.end(), n) == nodes.end()) {
-      nodes.push_back(n);
-    }
-  }
+  // void add_node(DynTypedNode n) {
+  //   if (std::find(nodes.begin(), nodes.end(), n) == nodes.end()) {
+  //     nodes.push_back(n);
+  //   }
+  // }
 
   void add_matcher(std::string m) {
     matcher_names.push_back(m);
@@ -184,15 +132,15 @@ public:
   }
 
   // borrowed from clang/unittests/Tooling/RewriterTestContext.h:
-  FileID createInMemoryFile(StringRef Name, StringRef Content) {
-    std::unique_ptr<llvm::MemoryBuffer> Source =
-        llvm::MemoryBuffer::getMemBuffer(Content);
-    InMemoryFileSystem->addFile(Name, 0, std::move(Source));
-
-    auto Entry = Files.getOptionalFileRef(Name);
-    assert(Entry);
-    return context->getSourceManager().createFileID(*Entry, SourceLocation(), SrcMgr::C_User);
-  }
+  // FileID createInMemoryFile(StringRef Name, StringRef Content) {
+  //   std::unique_ptr<llvm::MemoryBuffer> Source =
+  //       llvm::MemoryBuffer::getMemBuffer(Content);
+  //   InMemoryFileSystem->addFile(Name, 0, std::move(Source));
+  //
+  //   auto Entry = Files.getOptionalFileRef(Name);
+  //   assert(Entry);
+  //   return context->getSourceManager().createFileID(*Entry, SourceLocation(), SrcMgr::C_User);
+  // }
 
   void dump_bindings(std::vector<Binding>& bindings) {
     printf("All bindings:\n");
@@ -248,92 +196,133 @@ public:
   //   }
   // }
 
-  void replace_bound_code(std::vector<Binding>& bindings) {
-    edited_code_snippet = ""; // clear it out before doing anything
-
-    Rewriter::RewriteOptions opts;
-    opts.IncludeInsertsAtBeginOfRange = false;
-
-    // tokenize_bindings(bindings);
-    dump_bindings(bindings);
-
-    // DO NOT UNCOMMENT
-    // for (DynTypedNode n : nodes) {
-    //   n.print(llvm::outs(), PrintingPolicy(context.getLangOpts()));
-    // }
-
-    for (Binding b : bindings) {
-      printf("LOOKING for things named %s\n", b.name.c_str());
-      ReplaceBindingsCallback cb(snippet_file);
-      MatchFinder finder;
-      VariantMatcher declmatcher =
-        constructBoundMatcher("namedDecl", "match",
-          constructMatcher("hasName",
-            StringRef(b.qual_name),
-          1),
-        0);
-      VariantMatcher refmatcher =
-        constructBoundMatcher("declRefExpr", "match",
-          constructMatcher("to",
-            constructMatcher("namedDecl",
-              constructMatcher("hasName",
-                StringRef(b.qual_name),
-              3),
-            2),
-          1),
-        0);
-
-      llvm::Optional<DynTypedMatcher> dynmatcher = declmatcher.getSingleMatcher();
-      if (dynmatcher) {
-        finder.addDynamicMatcher(*dynmatcher, &cb);
-      }
-      else {
-        printf("ERROR: bad decl matcher\n");
-        return;
-      }
-
-      dynmatcher = refmatcher.getSingleMatcher();
-      if (dynmatcher) {
-        finder.addDynamicMatcher(*dynmatcher, &cb);
-      }
-      else {
-        printf("ERROR: bad ref matcher\n");
-        return;
-      }
-
-      // for (DynTypedNode n : nodes) {
-      //   finder.match(n, context);
-      // }
-      finder.matchAST(*context);
-    }
-
-    // iterator token_iter = tokens.begin();
-    // printf("code: %s\n", base_code_snippet.c_str());
-    // if (!bindings.empty()) {
-    //   while (token_iter != tokens.end()) {
-    //     int bindings_index = 0;
-    //     int names_index = 0;
-    //     while (bindings_index < bindings.size()) {
-    //       std::string name = bindings[bindings_index].names[names_index];
-    //       if (matching_substream_starting_at(token_iter, ))
+  // void replace_bound_code(std::vector<Binding>& bindings) {
+    // edited_code_snippet = ""; // clear it out before doing anything
+    //
+    // Rewriter::RewriteOptions opts;
+    // opts.IncludeInsertsAtBeginOfRange = false;
+    //
+    // // tokenize_bindings(bindings);
+    // dump_bindings(bindings);
+    //
+    // // DO NOT UNCOMMENT
+    // // for (DynTypedNode n : nodes) {
+    // //   n.print(llvm::outs(), PrintingPolicy(context.getLangOpts()));
+    // // }
+    //
+    // for (Binding b : bindings) {
+    //   printf("LOOKING for things named %s or %s\n", b.name.c_str(), b.qual_name.c_str());
+    //   ReplaceBindingsCallback cb(snippet_file);
+    //   MatchFinder finder;
+    //   if (!b.name.empty()) {
+    //     VariantMatcher declmatcher =
+    //       constructBoundMatcher("namedDecl", "match",
+    //         constructMatcher("hasName",
+    //           StringRef(b.name),
+    //         1),
+    //       0);
+    //
+    //     llvm::Optional<DynTypedMatcher> dynmatcher = declmatcher.getSingleMatcher();
+    //     if (dynmatcher) {
+    //       finder.addDynamicMatcher(*dynmatcher, &cb);
+    //     }
+    //     else {
+    //       printf("ERROR: bad decl matcher\n");
+    //       return;
+    //     }
+    //
+    //     VariantMatcher refmatcher =
+    //       constructBoundMatcher("declRefExpr", "match",
+    //         constructMatcher("to",
+    //           constructMatcher("namedDecl",
+    //             constructMatcher("hasName",
+    //               StringRef(b.name),
+    //             3),
+    //           2),
+    //         1),
+    //       0);
+    //
+    //     dynmatcher = refmatcher.getSingleMatcher();
+    //     if (dynmatcher) {
+    //       finder.addDynamicMatcher(*dynmatcher, &cb);
+    //     }
+    //     else {
+    //       printf("ERROR: bad ref matcher\n");
+    //       return;
     //     }
     //   }
+    //
+    //   if (!b.qual_name.empty()) {
+    //     VariantMatcher declmatcher =
+    //       constructBoundMatcher("namedDecl", "match",
+    //         constructMatcher("hasName",
+    //           StringRef(b.qual_name),
+    //         1),
+    //       0);
+    //
+    //     llvm::Optional<DynTypedMatcher> dynmatcher = declmatcher.getSingleMatcher();
+    //     if (dynmatcher) {
+    //       finder.addDynamicMatcher(*dynmatcher, &cb);
+    //     }
+    //     else {
+    //       printf("ERROR: bad qual decl matcher\n");
+    //       return;
+    //     }
+    //
+    //     VariantMatcher refmatcher =
+    //       constructBoundMatcher("declRefExpr", "match",
+    //         constructMatcher("to",
+    //           constructMatcher("namedDecl",
+    //             constructMatcher("hasName",
+    //               StringRef(b.qual_name),
+    //             3),
+    //           2),
+    //         1),
+    //       0);
+    //
+    //     dynmatcher = refmatcher.getSingleMatcher();
+    //     if (dynmatcher) {
+    //       finder.addDynamicMatcher(*dynmatcher, &cb);
+    //     }
+    //     else {
+    //       printf("ERROR: bad qual ref matcher\n");
+    //       return;
+    //     }
+    //   }
+    //
+    //   // for (DynTypedNode n : nodes) {
+    //   //   finder.match(n, context);
+    //   // }
+    //   finder.matchAST(*context);
     // }
+    //
+    // // iterator token_iter = tokens.begin();
+    // // printf("code: %s\n", base_code_snippet.c_str());
+    // // if (!bindings.empty()) {
+    // //   while (token_iter != tokens.end()) {
+    // //     int bindings_index = 0;
+    // //     int names_index = 0;
+    // //     while (bindings_index < bindings.size()) {
+    // //       std::string name = bindings[bindings_index].names[names_index];
+    // //       if (matching_substream_starting_at(token_iter, ))
+    // //     }
+    // //   }
+    // // }
+    //
+    //
+    // const RewriteBuffer* rwbuff = rewrite.getRewriteBufferFor(snippet_file);
+    // if (rwbuff) {
+    //   llvm::raw_string_ostream out(edited_code_snippet);
+    //   rwbuff->write(out);
+    //   out.flush();
+    // }
+    // else {
+    //   edited_code_snippet = base_code_snippet;
+    // }
+    //
+    // printf("new code: %s\n", edited_code_snippet.c_str());
 
-
-    const RewriteBuffer* rwbuff = rewrite.getRewriteBufferFor(snippet_file);
-    if (rwbuff) {
-      llvm::raw_string_ostream out(edited_code_snippet);
-      rwbuff->write(out);
-      out.flush();
-    }
-    else {
-      edited_code_snippet = base_code_snippet;
-    }
-
-    printf("new code: %s\n", edited_code_snippet.c_str());
-
-  }
+  // }
 
   void dump_list() {
     for (std::string s : matcher_names) {
