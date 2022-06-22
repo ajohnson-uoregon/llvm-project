@@ -386,6 +386,31 @@ auto replace(int a, int b) {
 //   }
 // }
 
+
+
+for (int var = 0; var < max; var++) {
+  b[var] = a[var] + a[var+1];
+}
+
+i -> "var"
+  VarRef var
+N -> "max"
+  VarRef max
+LOOP_BODY -> "b[var] = a[var] + a[var+1]"
+  Assign
+    VarRef b
+    Idx
+      VarRef var
+  BinOp +
+    VarRef a
+    Idx
+      VarRef var
+    VarRef a
+    Idx
+      BinOp +
+        VarRef var
+        Int 1
+
 [[clang::matcher("loop")]]
 auto loops() {
   for (int i = 0; i < N; i++) {
@@ -393,7 +418,22 @@ auto loops() {
   }
 }
 
-[[clang::replace("loop")]]
+for (int var = 0; var < max; var += 4) {
+  if (var < max) {
+    b[var] = a[var] + a[var+1];
+  }
+  if (var+1 < max) {
+    b[var+1] = a[var+1] + a[var+1+1];
+  }
+  ...
+}
+
+[[clang::replace("loop", 0)]]
+auto l2() {
+  // blocking replacer
+}
+
+[[clang::replace("loop", 10)]]
 auto l() {
   for (int i = 0; i < N; i += 4) {
     if (i < N) {
@@ -406,31 +446,39 @@ auto l() {
   }
 }
 
+for (int i = 0; i < N; i++) {
+  for (int k = 0; k < M; k++) {
+    things(i, k);
+  }
+}
+
 [[clang::matcher("loop")]]
 auto loops() {
+  int lb;
   [[clang::matcher_block]] {
-  for (int i = 0; i < N; i++) {
-    LOOP_BODY(i);
-  }
+    for (int i = lb; i < N; i++) {
+      LOOP_BODY(i);
+    }
   }
 }
 
 [[clang::replace("loop")]]
 auto l() {
-  int i, N;
+  int i, lb, N;
   std::string LOOP_BODY;
   [[clang::matcher_block]] {
-  clang_rewrite_unroll(i, N, LOOP_BODY, 4);
+  clang_rewrite_unroll(4);
   }
 }
 
-
-clang_rewrite_unroll(int i, int N, std::string LOOP_BODY, int unroll_factor) {
-  os << "for (int i; i < N; i += unroll_factor) {";
+std::string clang_rewrite_unroll(int unroll_factor) {
+  std::string ret;
+  ret << "for (int i = lb; i < N; i += unroll_factor) {";
   for (int u = 0; u < unroll_factor; u++) {
-    os << LOOP_BODY(i+u);
+    ret << "LOOP_BODY(i+u)";
   }
-  os << "}"
+  ret << "}";
+  return ret;
 }
 
 int main() {

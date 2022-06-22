@@ -153,14 +153,17 @@ public:
 
     FullSourceLoc begin;
     FullSourceLoc end;
+    FullSourceLoc match;
 
     if (expr_valid) {
       begin = context->getFullLoc(expr->getBeginLoc());
       end = context->getFullLoc(expr->getEndLoc());
+      match = context->getFullLoc(expr->getBeginLoc());
     }
     else if (decl_valid) {
       begin = context->getFullLoc(decl->getBeginLoc());
       end = context->getFullLoc(decl->getEndLoc());
+      match = context->getFullLoc(decl->getLocation());
     }
 
     unsigned int begin_line = begin.getSpellingLineNumber();
@@ -168,8 +171,40 @@ public:
     unsigned int end_line = end.getSpellingLineNumber();
     unsigned int end_col = end.getSpellingColumnNumber();
 
+    FileID fid = begin.getFileID();
+    unsigned int begin_offset = begin.getFileOffset();
+    unsigned int end_offset = end.getFileOffset();
+    unsigned int match_offset = match.getFileOffset();
+
     printf("FOUND match for binding at %d:%d - %d:%d\n",
            begin_line, begin_col, end_line, end_col);
+
+    llvm::Optional<llvm::MemoryBufferRef> buff =
+      context->getSourceManager().getBufferOrNone(fid);
+
+    char* code = new char[end_offset - begin_offset + 1];
+    if (buff.hasValue()) {
+      memcpy(code, &(buff->getBufferStart()[begin_offset]),
+             (end_offset - begin_offset + 1) * sizeof(char));
+      code [end_offset - begin_offset] = '\0';
+      printf("matched range: %s\n", code);
+      printf("               ");
+      for (unsigned int i = 0; i < match_offset - begin_offset; i++) {
+        printf(" ");
+      }
+      printf("^\n");
+    }
+
+    if (expr_valid) {
+      printf("expr\n");
+      expr->dump();
+    }
+    else if (decl_valid) {
+      printf("decl\n");
+      decl->dump();
+
+
+    }
   }
 };
 
@@ -432,14 +467,6 @@ public:
 
     }
 
-
-    // MatchFinder testy;
-    // DumpCallback dumpcb;
-    // testy.addMatcher(translationUnitDecl(anything()).bind("tudecl"), &dumpcb);
-    // testy.matchAST(*context);
-
-
-
     for (CodeAction *action : matcher->actions) {
       replace_bound_code(action, bound_code);
     }
@@ -494,11 +521,12 @@ public:
     for (Binding b: bindings) {
       printf("LOOKING for things named %s or %s\n", b.name.c_str(), b.qual_name.c_str());
 
-      if (!b.name.empty()) {
+      if (!b.name.empty() && !b.qual_name.empty()) {
         VariantMatcher declmatcher =
           constructBoundMatcher("namedDecl", "match",
-            constructMatcher("hasName",
-              StringRef(b.name),
+            constructMatcher("anyOf",
+              constructMatcher("hasName", StringRef(b.name), 2),
+              constructMatcher("hasName", StringRef(b.qual_name), 2),
             1),
           0);
 
@@ -515,8 +543,9 @@ public:
           constructBoundMatcher("declRefExpr", "match",
             constructMatcher("to",
               constructMatcher("namedDecl",
-                constructMatcher("hasName",
-                  StringRef(b.name),
+                constructMatcher("anyOf",
+                  constructMatcher("hasName", StringRef(b.name), 4),
+                  constructMatcher("hasName", StringRef(b.qual_name), 4),
                 3),
               2),
             1),
@@ -532,11 +561,13 @@ public:
         }
       }
 
-      if (!b.qual_name.empty()) {
+      else if (!b.name.empty() || !b.qual_name.empty()) {
+        std::string valid_name = b.name.empty() ? b.qual_name : b.name;
+
         VariantMatcher declmatcher =
           constructBoundMatcher("namedDecl", "match",
             constructMatcher("hasName",
-              StringRef(b.qual_name),
+              StringRef(valid_name),
             1),
           0);
 
@@ -554,7 +585,7 @@ public:
             constructMatcher("to",
               constructMatcher("namedDecl",
                 constructMatcher("hasName",
-                  StringRef(b.qual_name),
+                  StringRef(valid_name),
                 3),
               2),
             1),
@@ -568,6 +599,11 @@ public:
           printf("ERROR: bad qual ref matcher\n");
           return;
         }
+      }
+
+      else {
+        printf("ERROR: no valid name to look for\n");
+        return;
       }
     }
 
