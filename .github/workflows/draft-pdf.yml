@@ -26,5 +26,5 @@ jobs:
         uses: openjournals/openjournals-draft-action@master
         with:
           journal: joss
-          paper-path: llvm-project/clang-tools-extra/clang-rewrite/paper.md
+          paper-path: clang-tools-extra/clang-rewrite/paper.md
 
