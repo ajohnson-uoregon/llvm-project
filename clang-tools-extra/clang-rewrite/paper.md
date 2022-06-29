@@ -1,5 +1,5 @@
 ---
-title: 'MARINI: The Little Match and Replace Tool for Automatic Code Rewriting'
+title: "MARTINI: The Little Match and Replace Tool for Automatic Code Rewriting"
 tags:
   - Clang
   - meteprogramming
@@ -21,7 +21,7 @@ affiliations:
   - name: University of Oregon, Eugene, OR, USA
     index: 1
   - name: Université du Québec à Montréal, Montréal, QC, Canada
-    index: 2 
+    index: 2
   - name: Argonne National Laboratory, Lemont, IL, USA
     index: 3
 date: 30 June 2022
