@@ -17,7 +17,7 @@ authors:
 		affiliation: 1
 		corresponding: true
 	- name: Camille Coti
-		affiliation: 2
+		affiliation: 3
 	- name: Allen D. Malony
 		affiliation: 1
 	- name: Johannes Doerfert
@@ -26,8 +26,8 @@ authors:
 affiliations:
 	- name: University of Oregon, Eugene, OR, USA
 		index: 1
-	- name: Université du Québec à Montréal, Montréal, QC, Canada
-		index: 2
+<!-- 	- name: Université du Québec à Montréal, Montréal, QC, Canada
+		index: 2 -->
 	- name: Argonne National Laboratory, Lemont, IL, USA
 		index: 3
 date: 30 June 2022
