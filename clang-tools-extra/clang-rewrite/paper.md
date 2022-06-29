@@ -5,7 +5,7 @@
 - references
 -->
 
-title: 'MARINI: The Little Match and Replace Tool for Automatic Code Rewriting'
+title: 'MARTINI: The Little Match and Replace Tool for Automatic Code Rewriting'
 tags:
 	- Clang
 	- meteprogramming
@@ -16,20 +16,20 @@ authors:
 		orcid: 0000-0002-7199-8221
 		affiliation: 1
 		corresponding: true
-	- name: Camille Coti
+<!-- 	- name: Camille Coti
 		affiliation: 3
 	- name: Allen D. Malony
 		affiliation: 1
 	- name: Johannes Doerfert
 		orcid: 0000-0001-7870-8963
-		affiliation: 3
+		affiliation: 3 -->
 affiliations:
 	- name: University of Oregon, Eugene, OR, USA
 		index: 1
 <!-- 	- name: Université du Québec à Montréal, Montréal, QC, Canada
 		index: 2 -->
-	- name: Argonne National Laboratory, Lemont, IL, USA
-		index: 3
+<!-- 	- name: Argonne National Laboratory, Lemont, IL, USA
+		index: 3 -->
 date: 30 June 2022
 bibliography: cite.bib
 
