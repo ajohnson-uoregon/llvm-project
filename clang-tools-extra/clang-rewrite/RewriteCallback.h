@@ -103,8 +103,9 @@ class ReplaceBindingsCallback : public MatchFinder::MatchCallback {
 public:
   ASTContext* context;
   CodeAction* action;
+  Binding bind;
 
-  ReplaceBindingsCallback(CodeAction* action) : action(action) {}
+  ReplaceBindingsCallback(CodeAction* action, Binding b) : action(action), bind(b) {}
 
   ~ReplaceBindingsCallback() {}
 
@@ -186,7 +187,7 @@ public:
     if (buff.hasValue()) {
       memcpy(code, &(buff->getBufferStart()[begin_offset]),
              (end_offset - begin_offset + 1) * sizeof(char));
-      code [end_offset - begin_offset] = '\0';
+      code[end_offset - begin_offset] = '\0';
       printf("matched range: %s\n", code);
       printf("               ");
       for (unsigned int i = 0; i < match_offset - begin_offset; i++) {
@@ -194,6 +195,11 @@ public:
       }
       printf("^\n");
     }
+    delete[] code;
+
+    Rewriter::RewriteOptions opts;
+    opts.IncludeInsertsAtBeginOfRange = false;
+    Rewriter rw(context->getSourceManager(), context->getLangOpts());
 
     if (expr_valid) {
       printf("expr\n");
@@ -203,8 +209,21 @@ public:
       printf("decl\n");
       decl->dump();
 
+      char* name_c = new char[end_offset - match_offset + 1];
+      if (buff.hasValue()) {
+        memcpy(name_c, &(buff->getBufferStart()[match_offset]),
+               (end_offset - match_offset + 1) * sizeof(char));
+        name_c[end_offset - match_offset] = '\0';
+        StringRef name(name_c);
+        size_t space = name.find(" ");
 
+        rw.ReplaceText(decl->getLocation(), space, bind.value);
+      }
+      delete[] name_c;
     }
+    std::string new_code = rw.getRewrittenText(action->snippet_range);
+
+    printf("new code!!!! %s\n", new_code.c_str());
   }
 };
 
@@ -515,10 +534,12 @@ public:
 
   void replace_bound_code(CodeAction* action, std::vector<Binding> bindings) {
     printf("REPLACE BOUND CODE\n");
-    MatchFinder finder;
-    ReplaceBindingsCallback cb(action);
+
+    // ReplaceBindingsCallback cb(action);
 
     for (Binding b: bindings) {
+      MatchFinder finder;
+      ReplaceBindingsCallback cb(action, b);
       printf("LOOKING for things named %s or %s\n", b.name.c_str(), b.qual_name.c_str());
 
       if (!b.name.empty() && !b.qual_name.empty()) {
@@ -605,13 +626,13 @@ public:
         printf("ERROR: no valid name to look for\n");
         return;
       }
-    }
 
-    printf("RUNNING MATCH FINDER\n");
-    // finder.matchAST(*context);
-    int retval = Tool->run(newFrontendActionFactory(&finder).get());
-    if (retval) {
-      printf("OH NOES\n");
+      printf("RUNNING MATCH FINDER\n");
+      // finder.matchAST(*context);
+      int retval = Tool->run(newFrontendActionFactory(&finder).get());
+      if (retval) {
+        printf("OH NOES\n");
+      }
     }
   }
 
