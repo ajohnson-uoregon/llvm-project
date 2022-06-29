@@ -11,7 +11,7 @@ authors:
     affiliation: 1
     corresponding: true
   - name: Camille Coti
-    affiliation: 3
+    affiliation: 2
   - name: Allen D. Malony
     affiliation: 1
   - name: Johannes Doerfert
@@ -50,10 +50,8 @@ Through this novel and user-friendly interface, programmers can automate
 and customize complex code changes which require a deep understanding of
 the language without any knowledge of compiler internals.
 
----
 
 # Statement of Need
 
----
 
 # References
