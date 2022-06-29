@@ -1,4 +1,4 @@
-title: 'MARTINI: The Little Match and Replace Tool for Automatic Code Rewriting'
+title: "MARTINI: The Little Match and Replace Tool for Automatic Code Rewriting"
 tags:
   - Clang
   - meteprogramming
@@ -6,9 +6,7 @@ tags:
   - AST matchers
 authors:
   - name: Alister Johnson
-    orcid: 0000-0002-7199-8221
     affiliation: 1
-    corresponding: true
 affiliations:
   - name: University of Oregon, Eugene, OR, USA
     index: 1
