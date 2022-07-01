@@ -118,8 +118,6 @@ as users have to directly describe AST manipulations and use syntax
 specific to each tool. MARTINI, on the other hand, only requires knowledge
 of C++ and the semantics of a few new attributes.
 
-![MARTINI's equivalent to `clang-tidy`'s "modernize-use-nullptr" rule, using abbreviated MARTINI syntax.\label{fig:martini_nullptr_example}](martini-nullptr-ex.png)
-
 The most similar work to our own is Nobrainer [@nobrainer1; @nobrainer2],
 which also uses C/C++ code snippets and AST matchers to match application
 code and describe how to modify it, and inspired some of our user interface.
@@ -138,6 +136,8 @@ precisely the opposite: our matchers are as general as possible and
 users must add specificity, e.g., with literals, and we allow users to
 define any transformations they wish with minimal restrictions on safety.
 Nobrainer is also, sadly, not open-source.
+
+![MARTINI's equivalent to `clang-tidy`'s "modernize-use-nullptr" rule, using abbreviated MARTINI syntax.\label{fig:martini_nullptr_example}](martini-nullptr-ex.png)
 
 
 # References
