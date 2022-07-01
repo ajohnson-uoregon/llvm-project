@@ -62,7 +62,7 @@ allow more complete understanding of the source code and, consequently,
 semantic-based rewriting over most arbitrary code ranges. However, developing
 and customizing such tooling requires a deep understanding of the compiler
 and its rewriting infrastructure (if it has one), which restricts the
-developer pool drastically [@xevolver, @omni]. In the past, as long as the
+developer pool drastically [@xevolver; @omni]. In the past, as long as the
 number of desired rewrites was small and customization was not required,
 hard-coded rules in a compiler-based rewriting tool were sufficient.
 Today, however, language standards are changing more rapidly and new
@@ -103,14 +103,14 @@ MARTINI has the context needed to emulate most of `clang-tidy`'s
 lines of complex C++ and Clang AST matchers that requires extensive knowledge
 of Clang internals, MARTINI can be understood by the average programmer.
 
-![MARTINI's equivalent to `clang-tidy`'s "modernize-use-nullptr" rule, using abbreviated MARTINI syntax.\label{fig:martini_nullptr_example}](martini-nullptr-ex.png)
-
 Most previous work in automatic code rewriting relies on compiler experts
 directly working with the code's abstract syntax tree (AST). ClangMR [@clangmr]
 and the Clang Transformer library [@transformer] are similar code rewriting
 tools implemented in Clang, but both of these use AST matchers (with a
 few additions) as a user interface. MARTINI is designed to provide similar
 functionality but be usable by non-compiler experts.
+
+![MARTINI's equivalent to `clang-tidy`'s "modernize-use-nullptr" rule, using abbreviated MARTINI syntax.\label{fig:martini_nullptr_example}](martini-nullptr-ex.png)
 
 Other code rewriting frameworks include the ROSE compiler [@rose2],
 Xevolver [@xevolver] (built on ROSE), and the Omni source-to-source
@@ -124,7 +124,7 @@ as users have to directly describe AST manipulations and use syntax
 specific to each tool. MARTINI, on the other hand, only requires knowledge
 of C++ and the semantics of a few new attributes.
 
-The most similar work to our own is Nobrainer [@nobrainer1, @nobrainer2],
+The most similar work to our own is Nobrainer [@nobrainer1; @nobrainer2],
 which also uses C/C++ code snippets and AST matchers to match application
 code and describe how to modify it, and inspired some of our user interface.
 As the Nobrainer project has existed for longer than ours, it supports
