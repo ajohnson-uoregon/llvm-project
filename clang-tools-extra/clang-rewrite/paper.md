@@ -33,7 +33,7 @@ bibliography: cite.bib
 
 Rewriting code for cleanliness, API changes, and new programming models is a
 common, yet time-consuming task. Localized or syntax-based changes are often
-mechanical and can be automated with text-based rewriting tools, like Unix's
+mechanical and can be automated with text-based tools, like Unix's
 `sed`. However, non-localized or semantic-based changes require specialized
 tools that usually come with complex, hard-coded rules that require expertise
 in compilers. This means existing techniques for code rewriting are either too
@@ -61,10 +61,10 @@ The compiler's frontend has parsing and semantic analysis capabilities that
 allow more complete understanding of the source code and, consequently,
 semantic-based rewriting over most arbitrary code ranges. However, developing
 and customizing such tooling requires a deep understanding of the compiler
-and its rewriting infrastructure (if it has one), which restricts the
-developer pool drastically [@xevolver; @omni]. In the past, as long as the
-number of desired rewrites was small and customization was not required,
-hard-coded rules in a compiler-based rewriting tool were sufficient.
+and its rewriting infrastructure (if one exists), which restricts the
+developer pool drastically [@xevolver; @omni]. Previously, as long as the
+number of rewrites was small and customization was not required,
+hard-coded rules in a compiler-based tool were sufficient.
 Today, however, language standards are changing more rapidly and new
 parallel programming models are constantly being developed.
 
@@ -90,18 +90,17 @@ readable. \autoref{fig:modernize_nullptr_example} illustrates the changes
 `clang-tidy` can perform. The first replacement, where `a` is initialized
 to `0`, could be done with a text-based tool, like `sed`, although
 constructing a generic regular expression to match arbitrary types and
-variable names could be tricky. However, the other two replacements, in the
-assignment to `c` and the return statement, are difficult if not impossible
+variable names could be tricky. However, the other two replacements are
+difficult if not impossible
 to handle without semantic context. The physical distance between the type
 of the variable and the `0`-literal can cross file boundaries, and most
-languages allow for various other complexities, like shadowing declarations
-with different types. This semantic context is out of reach for purely
-text-based search-and-replace tools. Being built on the Clang compiler,
+languages allow for various other complexities. This semantic context is
+out of reach for purely text-based tools. Being built on the Clang compiler,
 MARTINI has the context needed to emulate most of `clang-tidy`'s
 "modernize-use-nullptr" rule using just the three matcher-replacer pairs in
 \autoref{fig:martini_nullptr_example}. While `clang-tidy`'s rule is over 100
-lines of complex C++ and Clang AST matchers that requires extensive knowledge
-of Clang internals, MARTINI can be understood by the average programmer.
+lines of complex code that requires extensive knowledge of Clang internals,
+MARTINI can be understood by the average programmer.
 
 Most previous work in automatic code rewriting relies on compiler experts
 directly working with the code's abstract syntax tree (AST). ClangMR [@clangmr]
@@ -114,10 +113,7 @@ Other code rewriting frameworks include the ROSE compiler [@rose2],
 Xevolver [@xevolver] (built on ROSE), and the Omni source-to-source
 compiler [@omni]. These tools provide more low-level interfaces than ours,
 and thus more precise control over rewriting, but at the cost of requiring
-users to be compiler experts. In particular, Xevolver provides an
-XML-based AST pattern matching interface for describing code transformations
-and Omni requires users to write Java classes that perform transformations
-on an XML representation of the AST. Neither of these are very user-friendly,
+users to be compiler experts. Neither of these are very user-friendly,
 as users have to directly describe AST manipulations and use syntax
 specific to each tool. MARTINI, on the other hand, only requires knowledge
 of C++ and the semantics of a few new attributes.
@@ -129,24 +125,19 @@ which also uses C/C++ code snippets and AST matchers to match application
 code and describe how to modify it, and inspired some of our user interface.
 As the Nobrainer project has existed for longer than ours, it supports
 more of the C++ standard. However, Nobrainer uses more restrictive and
-specialized syntax (e.g., to match a single expression, the expression
-must be returned) and generally enforces more restrictions on
+specialized syntax and generally enforces more restrictions on
 transformations than we do. They do this to ensure their transformations
-are (type-)safe, but we opted to take a more lenient approach both to
-simplify the implementation of our prototype and to give users more
-flexibility in the transformations they can define. It's easy to imagine
-cases where users may want to change the type of an expression, such as
+are (type-)safe, but we opted to take a more lenient approach. For example, it's easy
+to imagine cases where users may want to change the type of an expression, such as
 testing multiple precision arithmetic, but this is nearly impossible
-in Nobrainer. Nobrainer rewrite rules are strictly before-and-after
-code snippets; ours allow for more nuance with both insert and replace rules
-and the potential for adding more control and logic around which
-transformations happen when. Nobrainer's design philosophy is to make
+in Nobrainer. Nobrainer's design philosophy is to make
 matchers as specific as possible and force users to add generality -
 they assume all names in a matcher are literals unless they are specified
 as parameters and do their best to enforce safety. Our philosophy is almost
-precisely opposite of that: our matchers are as general as possible and
+precisely the opposite: our matchers are as general as possible and
 users must add specificity, e.g., with literals, and we allow users to
 define any transformations they wish with minimal restrictions on safety.
+Nobrainer is also, sadly, not open-source.
 
 
 # References
