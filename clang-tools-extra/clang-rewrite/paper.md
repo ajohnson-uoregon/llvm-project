@@ -110,8 +110,6 @@ tools implemented in Clang, but both of these use AST matchers (with a
 few additions) as a user interface. MARTINI is designed to provide similar
 functionality but be usable by non-compiler experts.
 
-![MARTINI's equivalent to `clang-tidy`'s "modernize-use-nullptr" rule, using abbreviated MARTINI syntax.\label{fig:martini_nullptr_example}](martini-nullptr-ex.png)
-
 Other code rewriting frameworks include the ROSE compiler [@rose2],
 Xevolver [@xevolver] (built on ROSE), and the Omni source-to-source
 compiler [@omni]. These tools provide more low-level interfaces than ours,
@@ -123,6 +121,8 @@ on an XML representation of the AST. Neither of these are very user-friendly,
 as users have to directly describe AST manipulations and use syntax
 specific to each tool. MARTINI, on the other hand, only requires knowledge
 of C++ and the semantics of a few new attributes.
+
+![MARTINI's equivalent to `clang-tidy`'s "modernize-use-nullptr" rule, using abbreviated MARTINI syntax.\label{fig:martini_nullptr_example}](martini-nullptr-ex.png)
 
 The most similar work to our own is Nobrainer [@nobrainer1; @nobrainer2],
 which also uses C/C++ code snippets and AST matchers to match application
