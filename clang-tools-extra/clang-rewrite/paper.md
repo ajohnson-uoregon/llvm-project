@@ -79,8 +79,7 @@ and important. These changes often follow patterns, however, and if
 programmers are able to capture those patterns in some way, these tasks
 seem like they _should_ be able to be automated.
 
-![Example to showcase the "modernize-use-nullptr" `clang-tidy` rewrite
-rule, which replaces `0`-literal pointers with `nullptr`.\label{fig:modernize_nullptr_example}](modernize-use-nullptr-ex.png)
+### Example
 
 As an example, consider the "simple" rewriting task done by the `clang-tidy`
 rule ["modernize-use-nullptr"](https://clang.llvm.org/extra/clang-tidy/checks/modernize-use-nullptr.html).
@@ -101,6 +100,11 @@ MARTINI has the context needed to emulate most of `clang-tidy`'s
 \autoref{fig:martini_nullptr_example}. While `clang-tidy`'s rule is over 100
 lines of complex code that requires extensive knowledge of Clang internals,
 MARTINI can be understood by the average programmer.
+
+![Example to showcase the "modernize-use-nullptr" `clang-tidy` rewrite
+rule, which replaces `0`-literal pointers with `nullptr`.\label{fig:modernize_nullptr_example}](modernize-use-nullptr-ex.png)
+
+### Related Work
 
 Most previous work in automatic code rewriting relies on compiler experts
 directly working with the code's abstract syntax tree (AST). ClangMR [@clangmr]
