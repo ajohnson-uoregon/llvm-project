@@ -27,27 +27,25 @@ instructions:
   - `mkdir build`
   - `cd build`
   - For Ninja (recommended):
-    -  
-        ```
+
         cmake -G Ninja \
         -DLLVM_TARGETS_TO_BUILD="X86;NVPTX;AMDGPU" \
         -DCMAKE_INSTALL_PREFIX="<install dir>" \
         -DCMAKE_BUILD_TYPE=RelWithDebInfo \
         -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra" \
         ../llvm
-        ```
-    - `ninja -j <N> install`
+
+        ninja -j <N> install
   - For Unix make:
-    -  
-        ```
+
         cmake -G "Unix Makefiles" \
         -DLLVM_TARGETS_TO_BUILD="X86;NVPTX;AMDGPU" \
         -DCMAKE_INSTALL_PREFIX="<install dir>" \
         -DCMAKE_BUILD_TYPE=RelWithDebInfo \
         -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra" \
         ../llvm
-        ```
-    - `cmake --build . -j <N> --target install`
+
+        cmake --build . -j <N> --target install
 5. The MARTINI/`clang-rewrite` executable will be in the install directory chosen
 when building LLVM.
 
@@ -209,3 +207,9 @@ Most of this tool functions via callbacks that run during AST traversal.
 
 An example of the syntax expected (still a work in progress) is in
 ``tests/new.cpp``.
+
+## Contributing
+
+If you'd like to contribute to this project, fork this repo and pull request. If your contribution is to portions of this project that have been upstreamed to LLVM/Clang already, follow their guildlines for contributions.
+
+To report a bug or ask a question, email me (ajohnson (at) cs.uoregon.edu) or open an issue on github.
