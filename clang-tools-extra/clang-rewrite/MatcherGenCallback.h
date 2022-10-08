@@ -132,7 +132,7 @@ public:
         Node* fxn = add_node(MT::functionDecl, "functionDecl()", 0);
         if (is_literal(callee)) {
           fxn->set_is_literal(true);
-          fxn->set_name(callee->getNameAsString());
+          fxn->set_name(callee->getNameAsString(), callee->getQualifiedNameAsString());
         }
         else {
           fxn->bind_to(callee->getNameAsString());
@@ -162,7 +162,7 @@ public:
         Node* fxn = add_node(MT::functionDecl, "functionDecl()", 0);
         if (is_literal(kern)) {
           fxn->set_is_literal(true);
-          fxn->set_name(kern->getNameAsString());
+          fxn->set_name(kern->getNameAsString(), kern->getQualifiedNameAsString());
         }
         else {
           fxn->bind_to(kern->getNameAsString());
@@ -207,7 +207,7 @@ public:
         add_node(MT::callee, "callee()", 1);
         Node* fxn = add_node(MT::functionDecl, "functionDecl()", 0);
         fxn->set_is_literal(true);
-        fxn->set_name(callee->getNameAsString());
+        fxn->set_name(callee->getNameAsString(), callee->getNameAsString());
       }
       else {
         add_node(MT::callExpr, "cxxOperatorCallExpr()", getNumChildren(call));
@@ -228,7 +228,7 @@ public:
         declref->set_is_literal(true);
         add_node(MT::to, "to()", 1);
         Node* valuedecl = add_node(MT::valueDecl, "valueDecl()", 0);
-        valuedecl->set_name(name);
+        valuedecl->set_name(name, qualname);
         std::string ty = decl->getType().getAsString();
         valuedecl->set_type(ty);
 
@@ -273,6 +273,18 @@ public:
       return true;
     }
 
+    bool VisitDeclStmt(DeclStmt* decl) {
+      add_node(MT::declStmt, "declStmt()", getNumChildren(decl));
+
+      return true;
+    }
+
+    bool VisitForStmt(ForStmt* forstmt) {
+      add_node(MT::forStmt, "forStmt()", getNumChildren(forstmt));
+
+      return true;
+    }
+
     bool VisitVarDecl(VarDecl* decl) {
       std::string name = decl->getNameAsString();
       std::string qualname = decl->getQualifiedNameAsString();
@@ -286,7 +298,7 @@ public:
         d->set_is_literal(true);
         std::string type = decl->getType().getAsString();
         d->set_type(type);
-        d->set_name(name);
+        d->set_name(name, qualname);
       }
       else {
         QualType ty = decl->getType();
@@ -393,6 +405,14 @@ public:
       else {
         add_node(MT::returnStmt, "returnStmt()", getNumChildren(ret));
       }
+      return true;
+    }
+
+    bool VisitUnaryOperator(UnaryOperator* unop) {
+      add_node(MT::unaryOperator, "unaryOperator()", getNumChildren(unop) +1);
+      Node* opname = add_node(MT::hasOperatorName, "hasOperatorName()", 0);
+      opname->add_arg(unop->getOpcodeStr(unop->getOpcode()));
+
       return true;
     }
 
@@ -526,6 +546,10 @@ class MatcherGenCallback : public MatchFinder::MatchCallback {
 public:
   ASTContext* context;
   std::string matcher_name;
+
+  void onStartOfTranslationUnit() override {
+    // dynamic::registerLocalMatchers();
+  }
 
   void run(const MatchFinder::MatchResult& result) override {
     printf("found matcher\n");

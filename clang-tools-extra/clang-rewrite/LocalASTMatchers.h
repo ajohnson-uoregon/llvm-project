@@ -2,7 +2,7 @@
 #define CLANG_REWRITE_LOCAL_AST_MATCHERS_H
 
 #include "clang/ASTMatchers/ASTMatchFinder.h"
-#include "clang/ASTMatchers/Dynamic/Registry.h"
+
 
 using namespace clang;
 using namespace clang::ast_matchers;
@@ -105,25 +105,24 @@ AST_MATCHER_P(CUDAKernelCallExpr, cudaStream, internal::Matcher<Expr>,
   return false;
 }
 
+/// TODO
+/// ignoringPointersAndReferences -- matches base type, ignoring any
+/// enclosing pointers or references on the type -- look at refs more
+AST_MATCHER_P(Type, ignoringPointers, internal::Matcher<Type>,
+              InnerMatcher) {
+  const Type* type = &Node;
+  while (type->isPointerType()) {
+      type = type->getPointeeType().getTypePtr();
+  }
+  return InnerMatcher.matches(*type, Finder, Builder);
+    // else if (t.isReferenceType()) {
+    //
+    // }
+}
+
 }
 }
 
-// namespace clang {
-// namespace ast_matchers {
-// namespace dynamic {
-//
-//   #define REGISTER_MATCHER(name)                                                 \
-//     registerMatcher(#name, internal::makeMatcherAutoMarshall(                    \
-//                                ::clang::ast_matchers::name, #name));
-//
-//   REGISTER_MATCHER(cudaBlockDim);
-//   REGISTER_MATCHER(cudaGridDim);
-//   REGISTER_MATCHER(cudaSharedMemPerBlock);
-//   REGISTER_MATCHER(cudaStream);
-//   REGISTER_MATCHER(hasExpectedReturnType);
-// }
-// }
-// }
 
 
 #endif // CLANG_REWRITE_LOCAL_AST_MATCHERS_H

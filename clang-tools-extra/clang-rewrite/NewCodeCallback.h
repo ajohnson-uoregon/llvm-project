@@ -129,25 +129,36 @@ public:
 
     FullSourceLoc body_begin;
     FullSourceLoc body_end;
+    //todo: make work for multiline code
     if (!body->body_empty()) {
+      // printf("sigh\n");
+      // body->getLBracLoc().dump(context->getSourceManager());
+      // body->getBeginLoc().dump(context->getSourceManager());
+      // THIS body->body_front()->getBeginLoc().dump(context->getSourceManager());
+      // AND THIS body->body_back()->getEndLoc().dump(context->getSourceManager());
+      // body->getEndLoc().dump(context->getSourceManager());
+      // body->getRBracLoc().dump(context->getSourceManager());
+
       body_begin = context->getFullLoc(body->body_front()->getBeginLoc());
 
-      // go to end of line; stmts don't work, gotta lex to the end of the line
+      // // go to end of line; stmts don't work, gotta lex to the end of the line
       SourceLocation eol = Lexer::getLocForEndOfToken(
-          body->body_back()->getBeginLoc(), 0, context->getSourceManager(),
+          body->body_back()->getEndLoc(), 0, context->getSourceManager(),
           context->getLangOpts());
-      Optional<Token> tok = Lexer::findNextToken(
-          eol, context->getSourceManager(), context->getLangOpts());
-      while (tok.hasValue() && tok->isNot(clang::tok::semi)) {
-        tok = Lexer::findNextToken(eol, context->getSourceManager(),
-                                   context->getLangOpts());
-        eol = tok->getLocation();
-      }
-      // TODO: this is a hack and we should be smarter about semicolons
-      if (kind != Replace) {
-        eol = tok->getEndLoc(); // grab semicolon
-      }
+      // Optional<Token> tok = Lexer::findNextToken(
+      //     eol, context->getSourceManager(), context->getLangOpts());
+      // while (tok.hasValue() && tok->isNot(clang::tok::semi)) {
+      //   tok = Lexer::findNextToken(eol, context->getSourceManager(),
+      //                              context->getLangOpts());
+      //   eol = tok->getLocation();
+      // }
+      // // TODO: this is a hack and we should be smarter about semicolons
+      // if (kind != Replace) {
+      //   eol = tok->getEndLoc(); // grab semicolon
+      // }
       body_end = context->getFullLoc(eol);
+      // body_begin = context->getFullLoc(body->body_front()->getBeginLoc());
+      // body_end = context->getFullLoc(body->body_back()->getEndLoc());
     }
     else { // empty body just use brackets
       body_begin = context->getFullLoc(body->getLBracLoc());
@@ -182,8 +193,9 @@ public:
     //   nodes.push_back(DynTypedNode::create(*s));
     // }
     CodeAction *act =
-        new CodeAction(std::string(code), action_name, kind, matcher_names,
-          fid, SourceRange(body_begin, body_end));
+        new CodeAction(std::string(code), action_name, kind, matcher_names, fid,
+          SourceRange(body_begin,
+                      body_end));
     all_actions.push_back(act);
 
     delete[] code;

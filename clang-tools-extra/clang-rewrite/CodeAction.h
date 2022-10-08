@@ -33,10 +33,16 @@ enum NewCodeKind {
   Replace,
 };
 
+enum BindingKind {
+  TypeBinding,
+  VarNameBinding,
+};
+
 typedef struct Binding {
   std::string name;
   std::string qual_name;
   std::string value;
+  BindingKind kind;
 } Binding;
 
 class CodeAction {

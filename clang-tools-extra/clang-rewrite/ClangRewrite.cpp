@@ -78,6 +78,9 @@ static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 //
 
 int main(int argc, const char **argv) {
+
+  // dynamic::registerLocalMatchers();
+
   auto ExpectedParser =
       CommonOptionsParser::create(argc, argv, RewriteCategory);
   if (!ExpectedParser) {

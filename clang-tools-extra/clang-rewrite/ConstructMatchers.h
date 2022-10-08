@@ -27,11 +27,17 @@ enum class MatcherType {
   cxxFunctionalCastExpr,
   cxxOperatorCallExpr,
   declRefExpr,
+  declStmt,
   equals,
+  forStmt,
   functionDecl,
+  hasBody,
+  hasCondition,
   hasExpectedReturnType,
+  hasIncrement,
   hasInitializer,
   hasLHS,
+  hasLoopInit,
   hasOperatorName,
   hasReturnValue,
   hasRHS,
@@ -43,6 +49,7 @@ enum class MatcherType {
   returnStmt,
   to,
   type,
+  unaryOperator,
   valueDecl,
   varDecl,
 };
@@ -54,7 +61,8 @@ public:
   bool bound = false;
   std::string bound_name; // the name the matcher should be bound to
   bool has_name = false;
-  std::string name; // the actual name of the thing, eg function name, var name
+  std::string short_name; // the actual name of the thing, eg function name, var name
+  std::string qual_name; // actual name with qualifiers
   bool has_type = false;
   std::string type;
   bool ignore_casts = false;
@@ -114,9 +122,10 @@ public:
     return this->has_type;
   }
 
-  void set_name(std::string name) {
+  void set_name(std::string short_name, std::string qual_name) {
     this->has_name = true;
-    this->name = name;
+    this->short_name = short_name;
+    this->qual_name = qual_name;
   }
 
   bool is_named() {
@@ -152,12 +161,12 @@ public:
     return false;
   }
 
-  bool self_or_child_named(std::string name) {
-    if (this->has_name && this->name == name) {
+  bool self_or_child_qual_named(std::string qual_name) {
+    if (this->has_name && this->qual_name == qual_name) {
       return true;
     }
     for (Node* child = this->children; child != nullptr; child = child->next_sibling) {
-      if (child->self_or_child_named(name)) {
+      if (child->self_or_child_qual_named(qual_name)) {
         return true;
       }
     }
@@ -267,7 +276,7 @@ public:
       printf("  bound to %s;", n->bound_name.c_str());
     }
     if (n->has_name) {
-      printf("  named %s;", n->name.c_str());
+      printf("  named %s (%s);", n->short_name.c_str(), n->qual_name.c_str());
     }
     if (n->is_literal) {
       printf("  is literal;");
@@ -293,7 +302,7 @@ public:
       printf("  bound to %s;", this->bound_name.c_str());
     }
     if (this->has_name) {
-      printf("  named %s;", this->name.c_str());
+      printf("  named %s (%s);", this->short_name.c_str(), this->qual_name.c_str());
     }
     if (this->is_literal) {
       printf("  is literal;");
