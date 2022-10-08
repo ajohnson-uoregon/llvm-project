@@ -24,6 +24,7 @@
 #include "clang/ASTMatchers/ASTMatchersInternal.h"
 #include "clang/ASTMatchers/Dynamic/Diagnostics.h"
 #include "clang/ASTMatchers/Dynamic/VariantValue.h"
+#include "clang/ASTMatchers/Dynamic/Registry.h"
 #include "clang/Basic/AttrKinds.h"
 #include "clang/Basic/LLVM.h"
 #include "clang/Basic/OpenMPKinds.h"

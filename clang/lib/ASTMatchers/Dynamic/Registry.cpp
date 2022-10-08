@@ -12,7 +12,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "clang/ASTMatchers/Dynamic/Registry.h"
-#include "Marshallers.h"
 #include "clang/AST/ASTTypeTraits.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/ASTMatchers/Dynamic/Diagnostics.h"
@@ -35,34 +34,13 @@ namespace clang {
 namespace ast_matchers {
 namespace dynamic {
 
-namespace {
-
-using internal::MatcherDescriptor;
-
-using ConstructorMap =
-    llvm::StringMap<std::unique_ptr<const MatcherDescriptor>>;
-
-class RegistryMaps {
-public:
-  RegistryMaps();
-  ~RegistryMaps();
-
-  const ConstructorMap &constructors() const { return Constructors; }
-
-private:
-  void registerMatcher(StringRef MatcherName,
-                       std::unique_ptr<MatcherDescriptor> Callback);
-
-  ConstructorMap Constructors;
-};
-
-} // namespace
-
 void RegistryMaps::registerMatcher(
     StringRef MatcherName, std::unique_ptr<MatcherDescriptor> Callback) {
   assert(!Constructors.contains(MatcherName));
   Constructors[MatcherName] = std::move(Callback);
 }
+
+__attribute__((weak)) void registerLocalASTMatchers(RegistryMaps* map) {}
 
 #define REGISTER_MATCHER(name)                                                 \
   registerMatcher(#name, internal::makeMatcherAutoMarshall(                    \
@@ -599,11 +577,11 @@ RegistryMaps::RegistryMaps() {
   REGISTER_MATCHER(voidType);
   REGISTER_MATCHER(whileStmt);
   REGISTER_MATCHER(withInitializer);
+
+  registerLocalASTMatchers(this);
 }
 
 RegistryMaps::~RegistryMaps() = default;
-
-static llvm::ManagedStatic<RegistryMaps> RegistryData;
 
 ASTNodeKind Registry::nodeMatcherType(MatcherCtor Ctor) {
   return Ctor->nodeMatcherType();

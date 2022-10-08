@@ -18,6 +18,7 @@
 
 #include "clang/ASTMatchers/Dynamic/Diagnostics.h"
 #include "clang/ASTMatchers/Dynamic/VariantValue.h"
+#include "clang/ASTMatchers/Dynamic/Marshallers.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
 #include <optional>
@@ -152,6 +153,36 @@ public:
                                               ArrayRef<ParserValue> Args,
                                               Diagnostics *Error);
 };
+
+
+// namespace {
+
+using internal::MatcherDescriptor;
+
+using ConstructorMap =
+    llvm::StringMap<std::unique_ptr<const MatcherDescriptor>>;
+
+class RegistryMaps {
+public:
+  RegistryMaps();
+  ~RegistryMaps();
+
+  const ConstructorMap &constructors() const { return Constructors; }
+
+  void registerMatcher(StringRef MatcherName,
+                       std::unique_ptr<MatcherDescriptor> Callback);
+
+private:
+  ConstructorMap Constructors;
+};
+
+// } // namespace
+
+static llvm::ManagedStatic<RegistryMaps> RegistryData;
+
+__attribute__((weak)) void registerLocalASTMatchers(RegistryMaps* map);
+
+
 
 } // namespace dynamic
 } // namespace ast_matchers
