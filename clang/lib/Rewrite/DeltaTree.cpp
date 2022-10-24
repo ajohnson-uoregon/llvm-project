@@ -399,7 +399,15 @@ DeltaTree::DeltaTree(const DeltaTree &RHS) {
 }
 
 DeltaTree::~DeltaTree() {
+  assert(Root != nullptr && "Root of DeltaTree is nullptr");
   getRoot(Root)->Destroy();
+}
+
+void DeltaTree::resetTree() {
+  if (Root != nullptr) {
+    getRoot(Root)->Destroy();
+  }
+  Root = new DeltaTreeNode();
 }
 
 /// getDeltaAt - Return the accumulated delta at the specified file offset.

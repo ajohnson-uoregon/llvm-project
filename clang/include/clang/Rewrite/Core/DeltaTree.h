@@ -23,7 +23,7 @@ namespace clang {
   /// efficiently tell us the full accumulated delta for a specific file offset
   /// as well, without traversing the whole tree.
   class DeltaTree {
-    void *Root;    // "DeltaTreeNode *"
+    void *Root = nullptr;    // "DeltaTreeNode *"
 
   public:
     DeltaTree();
@@ -33,6 +33,8 @@ namespace clang {
 
     DeltaTree &operator=(const DeltaTree &) = delete;
     ~DeltaTree();
+
+    void resetTree();
 
     /// getDeltaAt - Return the accumulated delta at the specified file offset.
     /// This includes all insertions or delections that occurred *before* the

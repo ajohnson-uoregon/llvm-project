@@ -210,6 +210,18 @@ public:
     Chunks.erase(Offset, NumBytes);
   }
 
+  // bit of a workaround for not being able to copy Chunks/RewriteBuffers,
+  // also just nice for debugging
+  std::string getAsString() {
+    std::string result = "";
+    RopePieceBTreeIterator iter = Chunks.begin();
+    while (iter != Chunks.end()) {
+      result += iter.piece().str();
+      iter.MoveToNextPiece();
+    }
+    return result;
+  }
+
 private:
   RopePiece MakeRopeString(const char *Start, const char *End);
 };

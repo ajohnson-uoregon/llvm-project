@@ -16,6 +16,7 @@
 
 #include "clang/Basic/LLVM.h"
 #include "clang/Basic/SourceLocation.h"
+#include "clang/Basic/SourceManager.h"
 #include "clang/Rewrite/Core/RewriteBuffer.h"
 #include "llvm/ADT/StringRef.h"
 #include <map>
@@ -24,7 +25,6 @@
 namespace clang {
 
 class LangOptions;
-class SourceManager;
 
 /// Rewriter - This is the main interface to the rewrite buffers.  Its primary
 /// job is to dispatch high-level requests to the low-level RewriteBuffers that
@@ -208,6 +208,20 @@ public:
     std::map<FileID, RewriteBuffer>::const_iterator I =
       RewriteBuffers.find(FID);
     return I == RewriteBuffers.end() ? nullptr : &I->second;
+  }
+
+  void resetRewriteBufferFor(SourceManager& SourceMgr, FileID FID) {
+    std::map<FileID, RewriteBuffer>::iterator I =
+      RewriteBuffers.find(FID);
+    if (I != RewriteBuffers.end()) {
+      I->second.resetBuffer();
+    }
+  }
+
+  void resetAllRewriteBuffers(SourceManager& SourceMgr) {
+    for (std::map<FileID, RewriteBuffer>::iterator i = RewriteBuffers.begin(); i != RewriteBuffers.end(); i++) {
+      i->second.resetBuffer();
+    }
   }
 
   // Iterators over rewrite buffers.

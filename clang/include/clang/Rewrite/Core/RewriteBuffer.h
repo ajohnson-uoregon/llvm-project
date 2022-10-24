@@ -30,8 +30,17 @@ class RewriteBuffer {
   DeltaTree Deltas;
 
   RewriteRope Buffer;
+  RewriteRope Original;
 
 public:
+
+  void resetBuffer() {
+    Deltas.resetTree();
+    std::string orig = Original.getAsString();
+    char orig_c[orig.size() + 1];
+    strcpy(orig_c, orig.c_str());
+    Buffer.assign(&orig_c[0], &orig_c[orig.size()]);
+  }
   using iterator = RewriteRope::const_iterator;
 
   iterator begin() const { return Buffer.begin(); }
@@ -42,6 +51,7 @@ public:
   /// input buffer.
   void Initialize(const char *BufStart, const char *BufEnd) {
     Buffer.assign(BufStart, BufEnd);
+    Original.assign(BufStart, BufEnd);
   }
   void Initialize(StringRef Input) {
     Initialize(Input.begin(), Input.end());
