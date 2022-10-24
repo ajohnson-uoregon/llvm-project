@@ -98,17 +98,17 @@ bool isBlock(const Decl* decl) {
 // - RequiresExprBodyDecl
 // - TranslationUnitDecl
 // - TemplateParamObjectDecl
+static Rewriter binding_rw;
 
 class ReplaceBindingsCallback : public MatchFinder::MatchCallback {
 public:
   ASTContext* context;
   CodeAction* action;
   Binding bind;
-  Rewriter binding_rw;
   Rewriter::RewriteOptions opts;
 
-  ReplaceBindingsCallback(CodeAction* action, Binding b, Rewriter& rw)
-    : action(action), bind(b), binding_rw(rw) {
+  ReplaceBindingsCallback(CodeAction* action, Binding b)
+    : action(action), bind(b) {
       opts.IncludeInsertsAtBeginOfRange = false;
     }
 
@@ -203,7 +203,7 @@ public:
       context->getSourceManager().getBufferOrNone(fid);
 
     char* code = new char[end_offset - begin_offset + 1];
-    if (buff.hasValue()) {
+    if (buff.has_value()) {
       memcpy(code, &(buff->getBufferStart()[begin_offset]),
              (end_offset - begin_offset + 1) * sizeof(char));
       code[end_offset - begin_offset] = '\0';
@@ -223,7 +223,7 @@ public:
 
       char* name_c = new char[end_offset - match_offset + 1];
       size_t space;
-      if (buff.hasValue()) {
+      if (buff.has_value()) {
         memcpy(name_c, &(buff->getBufferStart()[match_offset]),
                (end_offset - match_offset + 1) * sizeof(char));
         name_c[end_offset - match_offset] = '\0';
@@ -246,7 +246,7 @@ public:
 
       char* name_c = new char[end_offset - match_offset + 1];
       size_t space;
-      if (buff.hasValue()) {
+      if (buff.has_value()) {
         memcpy(name_c, &(buff->getBufferStart()[match_offset]),
                (end_offset - match_offset + 1) * sizeof(char));
         name_c[end_offset - match_offset] = '\0';
@@ -267,6 +267,8 @@ public:
     printf("new code!!!! %s\n", new_code.c_str());
     action->edited_code_snippet = new_code;
   }
+
+  void onEndOfTranslationUnit() override {}
 };
 
 // Rewriter ReplaceBindingsCallback::binding_rw;
@@ -449,7 +451,7 @@ public:
             context->getSourceManager().getBufferOrNone(fid);
 
         char *code = new char[end_offset - begin_offset + 1];
-        if (buff.hasValue()) {
+        if (buff.has_value()) {
           memcpy(code, &(buff->getBufferStart()[begin_offset]),
                  (end_offset - begin_offset + 1) * sizeof(char));
           code[end_offset - begin_offset] =
@@ -535,7 +537,10 @@ public:
 
     for (CodeAction *action : matcher->actions) {
       replace_bound_code(action, bound_code);
+      // action->dump_bindings(bound_code);
       printf("FINAL RESULT\n %s\n", action->edited_code_snippet.c_str());
+      binding_rw.resetAllRewriteBuffers(binding_rw.getSourceMgr());
+      bound_code.clear();
     }
 
 
@@ -583,14 +588,9 @@ public:
   void replace_bound_code(CodeAction* action, std::vector<Binding> bindings) {
     printf("REPLACE BOUND CODE\n");
 
-    // ReplaceBindingsCallback cb(action);
-
-    // Rewriter rw(context->getSourceManager(), context->getLangOpts());
-
-    Rewriter binding_rw;
     for (Binding b: bindings) {
       MatchFinder finder;
-      ReplaceBindingsCallback cb(action, b, binding_rw);
+      ReplaceBindingsCallback cb(action, b);
       printf("LOOKING for things named %s or %s\n", b.name.c_str(), b.qual_name.c_str());
 
       //TODO: if BindingKind is VarName or Type
@@ -814,7 +814,7 @@ private:
           context->getLangOpts());
       Optional<Token> tok = Lexer::findNextToken(
           eol, context->getSourceManager(), context->getLangOpts());
-      while (tok.hasValue() && tok->isNot(clang::tok::semi)) {
+      while (tok.has_value() && tok->isNot(clang::tok::semi)) {
         tok = Lexer::findNextToken(eol, context->getSourceManager(),
                                    context->getLangOpts());
         eol = tok->getLocation();
@@ -848,7 +848,7 @@ private:
           context->getLangOpts());
       Optional<Token> tok = Lexer::findNextToken(
           eol, context->getSourceManager(), context->getLangOpts());
-      while (tok.hasValue() && tok->isNot(clang::tok::semi)) {
+      while (tok.has_value() && tok->isNot(clang::tok::semi)) {
         tok = Lexer::findNextToken(eol, context->getSourceManager(),
                                    context->getLangOpts());
         eol = tok->getLocation();

@@ -177,7 +177,7 @@ public:
         context->getSourceManager().getBufferOrNone(fid);
 
     char *code = new char[end_offset - begin_offset + 1];
-    if (buff.hasValue()) {
+    if (buff.has_value()) {
       memcpy(code, &(buff->getBufferStart()[begin_offset]),
              (end_offset - begin_offset + 1) * sizeof(char));
       code[end_offset - begin_offset] =
