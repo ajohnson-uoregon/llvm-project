@@ -980,32 +980,8 @@ VariantMatcher handle_declStmt(Node* root, int level) {
   } // child_matchers.size()
 }
 
-VariantMatcher handle_non_bindable_node(Node* root, StringRef name, int level) {
-  std::vector<VariantValue> child_matchers;
-  child_matchers.insert(child_matchers.end(), root->args.begin(), root->args.end());
-
-  // if (root->has_type && root->is_literal) {
-  //   child_matchers.push_back(constructMatcher("hasType",
-  //     constructMatcher("asString", StringRef(root->type), level+6), level+5));
-  // }
-  if (root->has_name) {
-    child_matchers.push_back(constructMatcher("hasName", StringRef(root->qual_name), level+5));
-  }
-  if (root->bound) {
-    printf("WARNING: binding on a non bindable node\n");
-  }
-
-  if (root->children) {
-    for (Node* child = root->children; child != nullptr; child = child->next_sibling) {
-      child_matchers.push_back(make_matcher(child, level+5));
-    }
-  }
-  if (child_matchers.size() < 1) {
-    // guarantee child_matchers.size() >= 1 (also required to not make an
-    // ambiguous matcher and actually match things)
-    child_matchers.push_back(constructMatcher("anything", level+5));
-  }
-
+VariantMatcher handle_non_bindable_children(Node* root,
+    std::vector<VariantValue> child_matchers, StringRef name, int level) {
   if (child_matchers.size() > 1) {
     if (root->ignore_casts) {
       return constructMatcher("ignoringParenImpCasts",
@@ -1028,35 +1004,8 @@ VariantMatcher handle_non_bindable_node(Node* root, StringRef name, int level) {
   } // child_matchers.size()
 }
 
-VariantMatcher handle_bindable_node(Node* root, StringRef name, int level) {
-  std::vector<VariantValue> child_matchers;
-  child_matchers.insert(child_matchers.end(), root->args.begin(), root->args.end());
-
-  // if (root->has_type && root->is_literal) {
-  //   child_matchers.push_back(constructMatcher("hasType",
-  //     constructMatcher("asString", StringRef(root->type), level+6), level+5));
-  // }
-
-  if (root->has_type && root->matcher_type == MatcherType::varDecl) {
-    child_matchers.push_back(constructMatcher("hasType",
-      constructMatcher("asString", StringRef(root->type), level+6), level+5));
-  }
-
-  if (root->has_name) {
-    child_matchers.push_back(constructMatcher("hasName", StringRef(root->qual_name), level+5));
-  }
-
-  if (root->children) {
-    for (Node* child = root->children; child != nullptr; child = child->next_sibling) {
-      child_matchers.push_back(make_matcher(child, level+5));
-    }
-  }
-  if (child_matchers.size() < 1) {
-    // guarantee child_matchers.size() >= 1 (also required to not make an
-    // ambiguous matcher and actually match things)
-    child_matchers.push_back(constructMatcher("anything", level+5));
-  }
-
+VariantMatcher handle_bindable_children(Node* root,
+    std::vector<VariantValue> child_matchers, StringRef name, int level) {
   if (child_matchers.size() > 1) {
     if (root->ignore_casts) {
       if (root->bound) {
@@ -1102,6 +1051,67 @@ VariantMatcher handle_bindable_node(Node* root, StringRef name, int level) {
       }
     } // ignore_casts
   } // child_matchers.size()
+}
+
+VariantMatcher handle_non_bindable_node(Node* root, StringRef name, int level) {
+  std::vector<VariantValue> child_matchers;
+  child_matchers.insert(child_matchers.end(), root->args.begin(), root->args.end());
+
+  // if (root->has_type && root->is_literal) {
+  //   child_matchers.push_back(constructMatcher("hasType",
+  //     constructMatcher("asString", StringRef(root->type), level+6), level+5));
+  // }
+  if (root->has_name) {
+    child_matchers.push_back(constructMatcher("hasName", StringRef(root->qual_name), level+5));
+  }
+  if (root->bound) {
+    printf("WARNING: binding on a non bindable node\n");
+  }
+
+  if (root->children) {
+    for (Node* child = root->children; child != nullptr; child = child->next_sibling) {
+      child_matchers.push_back(make_matcher(child, level+5));
+    }
+  }
+  if (child_matchers.size() < 1) {
+    // guarantee child_matchers.size() >= 1 (also required to not make an
+    // ambiguous matcher and actually match things)
+    child_matchers.push_back(constructMatcher("anything", level+5));
+  }
+
+  return handle_non_bindable_children(root, child_matchers, name, level);
+}
+
+VariantMatcher handle_bindable_node(Node* root, StringRef name, int level) {
+  std::vector<VariantValue> child_matchers;
+  child_matchers.insert(child_matchers.end(), root->args.begin(), root->args.end());
+
+  // if (root->has_type && root->is_literal) {
+  //   child_matchers.push_back(constructMatcher("hasType",
+  //     constructMatcher("asString", StringRef(root->type), level+6), level+5));
+  // }
+
+  if (root->has_type && root->matcher_type == MatcherType::varDecl) {
+    child_matchers.push_back(constructMatcher("hasType",
+      constructMatcher("asString", StringRef(root->type), level+6), level+5));
+  }
+
+  if (root->has_name) {
+    child_matchers.push_back(constructMatcher("hasName", StringRef(root->qual_name), level+5));
+  }
+
+  if (root->children) {
+    for (Node* child = root->children; child != nullptr; child = child->next_sibling) {
+      child_matchers.push_back(make_matcher(child, level+5));
+    }
+  }
+  if (child_matchers.size() < 1) {
+    // guarantee child_matchers.size() >= 1 (also required to not make an
+    // ambiguous matcher and actually match things)
+    child_matchers.push_back(constructMatcher("anything", level+5));
+  }
+
+  return handle_bindable_children(root, child_matchers, name, level);
 }
 
 VariantMatcher make_matcher(Node* root, int level) {
