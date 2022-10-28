@@ -126,6 +126,15 @@ public:
       }
       FunctionDecl* callee = call->getDirectCallee();
       if (callee != nullptr) {
+        if (callee->getQualifiedNameAsString() == "clang_rewrite::loop_body") {
+          printf("FOUND LOOP BODY CALL\n");
+          Node* body = add_node(MT::loopBody, "loopBody", 0);
+          // using set_name as well as binding so in future we can have
+          // short_name be the name of the loop instead of a generic loop_body
+          body->set_name("loop_body", "clang_rewrite::loop_body");
+          body->bind_to("clang_rewrite::loop_body");
+          return false; //don't traverse the rest of the tree, we handle that
+        }
         // plus 1 for callee
         add_node(MT::callExpr, "callExpr()", getNumChildren(call) +1);
         add_node(MT::callee, "callee()", 1);
@@ -145,7 +154,7 @@ public:
     }
 
     bool VisitCompoundStmt(CompoundStmt* comp) {
-      add_node(MT::compoundStmt, "compountStmt()", getNumChildren(comp));
+      add_node(MT::compoundStmt, "compoundStmt()", getNumChildren(comp));
       return true;
     }
 

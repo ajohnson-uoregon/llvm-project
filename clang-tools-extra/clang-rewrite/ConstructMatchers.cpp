@@ -306,6 +306,79 @@ VariantMatcher constructBoundMatcher(StringRef MatcherName,
   return Out;
 }
 
+VariantMatcher handle_non_bindable_children(Node* root,
+    std::vector<VariantValue> child_matchers, StringRef name, int level) {
+  if (child_matchers.size() > 1) {
+    if (root->ignore_casts) {
+      return constructMatcher("ignoringParenImpCasts",
+              constructMatcher(name,
+                constructMatcher("allOf", child_matchers, level+3), level+2), level+1);
+    }
+    else {
+      return constructMatcher(name,
+              constructMatcher("allOf", child_matchers, level+2), level+1);
+    }
+  } // child_matchers.size() > 1
+  else { // child_matchers.size() == 1
+    if (root->ignore_casts) {
+      return constructMatcher("ignoringParenImpCasts",
+              constructMatcher(name, child_matchers[0], level+2), level+1);
+    }
+    else {
+      return constructMatcher(name, child_matchers[0], level+1);
+    }
+  } // child_matchers.size()
+}
+
+VariantMatcher handle_bindable_children(Node* root,
+    std::vector<VariantValue> child_matchers, StringRef name, int level) {
+  if (child_matchers.size() > 1) {
+    if (root->ignore_casts) {
+      if (root->bound) {
+        return constructMatcher("ignoringParenImpCasts",
+                constructBoundMatcher(name, StringRef(root->bound_name),
+                  constructMatcher("allOf", child_matchers, level+3), level+2), level+1);
+      }
+      else {
+        return constructMatcher("ignoringParenImpCasts",
+                constructMatcher(name,
+                  constructMatcher("allOf", child_matchers, level+3), level+2), level+1);
+      }
+    }
+    else { // no ignore casts
+      if (root->bound) {
+        return constructBoundMatcher(name, StringRef(root->bound_name),
+                constructMatcher("allOf", child_matchers, level+2), level+1);
+      }
+      else {
+        return constructMatcher(name,
+                constructMatcher("allOf", child_matchers, level+2), level+1);
+      }
+    } // ignore_casts
+  }
+  else { // child_matchers.size() == 1
+    if (root->ignore_casts) {
+      if (root->bound) {
+        return constructMatcher("ignoringParenImpCasts",
+                constructBoundMatcher(name, StringRef(root->bound_name),
+                  child_matchers[0], level+2), level+1);
+      }
+      else {
+        return constructMatcher("ignoringParenImpCasts",
+                constructMatcher(name, child_matchers[0], level+2), level+1);
+      }
+    }
+    else { // no ignore casts
+      if (root->bound) {
+        return constructBoundMatcher(name, StringRef(root->bound_name), child_matchers[0], level+1);
+      }
+      else {
+        return constructMatcher(name, child_matchers[0], level+1);
+      }
+    } // ignore_casts
+  } // child_matchers.size()
+}
+
 // mostly copy-paste from handle_bindable_node but need to add hasAnySubstatement
 VariantMatcher handle_compoundStmt(Node* root, int level) {
   std::vector<VariantValue> child_matchers;
@@ -321,8 +394,13 @@ VariantMatcher handle_compoundStmt(Node* root, int level) {
 
   if (root->children) {
     for (Node* child = root->children; child != nullptr; child = child->next_sibling) {
-      child_matchers.push_back(constructMatcher("hasAnySubstatement",
-          make_matcher(child, level+6), level+5));
+      if (child->matcher_type == MT::loopBody) {
+        root->bind_to(child->qual_name);
+      }
+      else {
+        child_matchers.push_back(constructMatcher("hasAnySubstatement",
+            make_matcher(child, level+6), level+5));
+      }
     }
   }
   if (child_matchers.size() < 1) {
@@ -331,52 +409,7 @@ VariantMatcher handle_compoundStmt(Node* root, int level) {
     child_matchers.push_back(constructMatcher("anything", level+5));
   }
 
-  if (child_matchers.size() > 1) {
-    if (root->ignore_casts) {
-      //TODO will we ever have ignore_casts on a compoundStmt? probably not,
-      // but do we still want to have ignoringParenImpCasts on the outside?
-      if (root->bound) {
-        return constructBoundMatcher("compoundStmt", StringRef(root->bound_name),
-                constructMatcher("ignoringParenImpCasts",
-                  constructMatcher("allOf", child_matchers, level+3), level+2), level+1);
-      }
-      else {
-        return constructMatcher("compoundStmt",
-                constructMatcher("ignoringParenImpCasts",
-                  constructMatcher("allOf", child_matchers, level+3), level+2), level+1);
-      }
-    }
-    else { // no ignore casts
-      if (root->bound) {
-        return constructBoundMatcher("compoundStmt", StringRef(root->bound_name),
-                constructMatcher("allOf", child_matchers, level+2), level+1);
-      }
-      else {
-        return constructMatcher("compoundStmt",
-                constructMatcher("allOf", child_matchers, level+2), level+1);
-      }
-    } // ignore_casts
-  }
-  else { // child_matchers.size() == 1
-    if (root->ignore_casts) {
-      if (root->bound) {
-        return constructBoundMatcher("compoundStmt", StringRef(root->bound_name),
-                constructMatcher("ignoringParenImpCasts", child_matchers[0], level+2), level+1);
-      }
-      else {
-        return constructMatcher("compoundStmt",
-                constructMatcher("ignoringParenImpCasts", child_matchers[0], level+2), level+1);
-      }
-    }
-    else { // no ignore casts
-      if (root->bound) {
-        return constructBoundMatcher("compoundStmt", StringRef(root->bound_name), child_matchers[0], level+1);
-      }
-      else {
-        return constructMatcher("compoundStmt", child_matchers[0], level+1);
-      }
-    } // ignore_casts
-  } // child_matchers.size()
+  return handle_bindable_children(root, child_matchers, "compoundStmt", level);
 }
 
 VariantMatcher handle_declRefExpr(Node* root, int level) {
@@ -980,78 +1013,7 @@ VariantMatcher handle_declStmt(Node* root, int level) {
   } // child_matchers.size()
 }
 
-VariantMatcher handle_non_bindable_children(Node* root,
-    std::vector<VariantValue> child_matchers, StringRef name, int level) {
-  if (child_matchers.size() > 1) {
-    if (root->ignore_casts) {
-      return constructMatcher("ignoringParenImpCasts",
-              constructMatcher(name,
-                constructMatcher("allOf", child_matchers, level+3), level+2), level+1);
-    }
-    else {
-      return constructMatcher(name,
-              constructMatcher("allOf", child_matchers, level+2), level+1);
-    }
-  } // child_matchers.size() > 1
-  else { // child_matchers.size() == 1
-    if (root->ignore_casts) {
-      return constructMatcher("ignoringParenImpCasts",
-              constructMatcher(name, child_matchers[0], level+2), level+1);
-    }
-    else {
-      return constructMatcher(name, child_matchers[0], level+1);
-    }
-  } // child_matchers.size()
-}
 
-VariantMatcher handle_bindable_children(Node* root,
-    std::vector<VariantValue> child_matchers, StringRef name, int level) {
-  if (child_matchers.size() > 1) {
-    if (root->ignore_casts) {
-      if (root->bound) {
-        return constructMatcher("ignoringParenImpCasts",
-                constructBoundMatcher(name, StringRef(root->bound_name),
-                  constructMatcher("allOf", child_matchers, level+3), level+2), level+1);
-      }
-      else {
-        return constructMatcher("ignoringParenImpCasts",
-                constructMatcher(name,
-                  constructMatcher("allOf", child_matchers, level+3), level+2), level+1);
-      }
-    }
-    else { // no ignore casts
-      if (root->bound) {
-        return constructBoundMatcher(name, StringRef(root->bound_name),
-                constructMatcher("allOf", child_matchers, level+2), level+1);
-      }
-      else {
-        return constructMatcher(name,
-                constructMatcher("allOf", child_matchers, level+2), level+1);
-      }
-    } // ignore_casts
-  }
-  else { // child_matchers.size() == 1
-    if (root->ignore_casts) {
-      if (root->bound) {
-        return constructMatcher("ignoringParenImpCasts",
-                constructBoundMatcher(name, StringRef(root->bound_name),
-                  child_matchers[0], level+2), level+1);
-      }
-      else {
-        return constructMatcher("ignoringParenImpCasts",
-                constructMatcher(name, child_matchers[0], level+2), level+1);
-      }
-    }
-    else { // no ignore casts
-      if (root->bound) {
-        return constructBoundMatcher(name, StringRef(root->bound_name), child_matchers[0], level+1);
-      }
-      else {
-        return constructMatcher(name, child_matchers[0], level+1);
-      }
-    } // ignore_casts
-  } // child_matchers.size()
-}
 
 VariantMatcher handle_non_bindable_node(Node* root, StringRef name, int level) {
   std::vector<VariantValue> child_matchers;

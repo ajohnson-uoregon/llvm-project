@@ -16,7 +16,7 @@ namespace clang {
 namespace rewrite_tool {
 
 enum class MatcherType {
-  fakeNode,
+  fakeNode,                 // 0
   binaryOperator,
   callee,
   callExpr,
@@ -26,7 +26,7 @@ enum class MatcherType {
   cxxDefaultArgExpr,
   cxxFunctionalCastExpr,
   cxxOperatorCallExpr,
-  declRefExpr,
+  declRefExpr,            // 10
   declStmt,
   equals,
   forStmt,
@@ -36,7 +36,7 @@ enum class MatcherType {
   hasExpectedReturnType,
   hasIncrement,
   hasInitializer,
-  hasLHS,
+  hasLHS,                 // 20
   hasLoopInit,
   hasOperatorName,
   hasReturnValue,
@@ -44,8 +44,9 @@ enum class MatcherType {
   hasType,
   ignoringParenImpCasts,
   integerLiteral,
+  loopBody,
   pointerType,
-  pointee,
+  pointee,                // 30
   returnStmt,
   to,
   type,
@@ -246,6 +247,8 @@ public:
         clean_fake_nodes_help(current_child);
       }
       else {
+        clean_fake_nodes_help(current_child);
+
         prev_child = current_child;
         current_child = current_child->next_sibling;
         if (current_child) {

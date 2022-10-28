@@ -171,9 +171,30 @@ public:
     FullSourceLoc match;
 
     if (expr_valid) {
-      begin = context->getFullLoc(expr->getBeginLoc());
-      end = context->getFullLoc(expr->getEndLoc());
-      match = context->getFullLoc(expr->getBeginLoc());
+      if (bind.name == "clang_rewrite::loop_body" ||
+          bind.qual_name == "clang_rewrite::loop_body") {
+        printf("YAY LOOP BODY\n");
+        // auto parentmap = context->getParentMapContext().getParents(*expr);
+        DynTypedNodeList Parents = context->getParents(*expr);
+        llvm::SmallVector<DynTypedNode, 8> Stack(Parents.begin(), Parents.end());
+        while (!Stack.empty()) {
+          const auto &CurNode = Stack.back();
+          Stack.pop_back();
+          if (const CompoundStmt* comp = CurNode.get<CompoundStmt>()) {
+            begin = context->getFullLoc(comp->getLBracLoc());
+            end = context->getFullLoc(comp->getRBracLoc());
+            match = begin;
+            break;
+          } else {
+            llvm::append_range(Stack, context->getParents(CurNode));
+          }
+        }
+      }
+      else {
+        begin = context->getFullLoc(expr->getBeginLoc());
+        end = context->getFullLoc(expr->getEndLoc());
+        match = context->getFullLoc(expr->getBeginLoc());
+      }
     }
     else if (decl_valid) {
       begin = context->getFullLoc(decl->getBeginLoc());
@@ -217,7 +238,11 @@ public:
     delete[] code;
 
 
-    if (expr_valid) {
+    if (expr_valid && (bind.name == "clang_rewrite::loop_body" ||
+        bind.qual_name == "clang_rewrite::loop_body")) {
+      binding_rw.ReplaceText(begin, end_offset - begin_offset + 1, bind.value);
+    }
+    else if (expr_valid) {
       printf("expr\n");
       expr->dump();
 
