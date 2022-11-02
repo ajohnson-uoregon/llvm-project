@@ -253,7 +253,12 @@ public:
                (end_offset - match_offset + 1) * sizeof(char));
         name_c[end_offset - match_offset] = '\0';
         StringRef name(name_c);
-        if (name.find(" ") != StringRef::npos) {
+        // TODO something clever to figure out which name was used in the og
+        // code, use that as the length of stuff to replace
+        if (bind.name == bind.qual_name) {
+          space = bind.name.size();
+        }
+        else if (name.find(" ") != StringRef::npos) {
           space = name.find(" ");
         }
         else {
@@ -562,7 +567,7 @@ public:
 
     for (CodeAction *action : matcher->actions) {
       replace_bound_code(action, bound_code);
-      // action->dump_bindings(bound_code);
+      action->dump_bindings(bound_code);
       printf("FINAL RESULT\n %s\n", action->edited_code_snippet.c_str());
       binding_rw.resetAllRewriteBuffers(binding_rw.getSourceMgr());
       bound_code.clear();

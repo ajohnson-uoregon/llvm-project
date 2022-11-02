@@ -17,42 +17,52 @@ namespace rewrite_tool {
 
 enum class MatcherType {
   fakeNode,                 // 0
+  anyOf,
+  arraySubscriptExpr,
   binaryOperator,
   callee,
   callExpr,
+  characterLiteral,
+  compoundLiteral,
   compoundStmt,
   cudaKernelCallExpr,
+  cxxBoolLiteral,         // 10
   cxxConstructExpr,
   cxxDefaultArgExpr,
-  cxxFunctionalCastExpr,
-  cxxOperatorCallExpr,
-  declRefExpr,            // 10
+  cxxFunctionalCastExpr,  //
+  cxxOperatorCallExpr,    //
+  declRefExpr,
   declStmt,
   equals,
-  forStmt,
+  fixedPointLiteral,
+  floatLiteral,
+  forStmt,                // 20
   functionDecl,
   hasBody,
   hasCondition,
   hasExpectedReturnType,
-  hasIncrement,
-  hasInitializer,
-  hasLHS,                 // 20
+  hasIncrement,           //
+  hasInitializer,         //
+  hasLHS,                 //
   hasLoopInit,
   hasOperatorName,
-  hasReturnValue,
+  hasReturnValue,         // 30
   hasRHS,
+  hasSubExpr,
   hasType,
   ignoringParenImpCasts,
-  integerLiteral,
-  loopBody,
+  integerLiteral,         //
+  loopBody,               // macro
+  parenExpr,              //
   pointerType,
-  pointee,                // 30
-  returnStmt,
+  pointee,
+  returnStmt,             // 40
+  stringLiteral,
   to,
   type,
   unaryOperator,
   valueDecl,
-  varDecl,
+  varDecl,                // 
 };
 
 class Node {

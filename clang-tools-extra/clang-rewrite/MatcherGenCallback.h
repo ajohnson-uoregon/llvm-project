@@ -109,6 +109,12 @@ public:
       return nullptr;
     }
 
+    bool VisitArraySubscriptExpr(ArraySubscriptExpr* sub) {
+      add_node(MT::arraySubscriptExpr, "arraySubscriptExpr()", getNumChildren(sub));
+
+      return true;
+    }
+
     bool VisitBinaryOperator(BinaryOperator* binop) {
       // plus one for opname
       add_node(MT::binaryOperator, "binaryOperator()", getNumChildren(binop) +1);
@@ -266,9 +272,54 @@ public:
           type_node->bind_to(ty.getAsString());
         }
         else {
-          Node* declref = add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref));
-          declref->set_ignore_casts(true);
-          declref->bind_to(name + ";" + qualname);
+          QualType ty = ref->getType();
+          if (!ty->isPointerType()) {
+            add_node(MT::anyOf, "anyOf()", 2);
+            Node* declref = add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref));
+            declref->set_ignore_casts(true);
+            declref->bind_to(name + ";" + qualname);
+            if (ty->isIntegerType()) {
+              Node* lit = add_node(MT::integerLiteral, "integerLiteral()", 0);
+              lit->set_ignore_casts(true);
+              lit->bind_to(name + ";" + qualname);
+            }
+            else if (ty->isAnyCharacterType()) {
+              Node* lit = add_node(MT::characterLiteral, "characterLiteral()", getNumChildren(ref));
+              lit->set_ignore_casts(true);
+              lit->bind_to(name + ";" + qualname);
+            }
+            else if (ty->isCompoundType()) {
+              Node* lit = add_node(MT::compoundLiteral, "compoundLiteral()", getNumChildren(ref));
+              lit->set_ignore_casts(true);
+              lit->bind_to(name + ";" + qualname);
+            }
+            else if (ty->isBooleanType()) {
+              Node* lit = add_node(MT::cxxBoolLiteral, "cxxBoolLiteral()", getNumChildren(ref));
+              lit->set_ignore_casts(true);
+              lit->bind_to(name + ";" + qualname);
+            }
+            else if (ty->isFixedPointType()) {
+              Node* lit = add_node(MT::fixedPointLiteral, "fixedPointLiteral()", getNumChildren(ref));
+              lit->set_ignore_casts(true);
+              lit->bind_to(name + ";" + qualname);
+            }
+            else if (ty->isFloatingType()) {
+              Node* lit = add_node(MT::floatLiteral, "floatLiteral()", getNumChildren(ref));
+              lit->set_ignore_casts(true);
+              lit->bind_to(name + ";" + qualname);
+            }
+            else { // no test for string types, also no default literal type so
+              Node* lit = add_node(MT::stringLiteral, "stringLiteral()", getNumChildren(ref));
+              lit->set_ignore_casts(true);
+              lit->bind_to(name + ";" + qualname);
+            }
+
+          }
+          else {
+            Node* declref = add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref));
+            declref->set_ignore_casts(true);
+            declref->bind_to(name + ";" + qualname);
+          }
         }
       }
 
@@ -290,6 +341,13 @@ public:
 
     bool VisitForStmt(ForStmt* forstmt) {
       add_node(MT::forStmt, "forStmt()", getNumChildren(forstmt));
+
+      return true;
+    }
+
+    bool VisitParenExpr(ParenExpr* parens) {
+      add_node(MT::parenExpr, "parenExpr()", 1);
+      add_node(MT::hasSubExpr, "hasSubExpr()", getNumChildren(parens));
 
       return true;
     }
@@ -450,6 +508,7 @@ private:
   Node* add_node(MatcherType sm, std::string code, int children) {
     Node* temp = new Node(sm, code);
     // printf("before node add\n");
+    // printf("adding node %s\n", code.c_str());
     // dump_branch_points();
     // if the tree is empty
     if (root == nullptr) {
@@ -485,7 +544,7 @@ private:
       if (sm != MT::fakeNode) {
         handle_pending();
       }
-      if (branch_points.back().second == 0) {
+      while (branch_points.back().second == 0) {
         branch_points.pop_back();
         if (!branch_points.empty()) {
           branch_points.back().second--;
@@ -506,18 +565,28 @@ private:
     }
     // printf("after node add\n");
     // dump_branch_points();
+    // printf("------------------------\n");
     return temp;
   }
 
-  void handle_pending() {
-    if (pending_type) {
-      current->set_type(pending_type_str);
-      pending_type = false;
-      pending_type_str = "";
+  bool ignore_pending() {
+    if (current->matcher_type == MT::anyOf) {
+      return true;
     }
-    if (pending_ignore_casts) {
-      current->set_ignore_casts(true);
-      pending_ignore_casts = false;
+    return false;
+  }
+
+  void handle_pending() {
+    if (!ignore_pending()) {
+      if (pending_type) {
+        current->set_type(pending_type_str);
+        pending_type = false;
+        pending_type_str = "";
+      }
+      if (pending_ignore_casts) {
+        current->set_ignore_casts(true);
+        pending_ignore_casts = false;
+      }
     }
   }
 
