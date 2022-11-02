@@ -345,6 +345,12 @@ public:
       return true;
     }
 
+    bool VisitIfStmt(IfStmt* ifstmt) {
+      add_node(MT::ifStmt, "ifStmt()", getNumChildren(ifstmt));
+
+      return true;
+    }
+
     bool VisitParenExpr(ParenExpr* parens) {
       add_node(MT::parenExpr, "parenExpr()", 1);
       add_node(MT::hasSubExpr, "hasSubExpr()", getNumChildren(parens));

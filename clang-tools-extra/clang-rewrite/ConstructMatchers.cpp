@@ -842,6 +842,55 @@ VariantMatcher handle_anyOf(Node* root, int level) {
   } // child_matchers.size()
 }
 
+VariantMatcher handle_ifStmt(Node* root, int level) {
+  std::vector<VariantValue> child_matchers;
+  child_matchers.insert(child_matchers.end(), root->args.begin(), root->args.end());
+
+  // if (root->has_type && root->is_literal) {
+  //   child_matchers.push_back(constructMatcher("hasType",
+  //     constructMatcher("asString", StringRef(root->type), level+6), level+5));
+  // }
+
+  if (root->has_type && root->matcher_type == MatcherType::varDecl) {
+    child_matchers.push_back(constructMatcher("hasType",
+      constructMatcher("asString", StringRef(root->type), level+6), level+5));
+  }
+
+  if (root->has_name) {
+    child_matchers.push_back(constructMatcher("hasName", StringRef(root->qual_name), level+5));
+  }
+
+  if (root->children) {
+    // for (Node* child = root->children; child != nullptr; child = child->next_sibling) {
+    //   child_matchers.push_back(make_matcher(child, level+5));
+    // }
+    Node* cond = root->children;
+    child_matchers.push_back(constructMatcher("hasCondition", make_matcher(cond, level+6), level+5));
+
+    Node* thenstmt = cond->next_sibling;
+    if (thenstmt == nullptr) {
+      printf("ERROR: if stmt doesn't have then code???\n");
+    }
+    child_matchers.push_back(constructMatcher("hasThen", make_matcher(thenstmt, level+6), level+5));
+
+    Node* elsestmt = thenstmt->next_sibling;
+    if (elsestmt != nullptr) {
+      child_matchers.push_back(constructMatcher("hasElse", make_matcher(elsestmt, level+6), level+5));
+    }
+
+    if (elsestmt && elsestmt->next_sibling) {
+      printf("ifstmt has extra operands???\n");
+    }
+  }
+  if (child_matchers.size() < 1) {
+    // guarantee child_matchers.size() >= 1 (also required to not make an
+    // ambiguous matcher and actually match things)
+    child_matchers.push_back(constructMatcher("anything", level+5));
+  }
+
+  return handle_bindable_children(root, child_matchers, "ifStmt", level);
+}
+
 
 
 VariantMatcher handle_non_bindable_node(Node* root, StringRef name, int level) {
@@ -943,6 +992,9 @@ VariantMatcher make_matcher(Node* root, int level) {
     case MT::equals:
       return handle_non_bindable_node(root, "equals", level);
       break;
+    case MT::floatLiteral:
+      return handle_bindable_node(root, "floatLiteral", level);
+      break;
     case MT::forStmt:
       return handle_forStmt(root, level);
       break;
@@ -966,6 +1018,9 @@ VariantMatcher make_matcher(Node* root, int level) {
       break;
     case MT::hasType:
       return handle_non_bindable_node(root, "hasType", level);
+      break;
+    case MT::ifStmt:
+      return handle_ifStmt(root, level);
       break;
     case MT::ignoringParenImpCasts:
       return handle_non_bindable_node(root, "ignoringParenImpCasts", level);

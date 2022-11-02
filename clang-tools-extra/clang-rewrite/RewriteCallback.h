@@ -258,6 +258,12 @@ public:
         if (bind.name == bind.qual_name) {
           space = bind.name.size();
         }
+        else if (bind.name.empty()) {
+          space = bind.qual_name.size();
+        }
+        else if (bind.qual_name.empty()) {
+          space = bind.name.size();
+        }
         else if (name.find(" ") != StringRef::npos) {
           space = name.find(" ");
         }

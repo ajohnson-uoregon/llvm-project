@@ -50,19 +50,20 @@ enum class MatcherType {
   hasRHS,
   hasSubExpr,
   hasType,
+  ifStmt,
   ignoringParenImpCasts,
   integerLiteral,         //
   loopBody,               // macro
   parenExpr,              //
   pointerType,
-  pointee,
-  returnStmt,             // 40
+  pointee,                // 40
+  returnStmt,             // 
   stringLiteral,
   to,
   type,
   unaryOperator,
   valueDecl,
-  varDecl,                // 
+  varDecl,                //
 };
 
 class Node {
