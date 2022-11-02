@@ -338,6 +338,7 @@ RegistryMaps::RegistryMaps() {
   REGISTER_MATCHER(hasSpecializedTemplate);
   REGISTER_MATCHER(hasStaticStorageDuration);
   REGISTER_MATCHER(hasStructuredBlock);
+  REGISTER_MATCHER(hasSubExpr);
   REGISTER_MATCHER(hasSubStmt);
   REGISTER_MATCHER(hasSyntacticForm);
   REGISTER_MATCHER(hasTargetDecl);

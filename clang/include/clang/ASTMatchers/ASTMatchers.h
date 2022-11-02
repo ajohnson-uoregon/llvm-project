@@ -1862,6 +1862,11 @@ extern const internal::VariadicDynCastAllOfMatcher<Stmt, ConstantExpr>
 /// \endcode
 extern const internal::VariadicDynCastAllOfMatcher<Stmt, ParenExpr> parenExpr;
 
+AST_MATCHER_P(ParenExpr, hasSubExpr, internal::Matcher<Expr>, InnerMatcher) {
+  const Expr *expr = Node.getSubExpr();
+  return InnerMatcher.matches(*expr, Finder, Builder);
+}
+
 /// Matches constructor call expressions (including implicit ones).
 ///
 /// Example matches string(ptr, n) and ptr within arguments of f
