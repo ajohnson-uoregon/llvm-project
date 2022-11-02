@@ -37,8 +37,7 @@ public:
   void resetBuffer() {
     Deltas.resetTree();
     std::string orig = Original.getAsString();
-    char orig_c[orig.size() + 1];
-    strcpy(orig_c, orig.c_str());
+    const char* orig_c = orig.c_str();
     Buffer.assign(&orig_c[0], &orig_c[orig.size()]);
   }
   using iterator = RewriteRope::const_iterator;
