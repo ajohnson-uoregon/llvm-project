@@ -193,7 +193,8 @@ public:
     //   nodes.push_back(DynTypedNode::create(*s));
     // }
     CodeAction *act =
-        new CodeAction(std::string(code), action_name, kind, matcher_names, fid,
+        new CodeAction(std::string(code), action_name, kind, matcher_names,
+          context->getSourceManager().getFilename(func->getBeginLoc()).str(),
           SourceRange(body_begin,
                       body_end));
     all_actions.push_back(act);

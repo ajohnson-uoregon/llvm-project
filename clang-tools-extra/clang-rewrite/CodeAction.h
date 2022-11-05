@@ -54,7 +54,8 @@ public:
   NewCodeKind kind;
   std::vector<std::string> matcher_names;
   std::string action_name;
-  FileID spec_file;
+  // FileID spec_file; <- WE CAN'T TRUST THIS
+  std::string spec_file_name;
   SourceRange snippet_range;
 
   // Rewriter rewrite;
@@ -72,9 +73,9 @@ public:
   //   SelectorTable &sels, Builtin::Context &builtins, TranslationUnitKind TUKind)
 
   CodeAction(std::string code, std::string action_name, NewCodeKind kind,
-      std::vector<std::string> matcher_names, FileID spec_file, SourceRange range)
+      std::vector<std::string> matcher_names, std::string file_name, SourceRange range)
       : base_code_snippet(code), kind(kind), matcher_names(matcher_names),
-        action_name(action_name), spec_file(spec_file), snippet_range(range) {}
+        action_name(action_name), spec_file_name(file_name), snippet_range(range) {}
   // CodeAction(SourceManager& SM, LangOptions LangOpts, IdentifierTable& idents,
   //     SelectorTable& selectors, Builtin::Context builtins, TranslationUnitKind TUKind,
   //     std::vector<DynTypedNode> nodes, NewCodeKind kind,

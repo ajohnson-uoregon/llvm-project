@@ -129,30 +129,32 @@ public:
     bool decl_valid = true;
 
     if (!expr ||
-        !context->getSourceManager().isInFileID(expr->getBeginLoc(), action->spec_file))
+        context->getSourceManager().getFilename(expr->getBeginLoc()).str() != action->spec_file_name)
          {
       // printf("ERROR: invalid expr binding match loc\n");
       expr_valid = false;
     }
 
     if (!decl ||
-        !context->getSourceManager().isInFileID(decl->getBeginLoc(), action->spec_file)) {
+        context->getSourceManager().getFilename(decl->getBeginLoc()).str() != action->spec_file_name) {
       // printf("ERROR: invalid decl binding match loc\n");
       decl_valid = false;
     }
 
     if (!expr_valid && !decl_valid) {
-      printf("ERROR: no valid binding match loc\n");
+      // printf("ERROR: no valid binding match loc\n");
       return;
     }
 
     SourceRange match_range;
     if (expr_valid) {
       // printf("expr valid\n");
+      // printf("file name %s\n", context->getSourceManager().getFilename(expr->getBeginLoc()).str().c_str());
       match_range = SourceRange(expr->getBeginLoc(), expr->getEndLoc());
     }
     else if (decl_valid) {
       // printf("decl valid\n");
+      // printf("file name %s\n", context->getSourceManager().getFilename(decl->getBeginLoc()).str().c_str());
       match_range = SourceRange(decl->getBeginLoc(), decl->getEndLoc());
     }
 
@@ -161,7 +163,7 @@ public:
     printf("match range\n");
     match_range.dump(context->getSourceManager());
     if (!action->snippet_range.fullyContains(match_range)) {
-      printf("ERROR: match not in action's snippet\n");
+      // printf("ERROR: match not in action's snippet\n");
       return;
     }
 
