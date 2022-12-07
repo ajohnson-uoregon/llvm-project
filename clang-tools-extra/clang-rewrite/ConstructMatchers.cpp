@@ -992,6 +992,9 @@ VariantMatcher make_matcher(Node* root, int level) {
     case MT::equals:
       return handle_non_bindable_node(root, "equals", level);
       break;
+    case MT::expr:
+      return handle_bindable_node(root, "expr", level);
+      break;
     case MT::floatLiteral:
       return handle_bindable_node(root, "floatLiteral", level);
       break;

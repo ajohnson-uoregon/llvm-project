@@ -34,9 +34,10 @@ enum class MatcherType {
   declRefExpr,
   declStmt,
   equals,
+  expr,
   fixedPointLiteral,
-  floatLiteral,
-  forStmt,                // 20
+  floatLiteral,           // 20
+  forStmt,                //
   functionDecl,
   hasBody,
   hasCondition,
@@ -45,8 +46,8 @@ enum class MatcherType {
   hasInitializer,         //
   hasLHS,                 //
   hasLoopInit,
-  hasOperatorName,
-  hasReturnValue,         // 30
+  hasOperatorName,        // 30
+  hasReturnValue,         //
   hasRHS,
   hasSubExpr,
   hasType,
@@ -55,9 +56,9 @@ enum class MatcherType {
   integerLiteral,         //
   loopBody,               // macro
   parenExpr,              //
-  pointerType,
-  pointee,                // 40
-  returnStmt,             // 
+  pointerType,            // 40
+  pointee,                // 
+  returnStmt,             //
   stringLiteral,
   to,
   type,

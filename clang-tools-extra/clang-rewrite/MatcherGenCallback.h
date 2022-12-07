@@ -39,8 +39,10 @@ using MT = MatcherType;
 
 class BuildMatcherVisitor : public RecursiveASTVisitor<BuildMatcherVisitor> {
 public:
-  explicit BuildMatcherVisitor(ASTContext* context, std::vector<std::string> literals)
-    : context(context), literals(literals) {}
+  explicit BuildMatcherVisitor(ASTContext* context, std::vector<std::string> literals,
+      bool is_internal_matcher, std::vector<Binding> internal_literals)
+    : context(context), literals(literals), is_internal_matcher(is_internal_matcher),
+      internal_literals(internal_literals) {}
 
 
     Node* get_matcher() {
@@ -69,6 +71,20 @@ public:
     // TODO: placeholder until we actually figure out literals
     bool is_literal(DeclRefExpr* ref) {
       return is_literal(ref->getDecl());
+    }
+
+    std::string is_internal_literal(NamedDecl* decl) {
+      for (Binding b : internal_literals) {
+        if (decl->getNameAsString() == b.name ||
+            decl->getQualifiedNameAsString() == b.qual_name) {
+          return b.value;
+        }
+      }
+      return "";
+    }
+
+    std::string is_internal_literal(DeclRefExpr* ref) {
+      return is_internal_literal(ref->getDecl());
     }
 
     int getNumChildren(Stmt* stmt) {
@@ -149,6 +165,10 @@ public:
           fxn->set_is_literal(true);
           fxn->set_name(callee->getNameAsString(), callee->getQualifiedNameAsString());
         }
+        else if (is_internal_matcher && is_internal_literal(callee) != "") {
+          fxn->set_is_literal(true);
+          fxn->set_name(is_internal_literal(callee), is_internal_literal(callee));
+        }
         else {
           fxn->bind_to(callee->getNameAsString());
         }
@@ -178,6 +198,10 @@ public:
         if (is_literal(kern)) {
           fxn->set_is_literal(true);
           fxn->set_name(kern->getNameAsString(), kern->getQualifiedNameAsString());
+        }
+        else if (is_internal_matcher && is_internal_literal(kern) != "") {
+          fxn->set_is_literal(true);
+          fxn->set_name(is_internal_literal(kern), is_internal_literal(kern));
         }
         else {
           fxn->bind_to(kern->getNameAsString());
@@ -246,7 +270,16 @@ public:
         valuedecl->set_name(name, qualname);
         std::string ty = decl->getType().getAsString();
         valuedecl->set_type(ty);
-
+      }
+      else if (is_internal_matcher && is_internal_literal(ref) != "") {
+        Node* declref = add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref) +1);
+        declref->set_ignore_casts(true);
+        declref->set_is_literal(true);
+        add_node(MT::to, "to()", 1);
+        Node* valuedecl = add_node(MT::valueDecl, "valueDecl()", 0);
+        valuedecl->set_name(is_internal_literal(ref), is_internal_literal(ref));
+        std::string ty = decl->getType().getAsString();
+        valuedecl->set_type(ty);
       }
       else {
         QualType ty = ref->getType();
@@ -274,7 +307,7 @@ public:
         else {
           QualType ty = ref->getType();
           if (!ty->isPointerType()) {
-            add_node(MT::anyOf, "anyOf()", 2);
+            add_node(MT::anyOf, "anyOf()", 3);
             Node* declref = add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref));
             declref->set_ignore_casts(true);
             declref->bind_to(name + ";" + qualname);
@@ -313,6 +346,10 @@ public:
               lit->set_ignore_casts(true);
               lit->bind_to(name + ";" + qualname);
             }
+
+            Node* gen_expr = add_node(MT::expr, "expr()", getNumChildren(ref));
+            gen_expr->set_ignore_casts(true);
+            gen_expr->bind_to(name + ";" + qualname);
 
           }
           else {
@@ -492,6 +529,8 @@ public:
 private:
   ASTContext* context;
   std::vector<std::string> literals;
+  bool is_internal_matcher = false;
+  std::vector<Binding> internal_literals;
   std::string matcher = "";
   Node* root = nullptr;
   Node* current = root;
@@ -625,11 +664,17 @@ DeclarationMatcher matcher =
 
 // std::unordered_map<std::string, VariantMatcher> stmt_matchers;
 std::vector<MatcherWrapper<ast_matchers::internal::DynTypedMatcher> *> user_matchers;
+std::vector<MatcherWrapper<ast_matchers::internal::DynTypedMatcher> *> internal_matchers;
 
 class MatcherGenCallback : public MatchFinder::MatchCallback {
 public:
   ASTContext* context;
   std::string matcher_name;
+  bool is_internal_matcher;
+  std::vector<Binding> internal_bindings;
+
+  MatcherGenCallback(bool internal_matcher, std::vector<Binding> internal_binds)
+    : is_internal_matcher(internal_matcher), internal_bindings(internal_binds) {}
 
   void onStartOfTranslationUnit() override {
     // dynamic::registerLocalMatchers();
@@ -639,33 +684,92 @@ public:
     printf("found matcher\n");
     context = result.Context;
 
-    const FunctionDecl* func = result.Nodes.getNodeAs<FunctionDecl>("matcher");
+    // const CallExpr* call = result.Nodes.getNodeAs<CallExpr>("matcher");
+    // if (call &&
+    //   spec_files.find(context->getSourceManager().getFilename(call->getBeginLoc())) != spec_files.end()) {
+    //   //TODO
+    // }
 
-    if (!func || !context->getSourceManager().isWrittenInMainFile(func->getBeginLoc())) {
+    const Decl* decl = result.Nodes.getNodeAs<Decl>("matcher");
+    const Stmt* stmt = result.Nodes.getNodeAs<Stmt>("matcher");
+
+    bool decl_valid = true;
+    bool stmt_valid = true;
+
+    if (!decl || !context->getSourceManager().isWrittenInMainFile(decl->getBeginLoc())) {
+      // printf("ERROR: invalid matcher definition\n");
+      decl_valid = false;
+    }
+    if (!stmt || !context->getSourceManager().isWrittenInMainFile(stmt->getBeginLoc())) {
+      stmt_valid = false;
+    }
+
+    if (!decl_valid && !stmt_valid) {
       printf("ERROR: invalid matcher definition\n");
       return;
     }
     // printf("full function\n");
     // func->dump();
 
-    FullSourceLoc begin = context->getFullLoc(func->getBeginLoc());
-    FullSourceLoc end = context->getFullLoc(func->getEndLoc());
-    unsigned int begin_line = begin.getSpellingLineNumber();
-    unsigned int begin_col = begin.getSpellingColumnNumber();
-    unsigned int end_line = end.getSpellingLineNumber();
-    unsigned int end_col = end.getSpellingColumnNumber();
+    unsigned int begin_line, begin_col;
 
-    for (Attr* attr : func->attrs()) {
-      if (attr->getKind() == attr::Matcher) {
-        StringRef name = cast<MatcherAttr>(attr)->getMatcherName();
-        matcher_name = name.str();
+    if (decl_valid) {
+      FullSourceLoc begin = context->getFullLoc(decl->getBeginLoc());
+      FullSourceLoc end = context->getFullLoc(decl->getEndLoc());
+      begin_line = begin.getSpellingLineNumber();
+      begin_col = begin.getSpellingColumnNumber();
+      unsigned int end_line = end.getSpellingLineNumber();
+      unsigned int end_col = end.getSpellingColumnNumber();
+
+      for (Attr* attr : decl->attrs()) {
+        if (attr->getKind() == attr::Matcher) {
+          StringRef name = cast<MatcherAttr>(attr)->getMatcherName();
+          matcher_name = name.str();
+        }
+      }
+      printf("FOUND matcher %s at %d:%d - %d:%d\n", matcher_name.c_str(), begin_line, begin_col, end_line, end_col);
+    }
+    else if (stmt_valid) {
+      FullSourceLoc begin = context->getFullLoc(stmt->getBeginLoc());
+      FullSourceLoc end = context->getFullLoc(stmt->getEndLoc());
+      begin_line = begin.getSpellingLineNumber();
+      begin_col = begin.getSpellingColumnNumber();
+      unsigned int end_line = end.getSpellingLineNumber();
+      unsigned int end_col = end.getSpellingColumnNumber();
+
+      if (const AttributedStmt* attrstmt = dyn_cast<AttributedStmt>(stmt)) {
+        for (const Attr* attr : attrstmt->getAttrs()) {
+          if (attr->getKind() == attr::Matcher) {
+            StringRef name = cast<MatcherAttr>(attr)->getMatcherName();
+            matcher_name = name.str();
+          }
+        }
+        printf("FOUND matcher %s at %d:%d - %d:%d\n", matcher_name.c_str(), begin_line, begin_col, end_line, end_col);
+      }
+      else {
+        printf("FOUND nameless matcher at %d:%d - %d:%d\n", begin_line, begin_col, end_line, end_col);
       }
     }
-    printf("FOUND matcher %s at %d:%d - %d:%d\n", matcher_name.c_str(), begin_line, begin_col, end_line, end_col);
 
-    const CompoundStmt* body = result.Nodes.getNodeAs<CompoundStmt>("body");
-    if (!body || !context->getSourceManager().isWrittenInMainFile(body->getBeginLoc())) {
-      printf("ERROR: invalid body\n");
+    const Decl* body_decl = result.Nodes.getNodeAs<Decl>("body");
+    const Stmt* body_stmt = result.Nodes.getNodeAs<Stmt>("body");
+
+    bool body_decl_valid = true;
+    bool body_stmt_valid = true;
+
+    if (!body_decl || !context->getSourceManager().isWrittenInMainFile(body_decl->getBeginLoc())) {
+      // printf("ERROR: invalid body\n");
+      // return;
+      body_decl_valid = false;
+    }
+    if (!body_stmt || !context->getSourceManager().isWrittenInMainFile(body_stmt->getBeginLoc())) {
+      // printf("ERROR: invalid body\n");
+      // return;
+      body_stmt_valid = false;
+    }
+
+    if (!body_decl_valid && !body_stmt_valid) {
+      printf("ERROR: invalid matcher body\n");
       return;
     }
     // printf("function body\n");
@@ -673,26 +777,40 @@ public:
 
     // std::vector<std::string> literals;
 
-    BuildMatcherVisitor visitor(context, clang_rewrite_literals);
+    BuildMatcherVisitor visitor(context, clang_rewrite_literals,
+      is_internal_matcher, internal_bindings);
 
-    if (body->size() == 1) {
-      visitor.TraverseStmt(const_cast<Stmt*>(body->body_front()));
+    if (body_stmt_valid) {
+      if (const CompoundStmt* body = dyn_cast<CompoundStmt>(body_stmt)) {
+        if (body->size() == 1) {
+          visitor.TraverseStmt(const_cast<Stmt*>(body->body_front()));
+        }
+        else {
+          printf("WARNING: matcher generation for more than one statement is not "
+            "fully implemented and may produce incorrect or invalid results.\n");
+          // TODO: figure out multiple statements. ideas:
+          // possibly do the compoundStmt thing but bind matchers for hasAnySubstmt
+          //    to s1, s2, etc and then verify that loc(s1) < loc(s2) < ...
+          // if we want to allow for intervening statements,
+          //    loc(s1) < loc(s2) < loc(s3) is good
+          // if we have s1; sa; s2; s3 that holds but if s1, s2, and s3 are
+          //    reordered at all it'll break
+          // if we don't allow intervening statements, we'd need the strict
+          //    ordering and something like end(s1) = start(s2) and
+          //    end(s2) = start(s3) in addition
+          visitor.TraverseStmt(const_cast<CompoundStmt*>(body));
+        }
+      }
+      else {
+        visitor.TraverseStmt(const_cast<Stmt*>(body_stmt));
+      }
     }
-    else {
-      printf("WARNING: matcher generation for more than one statement is not "
-        "fully implemented and may produce incorrect or invalid results.\n");
-      // TODO: figure out multiple statements. ideas:
-      // possibly do the compoundStmt thing but bind matchers for hasAnySubstmt
-      //    to s1, s2, etc and then verify that loc(s1) < loc(s2) < ...
-      // if we want to allow for intervening statements,
-      //    loc(s1) < loc(s2) < loc(s3) is good
-      // if we have s1; sa; s2; s3 that holds but if s1, s2, and s3 are
-      //    reordered at all it'll break
-      // if we don't allow intervening statements, we'd need the strict
-      //    ordering and something like end(s1) = start(s2) and
-      //    end(s2) = start(s3) in addition
-      visitor.TraverseStmt(const_cast<CompoundStmt*>(body));
+    else if (body_decl_valid) {
+      printf("WARNING: matcher generation for declarations is not fully "
+             "implemented and may produce incorrect or invalid results.\n");
+      visitor.TraverseDecl(const_cast<Decl*>(body_decl));
     }
+
 
     Node* matcher = visitor.get_matcher();
 
@@ -707,11 +825,28 @@ public:
     VariantMatcher varmatcher = make_matcher(matcher, 0);
 
     llvm::Optional<DynTypedMatcher> dynmatcher = varmatcher.getSingleMatcher();
-    if (dynmatcher) {
+    if (dynmatcher && decl_valid) {
       MatcherWrapper<DynTypedMatcher>* m = new MatcherWrapper<DynTypedMatcher>(*dynmatcher, matcher_name,
-        context->getSourceManager().getFilename(func->getBeginLoc()).str(),
+        context->getSourceManager().getFilename(decl->getBeginLoc()).str(),
         begin_line, begin_col);
-      user_matchers.push_back(m);
+      if (is_internal_matcher) {
+        internal_matchers.push_back(m);
+      }
+      else {
+        user_matchers.push_back(m);
+      }
+
+    }
+    else if (dynmatcher && stmt_valid) {
+      MatcherWrapper<DynTypedMatcher>* m = new MatcherWrapper<DynTypedMatcher>(*dynmatcher, matcher_name,
+        context->getSourceManager().getFilename(stmt->getBeginLoc()).str(),
+        begin_line, begin_col);
+      if (is_internal_matcher) {
+        internal_matchers.push_back(m);
+      }
+      else {
+        user_matchers.push_back(m);
+      }
     }
     else {
       printf("ERROR: ambiguous matcher\n");

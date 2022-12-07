@@ -136,7 +136,7 @@ int main(int argc, const char **argv) {
     InsertPrematchCallback prematch_callback;
     InsertPostmatchCallback postmatch_callback;
     ReplaceCallback replace_callback;
-    MatcherGenCallback matcher_callback;
+    MatcherGenCallback matcher_callback(/*is_internal_matcher=*/false, {});
 
     inst_finder.addMatcher(insert_before_match, &prematch_callback);
     inst_finder.addMatcher(insert_after_match, &postmatch_callback);
@@ -187,6 +187,9 @@ int main(int argc, const char **argv) {
   retval = Tool->run(newFrontendActionFactory(&Finder).get());
 
   for (MatcherWrapper<ast_matchers::internal::DynTypedMatcher> *m : user_matchers) {
+    delete m;
+  }
+  for (MatcherWrapper<ast_matchers::internal::DynTypedMatcher> *m : internal_matchers) {
     delete m;
   }
   for (CodeAction *act : all_actions) {

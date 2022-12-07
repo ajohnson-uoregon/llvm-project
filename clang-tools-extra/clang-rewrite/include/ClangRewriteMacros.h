@@ -1,6 +1,9 @@
 #ifndef CLANG_REWRITE_MACROS_H
 #define CLANG_REWRITE_MACROS_H
 
+#include <vector>
+#include <utility>
+
 namespace clang_rewrite {
 
   enum class code_structure {
@@ -12,8 +15,11 @@ namespace clang_rewrite {
   template<typename T>
   void loop_body(T predicate) {}
 
-  template<typename T>
+  // template<typename T, typename U>
+  void loop_body(std::vector<std::pair<int,int>> bindings) {}
+
   void not_contains(code_structure structure) {}
+
 }
 
 #endif // CLANG_REWRITE_MACROS_H

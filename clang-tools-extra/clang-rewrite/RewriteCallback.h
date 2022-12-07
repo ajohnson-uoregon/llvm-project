@@ -17,6 +17,8 @@
 #include "CodeAction.h"
 #include "MatcherWrapper.h"
 #include "ClangRewriteUtils.h"
+#include "MatcherGenCallback.h"
+#include "ReplaceBindingsCallback.h"
 
 #include <algorithm>
 #include <fstream>
@@ -98,216 +100,7 @@ bool isBlock(const Decl* decl) {
 // - RequiresExprBodyDecl
 // - TranslationUnitDecl
 // - TemplateParamObjectDecl
-static Rewriter binding_rw;
 
-class ReplaceBindingsCallback : public MatchFinder::MatchCallback {
-public:
-  ASTContext* context;
-  CodeAction* action;
-  Binding bind;
-  Rewriter::RewriteOptions opts;
-
-  ReplaceBindingsCallback(CodeAction* action, Binding b)
-    : action(action), bind(b) {
-      opts.IncludeInsertsAtBeginOfRange = false;
-    }
-
-  ~ReplaceBindingsCallback() {}
-
-  void onStartOfTranslationUnit() override {}
-
-  void run(const MatchFinder::MatchResult &result) override {
-    // printf("RUNNING THE THING\n");
-    printf("found match for binding\n");
-    context = result.Context;
-    binding_rw.setSourceMgr(context->getSourceManager(), context->getLangOpts());
-
-    const Expr* expr = result.Nodes.getNodeAs<Expr>("match");
-    const NamedDecl* decl = result.Nodes.getNodeAs<NamedDecl>("match");
-
-    bool expr_valid = true;
-    bool decl_valid = true;
-
-    if (!expr ||
-        context->getSourceManager().getFilename(expr->getBeginLoc()).str() != action->spec_file_name)
-         {
-      // printf("ERROR: invalid expr binding match loc\n");
-      expr_valid = false;
-    }
-
-    if (!decl ||
-        context->getSourceManager().getFilename(decl->getBeginLoc()).str() != action->spec_file_name) {
-      // printf("ERROR: invalid decl binding match loc\n");
-      decl_valid = false;
-    }
-
-    if (!expr_valid && !decl_valid) {
-      // printf("ERROR: no valid binding match loc\n");
-      return;
-    }
-
-    SourceRange match_range;
-    if (expr_valid) {
-      // printf("expr valid\n");
-      // printf("file name %s\n", context->getSourceManager().getFilename(expr->getBeginLoc()).str().c_str());
-      match_range = SourceRange(expr->getBeginLoc(), expr->getEndLoc());
-    }
-    else if (decl_valid) {
-      // printf("decl valid\n");
-      // printf("file name %s\n", context->getSourceManager().getFilename(decl->getBeginLoc()).str().c_str());
-      match_range = SourceRange(decl->getBeginLoc(), decl->getEndLoc());
-    }
-
-    printf("action source range\n");
-    action->snippet_range.dump(context->getSourceManager());
-    printf("match range\n");
-    match_range.dump(context->getSourceManager());
-    if (!action->snippet_range.fullyContains(match_range)) {
-      // printf("ERROR: match not in action's snippet\n");
-      return;
-    }
-
-
-    FullSourceLoc begin;
-    FullSourceLoc end;
-    FullSourceLoc match;
-
-    if (expr_valid) {
-      if (bind.name == "clang_rewrite::loop_body" ||
-          bind.qual_name == "clang_rewrite::loop_body") {
-        printf("YAY LOOP BODY\n");
-        // auto parentmap = context->getParentMapContext().getParents(*expr);
-        DynTypedNodeList Parents = context->getParents(*expr);
-        llvm::SmallVector<DynTypedNode, 8> Stack(Parents.begin(), Parents.end());
-        while (!Stack.empty()) {
-          const auto &CurNode = Stack.back();
-          Stack.pop_back();
-          if (const CompoundStmt* comp = CurNode.get<CompoundStmt>()) {
-            begin = context->getFullLoc(comp->getLBracLoc());
-            end = context->getFullLoc(comp->getRBracLoc());
-            match = begin;
-            break;
-          } else {
-            llvm::append_range(Stack, context->getParents(CurNode));
-          }
-        }
-      }
-      else {
-        begin = context->getFullLoc(expr->getBeginLoc());
-        end = context->getFullLoc(expr->getEndLoc());
-        match = context->getFullLoc(expr->getBeginLoc());
-      }
-    }
-    else if (decl_valid) {
-      begin = context->getFullLoc(decl->getBeginLoc());
-      end = context->getFullLoc(decl->getEndLoc());
-      match = context->getFullLoc(decl->getLocation());
-    }
-
-    unsigned int begin_line = begin.getSpellingLineNumber();
-    unsigned int begin_col = begin.getSpellingColumnNumber();
-    unsigned int end_line = end.getSpellingLineNumber();
-    unsigned int end_col = end.getSpellingColumnNumber();
-
-    FileID fid = begin.getFileID();
-    unsigned int begin_offset = begin.getFileOffset();
-    unsigned int end_offset = end.getFileOffset();
-    unsigned int match_offset = match.getFileOffset();
-
-    if (begin_offset == end_offset) {
-      printf("one char match, luls\n");
-      end_offset += 1;
-    }
-
-    printf("FOUND match for binding at %d:%d - %d:%d\n",
-           begin_line, begin_col, end_line, end_col);
-
-    llvm::Optional<llvm::MemoryBufferRef> buff =
-      context->getSourceManager().getBufferOrNone(fid);
-
-    char* code = new char[end_offset - begin_offset + 1];
-    if (buff.has_value()) {
-      memcpy(code, &(buff->getBufferStart()[begin_offset]),
-             (end_offset - begin_offset + 1) * sizeof(char));
-      code[end_offset - begin_offset] = '\0';
-      printf("matched range: %s\n", code);
-      printf("               ");
-      for (unsigned int i = 0; i < match_offset - begin_offset; i++) {
-        printf(" ");
-      }
-      printf("^\n");
-    }
-    delete[] code;
-
-
-    if (expr_valid && (bind.name == "clang_rewrite::loop_body" ||
-        bind.qual_name == "clang_rewrite::loop_body")) {
-      binding_rw.ReplaceText(begin, end_offset - begin_offset + 1, bind.value);
-    }
-    else if (expr_valid) {
-      printf("expr\n");
-      expr->dump();
-
-      char* name_c = new char[end_offset - match_offset + 1];
-      size_t space;
-      if (buff.has_value()) {
-        memcpy(name_c, &(buff->getBufferStart()[match_offset]),
-               (end_offset - match_offset + 1) * sizeof(char));
-        name_c[end_offset - match_offset] = '\0';
-        StringRef name(name_c);
-        // TODO something clever to figure out which name was used in the og
-        // code, use that as the length of stuff to replace
-        if (bind.name == bind.qual_name) {
-          space = bind.name.size();
-        }
-        else if (bind.name.empty()) {
-          space = bind.qual_name.size();
-        }
-        else if (bind.qual_name.empty()) {
-          space = bind.name.size();
-        }
-        else if (name.find(" ") != StringRef::npos) {
-          space = name.find(" ");
-        }
-        else {
-          space = 1;
-        }
-        printf("oh noes %lu\n", space);
-
-        expr->getExprLoc().dump(context->getSourceManager());
-        binding_rw.ReplaceText(expr->getExprLoc(), space, bind.value);
-      }
-    }
-    else if (decl_valid) {
-      printf("decl\n");
-      decl->dump();
-
-      char* name_c = new char[end_offset - match_offset + 1];
-      size_t space;
-      if (buff.has_value()) {
-        memcpy(name_c, &(buff->getBufferStart()[match_offset]),
-               (end_offset - match_offset + 1) * sizeof(char));
-        name_c[end_offset - match_offset] = '\0';
-        StringRef name(name_c);
-        if (name.find(" ") != StringRef::npos) {
-          space = name.find(" ");
-        }
-        else {
-          space = 1;
-        }
-
-        binding_rw.ReplaceText(decl->getLocation(), space, bind.value);
-      }
-      delete[] name_c;
-    }
-    std::string new_code = binding_rw.getRewrittenText(action->snippet_range);
-
-    printf("new code!!!! %s\n", new_code.c_str());
-    action->edited_code_snippet = new_code;
-  }
-
-  void onEndOfTranslationUnit() override {}
-};
 
 // Rewriter ReplaceBindingsCallback::binding_rw;
 
@@ -438,20 +231,6 @@ public:
 
     // std::map<DynTypedNode, std::vector<std::string>> reverse_Nodes;
     for (std::pair<std::string, DynTypedNode> n : result.Nodes.getMap()) {
-      // if not found, add it
-    //   auto search = reverse_Nodes.find(n.second);
-    //   if (search == reverse_Nodes.end()) {
-    //     reverse_Nodes.insert({n.second, {n.first}});
-    //   }
-    //   else {
-    //     search->second.push_back(n.first);
-    //   }
-    // }
-    //
-    // for (auto n : reverse_Nodes) {
-      // for (auto s : n.second) {
-      //   llvm::outs() << s << ",";
-      // }
       llvm::outs() << n.first << " : \n";
       n.second.dump(llvm::outs(), *context);
       const Stmt *stmt = result.Nodes.getNodeAs<Stmt>(n.first);
@@ -573,12 +352,25 @@ public:
 
     }
 
+    SourceRange original_range;
+    std::string original_file;
+
+    if (smatch) {
+      original_range = SourceRange(smatch->getBeginLoc(), smatch->getEndLoc());
+      original_file = context->getSourceManager().getFilename(smatch->getBeginLoc());
+    }
+    else if (dmatch) {
+      original_range = SourceRange(dmatch->getBeginLoc(), dmatch->getEndLoc());
+      original_file = context->getSourceManager().getFilename(dmatch->getBeginLoc());
+    }
+
     for (CodeAction *action : matcher->actions) {
-      replace_bound_code(action, bound_code);
+      replace_bound_code(action, bound_code, original_range, original_file);
       action->dump_bindings(bound_code);
       printf("FINAL RESULT\n %s\n", action->edited_code_snippet.c_str());
       binding_rw.resetAllRewriteBuffers(binding_rw.getSourceMgr());
       bound_code.clear();
+      banned_ranges.clear();
     }
 
 
@@ -623,12 +415,15 @@ public:
     files_changed.clear();
   }
 
-  void replace_bound_code(CodeAction* action, std::vector<Binding> bindings) {
+  void replace_bound_code(CodeAction* action, std::vector<Binding> bindings,
+      SourceRange original_range, std::string original_file) {
     printf("REPLACE BOUND CODE\n");
+
+    std::sort(bindings.begin(), bindings.end(), bindings_compare());
 
     for (Binding b: bindings) {
       MatchFinder finder;
-      ReplaceBindingsCallback cb(action, b);
+      ReplaceBindingsCallback cb(action, b, bindings, original_range, original_file);
       printf("LOOKING for things named %s or %s\n", b.name.c_str(), b.qual_name.c_str());
 
       //TODO: if BindingKind is VarName or Type

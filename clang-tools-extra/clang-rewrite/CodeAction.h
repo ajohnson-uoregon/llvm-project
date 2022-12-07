@@ -45,6 +45,22 @@ typedef struct Binding {
   BindingKind kind;
 } Binding;
 
+struct bindings_compare {
+  inline bool operator() (const Binding& b1, const Binding& b2) {
+    if (b1.name == "clang_rewrite::loop_body" ||
+        b1.qual_name == "clang_rewrite::loop_body") {
+      return true;
+    }
+    else if (b2.name == "clang_rewrite::loop_body" ||
+             b2.qual_name == "clang_rewrite::loop_body") {
+      return false;
+    }
+    else {
+      return b1.name < b2.name;
+    }
+  }
+};
+
 class CodeAction {
 public:
   // ASTContext* context;
