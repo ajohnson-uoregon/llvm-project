@@ -127,6 +127,8 @@ public:
     FullSourceLoc end;
     FullSourceLoc match;
 
+    // just in case, we may need it later
+    RewriteInternalCallback<ast_matchers::internal::DynTypedMatcher> **callbacks;
     if (expr_valid) {
       if (bind.name == "clang_rewrite::loop_body" ||
           bind.qual_name == "clang_rewrite::loop_body") {
@@ -163,8 +165,9 @@ public:
           const InitListExpr* initlist = findFirstChild<InitListExpr>(mods);
           if (initlist != nullptr) {
             // run binding replacement on cxxConstructExpr code
-            FullSourceLoc il_begin = context->getFullLoc(initlist->getBeginLoc());
-            FullSourceLoc il_end = context->getFullLoc(initlist->getEndLoc());
+            const Expr* init = initlist->getInit(0);
+            FullSourceLoc il_begin = context->getFullLoc(init->getBeginLoc());
+            FullSourceLoc il_end = context->getFullLoc(init->getEndLoc());
             FileID il_fid = il_begin.getFileID();
             unsigned int il_begin_offset = il_begin.getFileOffset();
             unsigned int il_end_offset = il_end.getFileOffset();
@@ -212,8 +215,8 @@ public:
             }
 
             MatchFinder replace_finder;
-            RewriteInternalCallback<ast_matchers::internal::DynTypedMatcher> **callbacks =
-                new RewriteInternalCallback<ast_matchers::internal::DynTypedMatcher> *[internal_matchers.size()];
+            callbacks = new RewriteInternalCallback<ast_matchers::internal::DynTypedMatcher>
+              *[internal_matchers.size()];
 
             int i = 0;
             for (MatcherWrapper<ast_matchers::internal::DynTypedMatcher> *m : internal_matchers) {
@@ -225,10 +228,14 @@ public:
             }
 
             Tool->run(newFrontendActionFactory(&replace_finder).get());
-            // replace_bound_code(act, )
-            // generate matcher for the first part of constuctor -- MatcherGenCallback
-            //   ^ anything in bindings is a literal
-            // run NewCodeCallback on second part of constructor
+
+            // options:
+            //  - replace in binding.value - no
+            //  - fake action?? - wtf even
+            //  - rewrite on top of rewrite - rewrite with existing binding, then
+            //    a series of rewrites for internal matcher actions - have to
+            //    figure out offsets
+
             // run this callback but with the og loop source range as place to look
           }
         }
@@ -284,6 +291,22 @@ public:
     if (expr_valid && (bind.name == "clang_rewrite::loop_body" ||
         bind.qual_name == "clang_rewrite::loop_body")) {
       binding_rw.ReplaceText(begin, end_offset - begin_offset + 1, bind.value);
+
+      // figure out offsets for inline m/r pairs we found above
+      for (int i = 0; i < internal_matchers.size(); i++) {
+        RewriteInternalCallback<ast_matchers::internal::DynTypedMatcher>* cb = callbacks[i];
+        if (cb->is_valid) {
+          printf("rewrite start offset %u\n", cb->rewrite_start_offset);
+          printf("length %u\n", cb->rewrite_end_offset - cb->rewrite_start_offset +1);
+          printf("new code for luls %s\n", cb->new_code.c_str());
+          if (!cb->new_code.empty()) {
+            binding_rw.ReplaceText(
+              begin.getLocWithOffset(cb->rewrite_start_offset),
+              cb->rewrite_end_offset - cb->rewrite_start_offset+1,
+              cb->new_code);
+          }
+        }
+      }
     }
     else if (expr_valid) {
       printf("expr\n");
@@ -298,21 +321,23 @@ public:
         StringRef name(name_c);
         // TODO something clever to figure out which name was used in the og
         // code, use that as the length of stuff to replace
-        if (bind.name == bind.qual_name) {
-          space = bind.name.size();
-        }
-        else if (bind.name.empty()) {
-          space = bind.qual_name.size();
-        }
-        else if (bind.qual_name.empty()) {
-          space = bind.name.size();
-        }
-        else if (name.find(" ") != StringRef::npos) {
-          space = name.find(" ");
-        }
-        else {
-          space = 1;
-        }
+        // if (bind.name == bind.qual_name) {
+        //   space = bind.name.size();
+        // }
+        // else if (bind.name.empty()) {
+        //   space = bind.qual_name.size();
+        // }
+        // else if (bind.qual_name.empty()) {
+        //   space = bind.name.size();
+        // }
+        // else if (name.find(" ") != StringRef::npos) {
+        //   space = name.find(" ");
+        // }
+        // else {
+        //   space = 1;
+        // }
+        space = Lexer::MeasureTokenLength(exp->getBeginLoc(),
+          context->getSourceManager(), context->getLangOpts());
         printf("oh noes %lu\n", space);
 
         exp->getExprLoc().dump(context->getSourceManager());
@@ -345,6 +370,7 @@ public:
 
     printf("new code!!!! %s\n", new_code.c_str());
     action->edited_code_snippet = new_code;
+    internal_matchers.clear();
   }
 
   void onEndOfTranslationUnit() override {}

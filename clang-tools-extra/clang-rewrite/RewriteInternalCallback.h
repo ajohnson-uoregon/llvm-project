@@ -49,6 +49,12 @@ public:
   SourceRange orig_range;
   std::string orig_file;
 
+  SourceRange match_range;
+  int rewrite_start_offset;
+  int rewrite_end_offset;
+  std::string new_code;
+  bool is_valid = false;
+
   RewriteInternalCallback(MatcherWrapper<T>* matcher,
       std::vector<Binding> literals, SourceRange og_range, std::string og_file)
     : matcher(matcher), literal_bindings(literals), orig_range(og_range),
@@ -72,11 +78,20 @@ public:
       return;
     }
 
-    SourceRange match_range = SourceRange(match->getBeginLoc(), match->getEndLoc());
+    match_range = SourceRange(match->getBeginLoc(), match->getEndLoc());
     if (!orig_range.fullyContains(match_range)) {
       printf("match not in source range\n");
       return;
     }
+
+    unsigned int og_start_offset = context->getSourceManager().getFileOffset(orig_range.getBegin());
+    // unsigned int og_end_offset   = context->getSourceManager().getFileOffset(orig_range.getEnd());
+
+    unsigned int match_start_offset = context->getSourceManager().getFileOffset(match->getBeginLoc());
+    unsigned int match_end_offset   = context->getSourceManager().getFileOffset(match->getEndLoc());
+
+    rewrite_start_offset = match_start_offset - og_start_offset;
+    rewrite_end_offset = match_end_offset - og_start_offset;
 
     match->dump();
 
@@ -208,19 +223,20 @@ public:
       // do replace_bound_code variant on this
         // info needed:
         //  - range of second part of init list
-      int offset = action->base_code_snippet.find(",");
+      int offset = action->base_code_snippet.find(",") + 1;
       SourceRange init_list_second =
         SourceRange(action->snippet_range.getBegin().getLocWithOffset(offset),
-                    action->snippet_range.getEnd());
+                    action->snippet_range.getEnd().getLocWithOffset(-1));
         //  - range of match (have from this cb) (match_range)
         // do ReplaceBindingsCallback on second part of init list
       replace_bound_code(action, bound_code, init_list_second, action->spec_file_name);
         // replace range in og code with replaced second half of init list
       action->dump();
       action->dump_bindings(bound_code);
-      bound_code.clear();
+      printf("literals\n");
+      action->dump_bindings(literal_bindings);
     }
-
+    bound_code.clear();
   }
 
   void onEndOfTranslationUnit() override {
@@ -228,7 +244,7 @@ public:
   }
 
   void replace_bound_code(CodeAction* action, std::vector<Binding> bindings,
-      SourceRange original_range, std::string original_file) {
+      SourceRange rep_range, std::string rep_file) {
     printf("OTHER REPLACE BOUND CODE\n");
 
     StatementMatcher inits_finder = callExpr(allOf(
@@ -246,18 +262,17 @@ public:
     ));
 
     MatchFinder finder;
-    ReplacerInternalCallback ri_cb(context, bindings, literal_bindings, original_file);
+    ReplacerInternalCallback ri_cb(context, bindings, literal_bindings, rep_file, rep_range);
     finder.addMatcher(inits_finder, &ri_cb);
 
     Tool->run(newFrontendActionFactory(&finder).get());
 
-    // for (Binding b: bindings) {
-    //   MatchFinder finder;
-    //   ReplaceBindingsCallback cb(action, b, bindings, original_range, original_file);
-    // }
-    // for (Binding b: literal_bindings) {
-    //
-    // }
+    new_code = ri_cb.new_code;
+    printf("new code\n%s\n", new_code.c_str());
+    internal_rep_rw.resetAllRewriteBuffers(internal_rep_rw.getSourceMgr());
+
+    action->edited_code_snippet = new_code;
+    is_valid = true; // ??????
   }
 
 };

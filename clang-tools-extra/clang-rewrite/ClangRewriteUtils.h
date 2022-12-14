@@ -19,6 +19,7 @@ std::vector<std::string> spec_files;
 ClangTool* Tool;
 
 Rewriter binding_rw;
+Rewriter internal_rep_rw;
 
 bool isInOneOfFileIDs(SourceLocation loc, std::vector<const FileEntry*> files, SourceManager& SrcMgr) {
   return llvm::any_of(files, [&](const FileEntry* file) {

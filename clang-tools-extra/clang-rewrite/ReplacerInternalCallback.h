@@ -31,46 +31,77 @@ namespace rewrite_tool {
   class ReplacerInternalVisitor : public RecursiveASTVisitor<ReplacerInternalVisitor> {
   public:
     ASTContext* context;
-    Rewriter file_rw;
+    std::vector<Binding> bindings;
+    std::vector<Binding> literals;
 
-    explicit ReplacerInternalVisitor(ASTContext* context, Rewriter& file_rw) :
-      context(context), file_rw(file_rw) {}
+    explicit ReplacerInternalVisitor(ASTContext* context,
+        std::vector<Binding> bindings, std::vector<Binding> literals) :
+        context(context), bindings(bindings), literals(literals) {
+      internal_rep_rw.setSourceMgr(context->getSourceManager(), context->getLangOpts());
+    }
 
     bool VisitDeclRefExpr(DeclRefExpr* declref) {
       printf("HAHA\n");
-      return false;
+      std::string name = declref->getDecl()->getNameAsString();
+      std::string qualname = declref->getDecl()->getQualifiedNameAsString();
+
+      for (Binding b : literals) {
+        if (qualname == b.qual_name || name == b.name) {
+          unsigned int begin_offset = context->getFullLoc(declref->getBeginLoc()).getFileOffset();
+          unsigned int end_offset = context->getFullLoc(declref->getEndLoc()).getFileOffset();
+          printf("length %u\n", end_offset-begin_offset+1);
+          internal_rep_rw.ReplaceText(declref->getBeginLoc(), end_offset-begin_offset+1, b.value);
+        }
+      }
+      for (Binding b : bindings) {
+        if (qualname == b.qual_name || name == b.name) {
+          unsigned int begin_offset = context->getFullLoc(declref->getBeginLoc()).getFileOffset();
+          unsigned int end_offset = context->getFullLoc(declref->getEndLoc()).getFileOffset();
+          printf("length %u\n", end_offset-begin_offset+1);
+          internal_rep_rw.ReplaceText(declref->getBeginLoc(), end_offset-begin_offset+1, b.value);
+        }
+      }
+      return true;
     }
   };
 
   class ReplacerInternalCallback : public MatchFinder::MatchCallback {
   public:
-    static Rewriter file_rw;
     ASTContext* context;
     std::vector<Binding> bindings;
     std::vector<Binding> literals;
-    std::string orig_file;
+    std::string rep_file;
+    SourceRange rep_range;
+
+    std::string new_code;
 
     ReplacerInternalCallback(ASTContext* context, std::vector<Binding> bindings,
-        std::vector<Binding> literals, std::string orig_file) :
-      context(context), bindings(bindings), literals(literals), orig_file(orig_file) {}
+        std::vector<Binding> literals, std::string rep_file, SourceRange rep_range) :
+      context(context), bindings(bindings), literals(literals), rep_file(rep_file),
+      rep_range(rep_range) {}
 
     void run(const MatchFinder::MatchResult& result) override {
       context = result.Context;
-      file_rw.setSourceMgr(context->getSourceManager(), context->getLangOpts());
 
       const Expr* rep = result.Nodes.getNodeAs<Expr>("replacer");
 
-      if (!rep || context->getSourceManager().getFilename(rep->getBeginLoc()) != orig_file) {
+      if (!rep || context->getSourceManager().getFilename(rep->getBeginLoc()) != rep_file) {
         printf("ERROR: invalid inline replacer\n");
         return;
       }
 
-      ReplacerInternalVisitor visitor(context, file_rw);
+      ReplacerInternalVisitor visitor(context, bindings, literals);
       visitor.TraverseStmt(const_cast<Expr*>(rep));
+
+      // I have to do everything in this house
+      unsigned int offset = Lexer::MeasureTokenLength(rep_range.getEnd(), context->getSourceManager(), context->getLangOpts());
+      new_code = internal_rep_rw.getRewrittenText(
+        CharSourceRange(SourceRange(rep_range.getBegin(), rep_range.getEnd().getLocWithOffset(offset)), false));
+      printf("new code\n%s\n", new_code.c_str());
     }
   };
 
-  Rewriter ReplacerInternalCallback::file_rw;
+
 }
 }
 
