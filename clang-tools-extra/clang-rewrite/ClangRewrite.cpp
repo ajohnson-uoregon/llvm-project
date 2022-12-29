@@ -81,7 +81,7 @@ int main(int argc, const char **argv) {
 
   // dynamic::registerLocalMatchers();
 
-  auto ExpectedParser =
+  llvm::Expected<CommonOptionsParser> ExpectedParser =
       CommonOptionsParser::create(argc, argv, RewriteCategory);
   if (!ExpectedParser) {
     // Fail gracefully for unsupported options.
@@ -89,7 +89,10 @@ int main(int argc, const char **argv) {
     return 1;
   }
 
-  CommonOptionsParser &OptionsParser = ExpectedParser.get();
+  global_argc = argc;
+  global_argv = argv;
+
+  CommonOptionsParser& OptionsParser = ExpectedParser.get();
   std::vector<std::string> sources = OptionsParser.getSourcePathList();
   std::vector<std::string> all_files = sources;
   if (!inst_file.empty()) {

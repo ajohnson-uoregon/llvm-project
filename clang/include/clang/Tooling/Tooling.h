@@ -377,6 +377,8 @@ public:
 
   llvm::ArrayRef<std::string> getSourcePaths() const { return SourcePaths; }
 
+  const CompilationDatabase& getCompilationDatabase() { return Compilations; }
+
 private:
   const CompilationDatabase &Compilations;
   std::vector<std::string> SourcePaths;

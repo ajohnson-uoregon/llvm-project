@@ -18,6 +18,9 @@
 #include "RewriteInternalCallback.h"
 #include "ClangRewriteUtils.h"
 
+#include <iostream>
+#include <fstream>
+
 using namespace clang;
 using namespace clang::ast_matchers;
 
@@ -68,6 +71,10 @@ public:
     }
 
   ~ReplaceBindingsCallback() {}
+
+  void handle_loop_body_macro() {
+
+  }
 
   void onStartOfTranslationUnit() override {}
 
@@ -206,6 +213,42 @@ public:
 
             Tool->run(newFrontendActionFactory(&inits_finder).get());
 
+            FileID fid = begin.getFileID();
+            unsigned int begin_offset = begin.getFileOffset();
+            unsigned int end_offset = end.getFileOffset();
+            unsigned int match_offset = match.getFileOffset();
+
+            binding_rw.ReplaceText(original_range.getBegin(), end_offset - begin_offset + 1, bind.value);
+
+            printf("wat?\n%s\n", binding_rw.getRewrittenText(action->snippet_range).c_str());
+
+            std::ofstream temp_file("clang_rewrite_temp.cpp");
+
+            // const RewriteBuffer* temp_buff = binding_rw.getRewriteBufferFor(fid);
+            SourceLocation file_begin = context->getSourceManager().getLocForStartOfFile(context->getFullLoc(original_range.getBegin()).getFileID());
+            SourceLocation file_end = context->getSourceManager().getLocForEndOfFile(context->getFullLoc(original_range.getBegin()).getFileID());
+            temp_file << binding_rw.getRewrittenText(SourceRange(file_begin, file_end));
+            temp_file.close();
+
+            llvm::cl::OptionCategory TempCategory("Internal category that should never be seen.");
+
+            llvm::Expected<CommonOptionsParser> ExpectedParser =
+                CommonOptionsParser::create(global_argc, global_argv, TempCategory);
+
+            printf("argc %d\n", global_argc);
+            for (int i = 0; i < global_argc; i++) {
+              printf("argv %s\n", global_argv[i]);
+            }
+
+            if (!ExpectedParser) {
+              // Fail gracefully for unsupported options.
+              llvm::errs() << ExpectedParser.takeError();
+              return;
+            }
+
+            CommonOptionsParser& OptionsParser = ExpectedParser.get();
+            ClangTool process_temp(Tool->getCompilationDatabase(), {"clang_rewrite_temp.cpp"});
+
             CodeAction act(std::string(code), "tempaction", NewCodeKind::Replace,
               {"tempmatcher"}, context->getSourceManager().getFilename(il_begin).str(),
               SourceRange(il_begin, il_end));
@@ -227,14 +270,7 @@ public:
               i++;
             }
 
-            Tool->run(newFrontendActionFactory(&replace_finder).get());
-
-            // options:
-            //  - replace in binding.value - no
-            //  - fake action?? - wtf even
-            //  - rewrite on top of rewrite - rewrite with existing binding, then
-            //    a series of rewrites for internal matcher actions - have to
-            //    figure out offsets
+            process_temp.run(newFrontendActionFactory(&replace_finder).get());
 
             // run this callback but with the og loop source range as place to look
           }
@@ -290,23 +326,46 @@ public:
 
     if (expr_valid && (bind.name == "clang_rewrite::loop_body" ||
         bind.qual_name == "clang_rewrite::loop_body")) {
-      binding_rw.ReplaceText(begin, end_offset - begin_offset + 1, bind.value);
+
 
       // figure out offsets for inline m/r pairs we found above
-      for (int i = 0; i < internal_matchers.size(); i++) {
-        RewriteInternalCallback<ast_matchers::internal::DynTypedMatcher>* cb = callbacks[i];
-        if (cb->is_valid) {
-          printf("rewrite start offset %u\n", cb->rewrite_start_offset);
-          printf("length %u\n", cb->rewrite_end_offset - cb->rewrite_start_offset +1);
-          printf("new code for luls %s\n", cb->new_code.c_str());
-          if (!cb->new_code.empty()) {
-            binding_rw.ReplaceText(
-              begin.getLocWithOffset(cb->rewrite_start_offset),
-              cb->rewrite_end_offset - cb->rewrite_start_offset+1,
-              cb->new_code);
-          }
-        }
-      }
+      // for (int i = 0; i < internal_matchers.size(); i++) {
+      //   RewriteInternalCallback<ast_matchers::internal::DynTypedMatcher>* cb = callbacks[i];
+      //   if (cb->is_valid) {
+      //     printf("rewrite start offset %u\n", cb->rewrite_start_offset);
+      //     printf("length %u\n", cb->rewrite_end_offset - cb->rewrite_start_offset +1);
+      //     printf("new code for luls %s\n", cb->new_code.c_str());
+      //     if (!cb->new_code.empty()) {
+      //       int curr_offset = 0;
+      //       SourceLocation curr_loc = begin;
+      //       while (curr_offset < cb->rewrite_start_offset) {
+      //         printf("token offset funtimes %d\n", curr_offset);
+      //         curr_offset += Lexer::MeasureTokenLength(curr_loc, context->getSourceManager(), context->getLangOpts());
+      //         llvm::Optional<Token> tok = Lexer::findNextToken(curr_loc, context->getSourceManager(), context->getLangOpts());
+      //         if (tok.has_value()) {
+      //           curr_loc = tok->getLocation();
+      //           llvm::errs() << tok->getName() << "\n";
+      //           if (tok->isOneOf(tok::TokenKind::unknown, tok::TokenKind::eof)) {
+      //             llvm::errs() << tok->getLiteralData() << "\n";
+      //             break;
+      //           }
+      //         }
+      //         else {
+      //           printf("ERROR: bad token\n");
+      //           break;
+      //         }
+      //       }
+      //       binding_rw.ReplaceText(
+      //         curr_loc /*begin.getLocWithOffset(cb->rewrite_start_offset)*/,
+      //         cb->rewrite_end_offset - cb->rewrite_start_offset+1,
+      //         cb->new_code);
+      //       printf("wat2?\n");
+      //       const RewriteBuffer* test = binding_rw.getRewriteBufferFor(fid);
+      //       test->write(llvm::errs());
+      //       printf("\n");
+      //     }
+      //   }
+      // }
     }
     else if (expr_valid) {
       printf("expr\n");

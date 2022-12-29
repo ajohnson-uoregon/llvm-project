@@ -18,6 +18,9 @@ std::vector<std::string> spec_files;
 
 ClangTool* Tool;
 
+int global_argc;
+const char** global_argv;
+
 Rewriter binding_rw;
 Rewriter internal_rep_rw;
 

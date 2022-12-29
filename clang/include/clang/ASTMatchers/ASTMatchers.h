@@ -1862,10 +1862,6 @@ extern const internal::VariadicDynCastAllOfMatcher<Stmt, ConstantExpr>
 /// \endcode
 extern const internal::VariadicDynCastAllOfMatcher<Stmt, ParenExpr> parenExpr;
 
-AST_MATCHER_P(ParenExpr, hasSubExpr, internal::Matcher<Expr>, InnerMatcher) {
-  const Expr *expr = Node.getSubExpr();
-  return InnerMatcher.matches(*expr, Finder, Builder);
-}
 
 /// Matches constructor call expressions (including implicit ones).
 ///
@@ -5868,6 +5864,15 @@ AST_POLYMORPHIC_MATCHER_P(hasSourceExpression,
       internal::GetSourceExpressionMatcher<NodeType>::get(Node);
   return (SubExpression != nullptr &&
           InnerMatcher.matches(*SubExpression, Finder, Builder));
+}
+
+AST_POLYMORPHIC_MATCHER_P(hasSubExpr,
+                          AST_POLYMORPHIC_SUPPORTED_TYPES(CXXBindTemporaryExpr,
+                            CXXStdInitializerListExpr, MaterializeTemporaryExpr,
+                            ParenExpr),
+                          internal::Matcher<Expr>, InnerMatcher) {
+  const Expr *expr = Node.getSubExpr();
+  return InnerMatcher.matches(*expr, Finder, Builder);
 }
 
 /// Matches casts that has a given cast kind.
