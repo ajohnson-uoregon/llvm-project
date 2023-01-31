@@ -20,7 +20,6 @@
 #include "NewCodeCallback.h"
 #include "MatcherGenCallback.h"
 #include "FindLiteralsCallback.h"
-#include "tests/test_matchers.cpp"
 
 #include <algorithm>
 #include <fstream>
@@ -67,19 +66,7 @@ cl::opt<std::string>
 // It's nice to have this help message in all tools.
 static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 
-// A help message for this specific tool can be added afterwards.
-// static cl::extrahelp MoreHelp("\nMore help text...\n");
-
-// static bool areSameVariable(const ValueDecl *First, const ValueDecl *Second)
-// {
-//   return First && Second &&
-//          First->getCanonicalDecl() == Second->getCanonicalDecl();
-// }
-//
-
-int main(int argc, const char **argv) {
-
-  // dynamic::registerLocalMatchers();
+int main(int argc, const char** argv) {
 
   llvm::Expected<CommonOptionsParser> ExpectedParser =
       CommonOptionsParser::create(argc, argv, RewriteCategory);
@@ -89,9 +76,6 @@ int main(int argc, const char **argv) {
     return 1;
   }
 
-  global_argc = argc;
-  global_argv = argv;
-
   CommonOptionsParser& OptionsParser = ExpectedParser.get();
   std::vector<std::string> sources = OptionsParser.getSourcePathList();
   std::vector<std::string> all_files = sources;
@@ -99,19 +83,9 @@ int main(int argc, const char **argv) {
     spec_files.push_back(inst_file);
   }
   all_files.insert(all_files.end(), spec_files.begin(), spec_files.end());
+
   Tool = new ClangTool(OptionsParser.getCompilations(),
                  all_files);
-
-  // for (std::string path : OptionsParser.getSourcePathList()) {
-  //   printf("source path %s\n", path.c_str());
-  // }
-
-  for (std::string file : sources) {
-    llvm::ErrorOr<const FileEntry*> entry = Tool->getFiles().getFile(file);
-    if (entry) {
-      source_file_entries.push_back(*entry);
-    }
-  }
 
   if (norewrite_file) {
     rewrite_file = false;
@@ -119,16 +93,17 @@ int main(int argc, const char **argv) {
   if (quiet) {
     verbose = false;
   }
+
   int retval;
+
   // TODO: multiple inst files
   if (!inst_file.empty()) {
-    // Tool(OptionsParser.getCompilations(), {inst_file});
-
     MatchFinder literal_finder;
     FindLiteralsCallback literals_callback;
 
     literal_finder.addMatcher(literal_vector, &literals_callback);
 
+    // grab literals from namespace or list
     retval = Tool->run(newFrontendActionFactory(&literal_finder).get());
     if (retval) {
       printf("Problems with finding literals.\n");
@@ -146,9 +121,10 @@ int main(int argc, const char **argv) {
     inst_finder.addMatcher(replace_match, &replace_callback);
     inst_finder.addMatcher(matcher, &matcher_callback);
 
+    // find matchers and replacers, make CodeActions
     retval = Tool->run(newFrontendActionFactory(&inst_finder).get());
     if (retval) {
-      printf("Problems with creating matchers and tranformations.\n");
+      printf("Problems with creating matchers and transformations.\n");
       return retval;
     }
   }
@@ -159,10 +135,6 @@ int main(int argc, const char **argv) {
   printf("NUM MATCHERS FOUND: %ld\n", user_matchers.size());
 
   MatchFinder Finder;
-
-  // TODO are we going to need any other kinds of matchers? probably
-  // DeclarationMatchers
-  // https://clang.llvm.org/doxygen/classclang_1_1ast__matchers_1_1MatchFinder.html
 
   // for each matcher, go through all the actions and find the ones relevant to
   // it
@@ -187,8 +159,10 @@ int main(int argc, const char **argv) {
     }
     i++;
   }
+  // actually run the rewrites
   retval = Tool->run(newFrontendActionFactory(&Finder).get());
 
+  // cleanup
   for (MatcherWrapper<ast_matchers::internal::DynTypedMatcher> *m : user_matchers) {
     delete m;
   }
@@ -209,14 +183,3 @@ int main(int argc, const char **argv) {
 
   return retval;
 }
-
-// TODO
-// user specified code and actions
-//    replace with arguments
-// for each match, rewrite ast before and after to call inst function
-//    figure out which inst function based on finstrument-functions
-// in codegen, if we see a node with that attribute, give the block we're
-// generating the same attribute (?)
-//    add codegenopt like finstrument-functions
-// in llvm pass, add calls to instrumentation funcs at appropriate points
-//    new llvm pass

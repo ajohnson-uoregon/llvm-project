@@ -57,7 +57,7 @@ enum class MatcherType {
   loopBody,               // macro
   parenExpr,              //
   pointerType,            // 40
-  pointee,                // 
+  pointee,                //
   returnStmt,             //
   stringLiteral,
   to,
