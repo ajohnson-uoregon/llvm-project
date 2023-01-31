@@ -21,6 +21,7 @@
 #include "ReplaceBindingsCallback.h"
 
 #include <algorithm>
+#include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -415,25 +416,71 @@ public:
     files_changed.clear();
   }
 
-  void replace_bound_code(CodeAction* action, std::vector<Binding> bindings,
+  void replace_bound_code(CodeAction* action, std::vector<Binding> all_bindings,
       SourceRange original_range, std::string original_file) {
     printf("REPLACE BOUND CODE\n");
 
-    std::sort(bindings.begin(), bindings.end(), bindings_compare());
+    //TODO:
+    //  - make temp file
+    //  - write source file into temp file with replacer copy-pasted in over the match
+    //  - rewrite as many bindings as we can, ENDING with macros for Reasons
+    //  - kinda recurse on macros; make a new temp file with current rewrites,
+    //    then do the thing
+    //  - grab modified source range out of temp file, drop it into og file
+    //  - ???
+    //  - profit
 
-    for (Binding b: bindings) {
+
+
+    std::ofstream temp_file("clang_rewrite_temp_source.cpp");
+
+    SourceLocation file_begin = context->getSourceManager().getLocForStartOfFile(context->getFullLoc(original_range.getBegin()).getFileID());
+    SourceLocation file_end = context->getSourceManager().getLocForEndOfFile(context->getFullLoc(original_range.getBegin()).getFileID());
+
+    file_rw.ReplaceText(original_range, "{" + action->setup_code_snippet + "\n" + action->base_code_snippet + "}");
+
+    temp_file << "#include \"ClangRewriteMacros.h\"\n";
+    temp_file << file_rw.getRewrittenText(SourceRange(file_begin, file_end));
+    temp_file.close();
+
+    std::sort(all_bindings.begin(), all_bindings.end(), bindings_compare());
+
+    std::vector<Binding> deferred_bindings;
+    std::vector<Binding> current_bindings;
+    for (Binding b: all_bindings) {
+      if (StringRef(b.name).startswith("clang_rewrite") || StringRef(b.qual_name).startswith("clang_rewrite")) {
+        deferred_bindings.push_back(b);
+      }
+    }
+
+    std::set_difference(all_bindings.begin(), all_bindings.end(),
+                        deferred_bindings.begin(), deferred_bindings.end(),
+                        std::inserter(current_bindings, current_bindings.begin()),
+                        bindings_compare());
+
+
+    ClangTool process_temp(Tool->getCompilationDatabase(), {"clang_rewrite_temp_source.cpp"});
+
+    for (Binding b: current_bindings) {
       MatchFinder finder;
-      ReplaceBindingsCallback cb(action, b, bindings, original_range, original_file);
+      ReplaceBindingsCallback cb(action, b, current_bindings, original_range, original_file);
       printf("LOOKING for things named %s or %s\n", b.name.c_str(), b.qual_name.c_str());
 
       //TODO: if BindingKind is VarName or Type
       if (b.kind == BindingKind::VarNameBinding) {
         if (!b.name.empty() && !b.qual_name.empty()) {
           VariantMatcher declmatcher =
-            constructBoundMatcher("namedDecl", "match",
-              constructMatcher("anyOf",
-                constructMatcher("hasName", StringRef(b.name), 2),
-                constructMatcher("hasName", StringRef(b.qual_name), 2),
+            constructMatcher("attributedStmt",
+              constructMatcher("allOf",
+                constructMatcher("hasAttr", StringRef("attr::MatcherBlock"), 2),
+                constructMatcher("hasDescendant",
+                  constructBoundMatcher("namedDecl", "match",
+                    constructMatcher("anyOf",
+                      constructMatcher("hasName", StringRef(b.name), 5),
+                      constructMatcher("hasName", StringRef(b.qual_name), 5),
+                    4),
+                  3),
+                2),
               1),
             0);
 
@@ -447,12 +494,19 @@ public:
           }
 
           VariantMatcher refmatcher =
-            constructBoundMatcher("declRefExpr", "match",
-              constructMatcher("to",
-                constructMatcher("namedDecl",
-                  constructMatcher("anyOf",
-                    constructMatcher("hasName", StringRef(b.name), 4),
-                    constructMatcher("hasName", StringRef(b.qual_name), 4),
+            constructMatcher("attributedStmt",
+              constructMatcher("allOf",
+                constructMatcher("hasAttr", StringRef("attr::MatcherBlock"), 2),
+                constructMatcher("hasDescendant",
+                  constructBoundMatcher("declRefExpr", "match",
+                    constructMatcher("to",
+                      constructMatcher("namedDecl",
+                        constructMatcher("anyOf",
+                          constructMatcher("hasName", StringRef(b.name), 7),
+                          constructMatcher("hasName", StringRef(b.qual_name), 7),
+                        6),
+                      5),
+                    4),
                   3),
                 2),
               1),
@@ -472,9 +526,14 @@ public:
           std::string valid_name = b.name.empty() ? b.qual_name : b.name;
 
           VariantMatcher declmatcher =
-            constructBoundMatcher("namedDecl", "match",
-              constructMatcher("hasName",
-                StringRef(valid_name),
+            constructMatcher("attributedStmt",
+              constructMatcher("allOf",
+                constructMatcher("hasAttr", StringRef("attr::MatcherBlock"), 2),
+                constructMatcher("hasDescendant",
+                  constructBoundMatcher("namedDecl", "match",
+                      constructMatcher("hasName", StringRef(valid_name), 4),
+                  3),
+                2),
               1),
             0);
 
@@ -488,11 +547,16 @@ public:
           }
 
           VariantMatcher refmatcher =
-            constructBoundMatcher("declRefExpr", "match",
-              constructMatcher("to",
-                constructMatcher("namedDecl",
-                  constructMatcher("hasName",
-                    StringRef(valid_name),
+            constructMatcher("attributedStmt",
+              constructMatcher("allOf",
+                constructMatcher("hasAttr", StringRef("attr::MatcherBlock"), 2),
+                constructMatcher("hasDescendant",
+                  constructBoundMatcher("declRefExpr", "match",
+                    constructMatcher("to",
+                      constructMatcher("namedDecl",
+                        constructMatcher("hasName", StringRef(valid_name), 6),
+                      5),
+                    4),
                   3),
                 2),
               1),
@@ -516,11 +580,18 @@ public:
       else if (b.kind == BindingKind::TypeBinding) {
         if (!b.name.empty() && !b.qual_name.empty()) {
           VariantMatcher declmatcher =
-            constructBoundMatcher("expr", "match",
-              constructMatcher("hasType",
-                constructMatcher("anyOf",
-                  constructMatcher("asString", StringRef(b.name), 3),
-                  constructMatcher("asString", StringRef(b.qual_name), 3),
+            constructMatcher("attributedStmt",
+              constructMatcher("allOf",
+                constructMatcher("hasAttr", StringRef("attr::MatcherBlock"), 2),
+                constructMatcher("hasDescendant",
+                  constructBoundMatcher("expr", "match",
+                    constructMatcher("hasType",
+                      constructMatcher("anyOf",
+                        constructMatcher("asString", StringRef(b.name), 6),
+                        constructMatcher("asString", StringRef(b.qual_name), 6),
+                      5),
+                    4),
+                  3),
                 2),
               1),
             0);
@@ -539,10 +610,17 @@ public:
           std::string valid_name = b.name.empty() ? b.qual_name : b.name;
 
           VariantMatcher declmatcher =
-            constructBoundMatcher("expr", "match",
-              constructMatcher("hasType",
-                constructMatcher("ignoringPointers",
-                  constructMatcher("asString", StringRef(valid_name), 3),
+            constructMatcher("attributedStmt",
+              constructMatcher("allOf",
+                constructMatcher("hasAttr", StringRef("attr::MatcherBlock"), 2),
+                constructMatcher("hasDescendant",
+                  constructBoundMatcher("expr", "match",
+                    constructMatcher("hasType",
+                      constructMatcher("ignoringPointers",
+                        constructMatcher("asString", StringRef(valid_name), 6),
+                      5),
+                    4),
+                  3),
                 2),
               1),
             0);
@@ -565,8 +643,7 @@ public:
 
 
       printf("RUNNING MATCH FINDER\n");
-      // finder.matchAST(*context);
-      int retval = Tool->run(newFrontendActionFactory(&finder).get());
+      int retval = process_temp.run(newFrontendActionFactory(&finder).get());
       if (retval) {
         printf("OH NOES\n");
       }

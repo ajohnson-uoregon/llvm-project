@@ -49,15 +49,27 @@ struct bindings_compare {
   inline bool operator() (const Binding& b1, const Binding& b2) {
     if (b1.name == "clang_rewrite::loop_body" ||
         b1.qual_name == "clang_rewrite::loop_body") {
-      return true;
+      return false;
     }
     else if (b2.name == "clang_rewrite::loop_body" ||
              b2.qual_name == "clang_rewrite::loop_body") {
-      return false;
+      return true;
     }
     else {
       return b1.name < b2.name;
     }
+  }
+};
+
+struct bindings_eq {
+  inline bool operator() (const Binding& b1, const Binding& b2) {
+    if (b1.name == b2.name &&
+        b1.qual_name == b2.qual_name &&
+        b1.value == b2.value &&
+        b1.kind == b2.kind) {
+      return true;
+    }
+    return false;
   }
 };
 
@@ -66,6 +78,7 @@ public:
   // ASTContext* context;
   // std::vector<DynTypedNode> nodes;
   std::string base_code_snippet; // the code as it appears in the spec
+  std::string setup_code_snippet; // any setup declarations
   std::string edited_code_snippet; // the code after bound snippets have been copy-pasted in
   NewCodeKind kind;
   std::vector<std::string> matcher_names;
@@ -88,9 +101,10 @@ public:
   // ASTContext (LangOptions &LOpts, SourceManager &SM, IdentifierTable &idents,
   //   SelectorTable &sels, Builtin::Context &builtins, TranslationUnitKind TUKind)
 
-  CodeAction(std::string code, std::string action_name, NewCodeKind kind,
+  CodeAction(std::string code, std::string setup_code, std::string action_name, NewCodeKind kind,
       std::vector<std::string> matcher_names, std::string file_name, SourceRange range)
-      : base_code_snippet(code), kind(kind), matcher_names(matcher_names),
+      : base_code_snippet(code), setup_code_snippet(setup_code), kind(kind),
+        matcher_names(matcher_names),
         action_name(action_name), spec_file_name(file_name), snippet_range(range) {}
   // CodeAction(SourceManager& SM, LangOptions LangOpts, IdentifierTable& idents,
   //     SelectorTable& selectors, Builtin::Context builtins, TranslationUnitKind TUKind,

@@ -44,15 +44,19 @@ DeclarationMatcher insert_after_match =
     ))
   )).bind("insert_after_match");
 
+// TODO: FEEX ^
 DeclarationMatcher replace_match =
   functionDecl(allOf(
     hasAttr(attr::ReplaceCode),
-    hasBody(compoundStmt(
+    hasBody(compoundStmt(allOf(
+      optionally(hasAnySubstatement(declStmt(
+        containsAnyDeclaration(varDecl(hasAttr(attr::RewriteSetup)))
+      ).bind("setup"))),
       hasAnySubstatement(attributedStmt(allOf(
         hasAttr(attr::MatcherBlock),
-        hasSubStmt(compoundStmt(anything()).bind("body"))
-      )))
-    ))
+        hasSubStmt(compoundStmt(anything()))
+      )).bind("body"))
+    )))
   )).bind("replace");
 
 
@@ -119,7 +123,7 @@ public:
     }
 
     // grab function body as new code
-    const CompoundStmt* body = result.Nodes.getNodeAs<CompoundStmt>("body");
+    const AttributedStmt* body = result.Nodes.getNodeAs<AttributedStmt>("body");
     if (!body || !context->getSourceManager().isWrittenInMainFile(body->getBeginLoc())) {
       printf("ERROR: invalid body\n");
       return;
@@ -127,43 +131,49 @@ public:
     // printf("function body\n");
     // body->dump();
 
-    FullSourceLoc body_begin;
-    FullSourceLoc body_end;
+    const DeclStmt* setup = result.Nodes.getNodeAs<DeclStmt>("setup");
+    if (setup && !context->getSourceManager().isWrittenInMainFile(setup->getBeginLoc())) {
+      printf("ERROR: invalid setup\n");
+      return;
+    }
+
+    FullSourceLoc body_begin = context->getFullLoc(body->getBeginLoc());
+    FullSourceLoc body_end = context->getFullLoc(body->getEndLoc());
     //todo: make work for multiline code
-    if (!body->body_empty()) {
-      // printf("sigh\n");
-      // body->getLBracLoc().dump(context->getSourceManager());
-      // body->getBeginLoc().dump(context->getSourceManager());
-      // THIS body->body_front()->getBeginLoc().dump(context->getSourceManager());
-      // AND THIS body->body_back()->getEndLoc().dump(context->getSourceManager());
-      // body->getEndLoc().dump(context->getSourceManager());
-      // body->getRBracLoc().dump(context->getSourceManager());
-
-      body_begin = context->getFullLoc(body->body_front()->getBeginLoc());
-
-      // // go to end of line; stmts don't work, gotta lex to the end of the line
-      SourceLocation eol = Lexer::getLocForEndOfToken(
-          body->body_back()->getEndLoc(), 0, context->getSourceManager(),
-          context->getLangOpts());
-      // Optional<Token> tok = Lexer::findNextToken(
-      //     eol, context->getSourceManager(), context->getLangOpts());
-      // while (tok.hasValue() && tok->isNot(clang::tok::semi)) {
-      //   tok = Lexer::findNextToken(eol, context->getSourceManager(),
-      //                              context->getLangOpts());
-      //   eol = tok->getLocation();
-      // }
-      // // TODO: this is a hack and we should be smarter about semicolons
-      // if (kind != Replace) {
-      //   eol = tok->getEndLoc(); // grab semicolon
-      // }
-      body_end = context->getFullLoc(eol);
-      // body_begin = context->getFullLoc(body->body_front()->getBeginLoc());
-      // body_end = context->getFullLoc(body->body_back()->getEndLoc());
-    }
-    else { // empty body just use brackets
-      body_begin = context->getFullLoc(body->getLBracLoc());
-      body_end = context->getFullLoc(body->getRBracLoc());
-    }
+    // if (!body->body_empty()) {
+    //   // printf("sigh\n");
+    //   // body->getLBracLoc().dump(context->getSourceManager());
+    //   // body->getBeginLoc().dump(context->getSourceManager());
+    //   // THIS body->body_front()->getBeginLoc().dump(context->getSourceManager());
+    //   // AND THIS body->body_back()->getEndLoc().dump(context->getSourceManager());
+    //   // body->getEndLoc().dump(context->getSourceManager());
+    //   // body->getRBracLoc().dump(context->getSourceManager());
+    //
+    //   body_begin = context->getFullLoc(body->body_front()->getBeginLoc());
+    //
+    //   // // go to end of line; stmts don't work, gotta lex to the end of the line
+    //   SourceLocation eol = Lexer::getLocForEndOfToken(
+    //       body->body_back()->getEndLoc(), 0, context->getSourceManager(),
+    //       context->getLangOpts());
+    //   // Optional<Token> tok = Lexer::findNextToken(
+    //   //     eol, context->getSourceManager(), context->getLangOpts());
+    //   // while (tok.hasValue() && tok->isNot(clang::tok::semi)) {
+    //   //   tok = Lexer::findNextToken(eol, context->getSourceManager(),
+    //   //                              context->getLangOpts());
+    //   //   eol = tok->getLocation();
+    //   // }
+    //   // // TODO: this is a hack and we should be smarter about semicolons
+    //   // if (kind != Replace) {
+    //   //   eol = tok->getEndLoc(); // grab semicolon
+    //   // }
+    //   body_end = context->getFullLoc(eol);
+    //   // body_begin = context->getFullLoc(body->body_front()->getBeginLoc());
+    //   // body_end = context->getFullLoc(body->body_back()->getEndLoc());
+    // }
+    // else { // empty body just use brackets
+    //   body_begin = context->getFullLoc(body->getLBracLoc());
+    //   body_end = context->getFullLoc(body->getRBracLoc());
+    // }
 
     FileID fid = body_begin.getFileID();
     unsigned int begin_offset = body_begin.getFileOffset();
@@ -176,15 +186,38 @@ public:
     llvm::Optional<llvm::MemoryBufferRef> buff =
         context->getSourceManager().getBufferOrNone(fid);
 
-    char *code = new char[end_offset - begin_offset + 1];
+    char *body_code = new char[end_offset - begin_offset + 2];
     if (buff.has_value()) {
-      memcpy(code, &(buff->getBufferStart()[begin_offset]),
-             (end_offset - begin_offset + 1) * sizeof(char));
-      code[end_offset - begin_offset] =
+      memcpy(body_code, &(buff->getBufferStart()[begin_offset]),
+             (end_offset - begin_offset + 2) * sizeof(char));
+      body_code[end_offset - begin_offset + 1] =
           '\0'; // force null terminated for Reasons
-      printf("code??? %s\n", code);
+      printf("body code??? %s\n", body_code);
     } else {
       printf("no buffer :<\n");
+    }
+
+    std::string setup_code = "";
+    if (setup) {
+      FullSourceLoc setup_begin = context->getFullLoc(setup->getBeginLoc());
+      FullSourceLoc setup_end = context->getFullLoc(setup->getEndLoc());
+
+      FileID fid = setup_begin.getFileID();
+      unsigned int begin_offset = setup_begin.getFileOffset();
+      unsigned int end_offset = setup_end.getFileOffset();
+
+      llvm::Optional<llvm::MemoryBufferRef> buff =
+        context->getSourceManager().getBufferOrNone(fid);
+
+      char* setup_code_c = new char[end_offset - begin_offset + 2];
+      if (buff.has_value()) {
+        memcpy(setup_code_c, &(buff->getBufferStart()[begin_offset]),
+                (end_offset - begin_offset + 2) * sizeof(char));
+        setup_code_c[end_offset - begin_offset + 1] = '\0';
+        setup_code = std::string(setup_code_c);
+        printf("setup code??? %s\n", setup_code_c);
+      }
+      delete[] setup_code_c;
     }
 
     // make action, put in vector of actions
@@ -193,13 +226,14 @@ public:
     //   nodes.push_back(DynTypedNode::create(*s));
     // }
     CodeAction *act =
-        new CodeAction(std::string(code), action_name, kind, matcher_names,
+        new CodeAction(std::string(body_code), setup_code, action_name, kind, matcher_names,
           context->getSourceManager().getFilename(func->getBeginLoc()).str(),
           SourceRange(body_begin,
                       body_end));
     all_actions.push_back(act);
 
-    delete[] code;
+    delete[] body_code;
+
   }
 };
 

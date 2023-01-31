@@ -62,6 +62,8 @@ public:
   std::vector<Binding> all_bindings;
   SourceRange original_range;
   std::string original_file;
+  FileID fid;
+  bool file_changed = false;
 
   ReplaceBindingsCallback(CodeAction* action, Binding b, std::vector<Binding> bindings,
       SourceRange og_range, std::string og_file)
@@ -91,20 +93,22 @@ public:
     bool decl_valid = true;
 
     if (!exp ||
-        context->getSourceManager().getFilename(exp->getBeginLoc()).str() != action->spec_file_name)
+        !context->getSourceManager().getFilename(exp->getBeginLoc()).endswith("clang_rewrite_temp_source.cpp"))
          {
-      // printf("ERROR: invalid expr binding match loc\n");
+      if (exp) printf("filename??? %s\n", context->getSourceManager().getFilename(exp->getBeginLoc()).str().c_str());
+      printf("ERROR: invalid expr binding match loc\n");
       expr_valid = false;
     }
 
     if (!decl ||
-        context->getSourceManager().getFilename(decl->getBeginLoc()).str() != action->spec_file_name) {
-      // printf("ERROR: invalid decl binding match loc\n");
+        !context->getSourceManager().getFilename(decl->getBeginLoc()).endswith("clang_rewrite_temp_source.cpp")) {
+      if (decl) printf("filename??? %s\n", context->getSourceManager().getFilename(decl->getBeginLoc()).str().c_str());
+      printf("ERROR: invalid decl binding match loc\n");
       decl_valid = false;
     }
 
     if (!expr_valid && !decl_valid) {
-      // printf("ERROR: no valid binding match loc\n");
+      printf("ERROR: no valid binding match loc\n");
       return;
     }
 
@@ -120,14 +124,15 @@ public:
       match_range = SourceRange(decl->getBeginLoc(), decl->getEndLoc());
     }
 
-    printf("action source range\n");
-    action->snippet_range.dump(context->getSourceManager());
-    printf("match range\n");
-    match_range.dump(context->getSourceManager());
-    if (!action->snippet_range.fullyContains(match_range) || in_banned_range(match_range)) {
-      // printf("ERROR: match not in action's snippet\n");
-      return;
-    }
+    // printf("action source range\n");
+    // action->snippet_range.dump(context->getSourceManager());
+    // printf("match range\n");
+    // match_range.dump(context->getSourceManager());
+    // if (!action->snippet_range.fullyContains(match_range) || in_banned_range(match_range)) {
+    //   // printf("ERROR: match not in action's snippet\n");
+    //   return;
+    // }
+    // valid range ensured by matcher only looking for things in [[clang::matcher_block]]
 
 
     FullSourceLoc begin;
@@ -139,142 +144,142 @@ public:
     if (expr_valid) {
       if (bind.name == "clang_rewrite::loop_body" ||
           bind.qual_name == "clang_rewrite::loop_body") {
-        printf("YAY LOOP BODY\n");
-        exp->dump();
-        // auto parentmap = context->getParentMapContext().getParents(*expr);
-        DynTypedNodeList Parents = context->getParents(*exp);
-        llvm::SmallVector<DynTypedNode, 8> Stack(Parents.begin(), Parents.end());
-        const CallExpr* call;
-        while (!Stack.empty()) {
-          const auto &CurNode = Stack.back();
-          Stack.pop_back();
-          if (const CompoundStmt* comp = CurNode.get<CompoundStmt>()) {
-            begin = context->getFullLoc(comp->getLBracLoc());
-            end = context->getFullLoc(comp->getRBracLoc());
-            match = begin;
-            break;
-          }
-          else if (const CallExpr* callexpr = CurNode.get<CallExpr>()) {
-            if (callexpr->getDirectCallee()->getQualifiedNameAsString() ==
-                "clang_rewrite::loop_body") {
-                  call = callexpr;
-            }
-            llvm::append_range(Stack, context->getParents(CurNode));
-          }
-          else {
-            llvm::append_range(Stack, context->getParents(CurNode));
-          }
-        }
+        // printf("YAY LOOP BODY\n");
+        // exp->dump();
+        // // auto parentmap = context->getParentMapContext().getParents(*expr);
+        // DynTypedNodeList Parents = context->getParents(*exp);
+        // llvm::SmallVector<DynTypedNode, 8> Stack(Parents.begin(), Parents.end());
+        // const CallExpr* call;
+        // while (!Stack.empty()) {
+        //   const auto &CurNode = Stack.back();
+        //   Stack.pop_back();
+        //   if (const CompoundStmt* comp = CurNode.get<CompoundStmt>()) {
+        //     begin = context->getFullLoc(comp->getLBracLoc());
+        //     end = context->getFullLoc(comp->getRBracLoc());
+        //     match = begin;
+        //     break;
+        //   }
+        //   else if (const CallExpr* callexpr = CurNode.get<CallExpr>()) {
+        //     if (callexpr->getDirectCallee()->getQualifiedNameAsString() ==
+        //         "clang_rewrite::loop_body") {
+        //           call = callexpr;
+        //     }
+        //     llvm::append_range(Stack, context->getParents(CurNode));
+        //   }
+        //   else {
+        //     llvm::append_range(Stack, context->getParents(CurNode));
+        //   }
+        // }
+        //
+        // if (call->getNumArgs() > 0) {
+        //   const Expr* mods = call->getArg(0);
+        //   mods->dump();
+        //   const InitListExpr* initlist = findFirstChild<InitListExpr>(mods);
+        //   if (initlist != nullptr) {
+        //     // run binding replacement on cxxConstructExpr code
+        //     const Expr* init = initlist->getInit(0);
+        //     FullSourceLoc il_begin = context->getFullLoc(init->getBeginLoc());
+        //     FullSourceLoc il_end = context->getFullLoc(init->getEndLoc());
+        //     FileID il_fid = il_begin.getFileID();
+        //     unsigned int il_begin_offset = il_begin.getFileOffset();
+        //     unsigned int il_end_offset = il_end.getFileOffset();
+        //
+        //     banned_ranges.push_back(SourceRange(il_begin, il_end));
+        //
+        //     llvm::Optional<llvm::MemoryBufferRef> buff =
+        //       context->getSourceManager().getBufferOrNone(il_fid);
+        //
+        //     char *code = new char[il_end_offset - il_begin_offset + 1];
+        //     if (buff.has_value()) {
+        //       memcpy(code, &(buff->getBufferStart()[il_begin_offset]),
+        //              (il_end_offset - il_begin_offset + 1) * sizeof(char));
+        //       code[il_end_offset - il_begin_offset] =
+        //           '\0'; // force null terminated for Reasons
+        //       printf("code??? %s\n", code);
+        //     } else {
+        //       printf("no buffer :<\n");
+        //     }
+        //
+        //     StatementMatcher inits_matcher = callExpr(allOf(
+        //       callee(functionDecl(hasName("clang_rewrite::loop_body"))),
+        //       hasArgument(0, cxxBindTemporaryExpr(hasSubExpr(
+        //         cxxConstructExpr(hasArgument(0,
+        //           cxxStdInitializerListExpr(hasSubExpr(materializeTemporaryExpr(hasSubExpr(
+        //             initListExpr(hasInit(0, cxxConstructExpr(hasArgument(0, expr(anything()).bind("body")))))
+        //           ))))
+        //         ))
+        //       )))
+        //     )).bind("matcher");
+        //
+        //     MatchFinder inits_finder;
+        //     MatcherGenCallback mgcb(/*is_internal_matcher=*/true, all_bindings);
+        //
+        //     inits_finder.addMatcher(inits_matcher, &mgcb);
+        //
+        //     Tool->run(newFrontendActionFactory(&inits_finder).get());
+        //
+        //     fid = begin.getFileID();
+        //     unsigned int begin_offset = begin.getFileOffset();
+        //     unsigned int end_offset = end.getFileOffset();
+        //     unsigned int match_offset = match.getFileOffset();
+        //
+        //     binding_rw.ReplaceText(original_range.getBegin(), end_offset - begin_offset + 1, bind.value);
+        //
+        //     printf("wat?\n%s\n", binding_rw.getRewrittenText(action->snippet_range).c_str());
 
-        if (call->getNumArgs() > 0) {
-          const Expr* mods = call->getArg(0);
-          mods->dump();
-          const InitListExpr* initlist = findFirstChild<InitListExpr>(mods);
-          if (initlist != nullptr) {
-            // run binding replacement on cxxConstructExpr code
-            const Expr* init = initlist->getInit(0);
-            FullSourceLoc il_begin = context->getFullLoc(init->getBeginLoc());
-            FullSourceLoc il_end = context->getFullLoc(init->getEndLoc());
-            FileID il_fid = il_begin.getFileID();
-            unsigned int il_begin_offset = il_begin.getFileOffset();
-            unsigned int il_end_offset = il_end.getFileOffset();
-
-            banned_ranges.push_back(SourceRange(il_begin, il_end));
-
-            llvm::Optional<llvm::MemoryBufferRef> buff =
-              context->getSourceManager().getBufferOrNone(il_fid);
-
-            char *code = new char[il_end_offset - il_begin_offset + 1];
-            if (buff.has_value()) {
-              memcpy(code, &(buff->getBufferStart()[il_begin_offset]),
-                     (il_end_offset - il_begin_offset + 1) * sizeof(char));
-              code[il_end_offset - il_begin_offset] =
-                  '\0'; // force null terminated for Reasons
-              printf("code??? %s\n", code);
-            } else {
-              printf("no buffer :<\n");
-            }
-
-            StatementMatcher inits_matcher = callExpr(allOf(
-              callee(functionDecl(hasName("clang_rewrite::loop_body"))),
-              hasArgument(0, cxxBindTemporaryExpr(hasSubExpr(
-                cxxConstructExpr(hasArgument(0,
-                  cxxStdInitializerListExpr(hasSubExpr(materializeTemporaryExpr(hasSubExpr(
-                    initListExpr(hasInit(0, cxxConstructExpr(hasArgument(0, expr(anything()).bind("body")))))
-                  ))))
-                ))
-              )))
-            )).bind("matcher");
-
-            MatchFinder inits_finder;
-            MatcherGenCallback mgcb(/*is_internal_matcher=*/true, all_bindings);
-
-            inits_finder.addMatcher(inits_matcher, &mgcb);
-
-            Tool->run(newFrontendActionFactory(&inits_finder).get());
-
-            FileID fid = begin.getFileID();
-            unsigned int begin_offset = begin.getFileOffset();
-            unsigned int end_offset = end.getFileOffset();
-            unsigned int match_offset = match.getFileOffset();
-
-            binding_rw.ReplaceText(original_range.getBegin(), end_offset - begin_offset + 1, bind.value);
-
-            printf("wat?\n%s\n", binding_rw.getRewrittenText(action->snippet_range).c_str());
-
-            std::ofstream temp_file("clang_rewrite_temp.cpp");
-
-            // const RewriteBuffer* temp_buff = binding_rw.getRewriteBufferFor(fid);
-            SourceLocation file_begin = context->getSourceManager().getLocForStartOfFile(context->getFullLoc(original_range.getBegin()).getFileID());
-            SourceLocation file_end = context->getSourceManager().getLocForEndOfFile(context->getFullLoc(original_range.getBegin()).getFileID());
-            temp_file << binding_rw.getRewrittenText(SourceRange(file_begin, file_end));
-            temp_file.close();
-
-            llvm::cl::OptionCategory TempCategory("Internal category that should never be seen.");
-
-            llvm::Expected<CommonOptionsParser> ExpectedParser =
-                CommonOptionsParser::create(global_argc, global_argv, TempCategory);
-
-            printf("argc %d\n", global_argc);
-            for (int i = 0; i < global_argc; i++) {
-              printf("argv %s\n", global_argv[i]);
-            }
-
-            if (!ExpectedParser) {
-              // Fail gracefully for unsupported options.
-              llvm::errs() << ExpectedParser.takeError();
-              return;
-            }
-
-            CommonOptionsParser& OptionsParser = ExpectedParser.get();
-            ClangTool process_temp(Tool->getCompilationDatabase(), {"clang_rewrite_temp.cpp"});
-
-            CodeAction act(std::string(code), "tempaction", NewCodeKind::Replace,
-              {"tempmatcher"}, context->getSourceManager().getFilename(il_begin).str(),
-              SourceRange(il_begin, il_end));
-
-            for (auto m : internal_matchers) {
-              m->addAction(&act);
-            }
-
-            MatchFinder replace_finder;
-            callbacks = new RewriteInternalCallback<ast_matchers::internal::DynTypedMatcher>
-              *[internal_matchers.size()];
-
-            int i = 0;
-            for (MatcherWrapper<ast_matchers::internal::DynTypedMatcher> *m : internal_matchers) {
-              callbacks[i] =
-                new RewriteInternalCallback<ast_matchers::internal::DynTypedMatcher>(m,
-                  all_bindings, original_range, original_file);
-              replace_finder.addDynamicMatcher(m->getMatcher(), callbacks[i]);
-              i++;
-            }
-
-            process_temp.run(newFrontendActionFactory(&replace_finder).get());
+            // std::ofstream temp_file("clang_rewrite_temp_spec.cpp");
+            //
+            // // const RewriteBuffer* temp_buff = binding_rw.getRewriteBufferFor(fid);
+            // SourceLocation file_begin = context->getSourceManager().getLocForStartOfFile(context->getFullLoc(original_range.getBegin()).getFileID());
+            // SourceLocation file_end = context->getSourceManager().getLocForEndOfFile(context->getFullLoc(original_range.getBegin()).getFileID());
+            // temp_file << binding_rw.getRewrittenText(SourceRange(file_begin, file_end));
+            // temp_file.close();
+            //
+            // llvm::cl::OptionCategory TempCategory("Internal category that should never be seen.");
+            //
+            // llvm::Expected<CommonOptionsParser> ExpectedParser =
+            //     CommonOptionsParser::create(global_argc, global_argv, TempCategory);
+            //
+            // printf("argc %d\n", global_argc);
+            // for (int i = 0; i < global_argc; i++) {
+            //   printf("argv %s\n", global_argv[i]);
+            // }
+            //
+            // if (!ExpectedParser) {
+            //   // Fail gracefully for unsupported options.
+            //   llvm::errs() << ExpectedParser.takeError();
+            //   return;
+            // }
+            //
+            // CommonOptionsParser& OptionsParser = ExpectedParser.get();
+            // ClangTool process_temp(Tool->getCompilationDatabase(), {"clang_rewrite_temp.cpp"});
+            //
+            // CodeAction act(std::string(code), "", "tempaction", NewCodeKind::Replace,
+            //   {"tempmatcher"}, context->getSourceManager().getFilename(il_begin).str(),
+            //   SourceRange(il_begin, il_end));
+            //
+            // for (auto m : internal_matchers) {
+            //   m->addAction(&act);
+            // }
+            //
+            // MatchFinder replace_finder;
+            // callbacks = new RewriteInternalCallback<ast_matchers::internal::DynTypedMatcher>
+            //   *[internal_matchers.size()];
+            //
+            // int i = 0;
+            // for (MatcherWrapper<ast_matchers::internal::DynTypedMatcher> *m : internal_matchers) {
+            //   callbacks[i] =
+            //     new RewriteInternalCallback<ast_matchers::internal::DynTypedMatcher>(m,
+            //       all_bindings, original_range, original_file);
+            //   replace_finder.addDynamicMatcher(m->getMatcher(), callbacks[i]);
+            //   i++;
+            // }
+            //
+            // process_temp.run(newFrontendActionFactory(&replace_finder).get());
 
             // run this callback but with the og loop source range as place to look
-          }
-        }
+          // }
+        // }
       }
       else {
         begin = context->getFullLoc(exp->getBeginLoc());
@@ -293,7 +298,7 @@ public:
     unsigned int end_line = end.getSpellingLineNumber();
     unsigned int end_col = end.getSpellingColumnNumber();
 
-    FileID fid = begin.getFileID();
+    fid = begin.getFileID();
     unsigned int begin_offset = begin.getFileOffset();
     unsigned int end_offset = end.getFileOffset();
     unsigned int match_offset = match.getFileOffset();
@@ -401,6 +406,7 @@ public:
 
         exp->getExprLoc().dump(context->getSourceManager());
         binding_rw.ReplaceText(exp->getExprLoc(), space, bind.value);
+        file_changed = true;
       }
     }
     else if (decl_valid) {
@@ -422,17 +428,32 @@ public:
         }
 
         binding_rw.ReplaceText(decl->getLocation(), space, bind.value);
+        file_changed = true;
       }
       delete[] name_c;
     }
-    std::string new_code = binding_rw.getRewrittenText(action->snippet_range);
+    std::string new_code = binding_rw.getRewrittenText(match_range);
 
     printf("new code!!!! %s\n", new_code.c_str());
     action->edited_code_snippet = new_code;
     internal_matchers.clear();
   }
 
-  void onEndOfTranslationUnit() override {}
+  void onEndOfTranslationUnit() override {
+    if (file_changed) {
+      std::ofstream temp_file("clang_rewrite_temp_source_1.cpp");
+
+      SourceLocation file_begin = context->getSourceManager().getLocForStartOfFile(fid);
+      SourceLocation file_end = context->getSourceManager().getLocForEndOfFile(fid);
+
+      temp_file << binding_rw.getRewrittenText(SourceRange(file_begin, file_end));
+      temp_file.close();
+    }
+    else {
+      printf("file not changed\n");
+    }
+
+  }
 };
 
 }
