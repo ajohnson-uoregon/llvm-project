@@ -4566,6 +4566,19 @@ AST_MATCHER_P2(DeclStmt, containsDeclaration, unsigned, N,
   return InnerMatcher.matches(**Iterator, Finder, Builder);
 }
 
+AST_MATCHER_P(DeclStmt, containsAnyDeclaration, internal::Matcher<Decl>,
+              InnerMatcher) {
+  const unsigned NumDecls = std::distance(Node.decl_begin(), Node.decl_end());
+  DeclStmt::const_decl_iterator Iterator = Node.decl_begin();
+  for (unsigned int i = 0; i < NumDecls; i++) {
+    if (InnerMatcher.matches(**Iterator, Finder, Builder)) {
+      return true;
+    }
+    std::advance(Iterator, 1);
+  }
+  return false;
+}
+
 /// Matches a C++ catch statement that has a catch-all handler.
 ///
 /// Given
