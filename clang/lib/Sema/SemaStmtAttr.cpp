@@ -327,6 +327,21 @@ static Attr *handleMatcherBlock(Sema &S, Stmt *St, const ParsedAttr &A,
   return ::new (S.Context) MatcherBlockAttr(S.Context, A);
 }
 
+static Attr *handleRewriteSetup(Sema &S, Stmt *St, const ParsedAttr &A,
+                            SourceRange Range) {
+  return ::new (S.Context) RewriteSetupAttr(S.Context, A);
+}
+
+static Attr *handleRewriteSetupBegin(Sema &S, Stmt *St, const ParsedAttr &A,
+                            SourceRange Range) {
+  return ::new (S.Context) RewriteSetupBeginAttr(S.Context, A);
+}
+
+static Attr *handleRewriteSetupEnd(Sema &S, Stmt *St, const ParsedAttr &A,
+                            SourceRange Range) {
+  return ::new (S.Context) RewriteSetupEndAttr(S.Context, A);
+}
+
 #define WANT_STMT_MERGE_LOGIC
 #include "clang/Sema/AttrParsedAttrImpl.inc"
 #undef WANT_STMT_MERGE_LOGIC
@@ -528,6 +543,12 @@ static Attr *ProcessStmtAttribute(Sema &S, Stmt *St, const ParsedAttr &A,
     return handleUnlikely(S, St, A, Range);
   case ParsedAttr::AT_MatcherBlock:
     return handleMatcherBlock(S, St, A, Range);
+  case ParsedAttr::AT_RewriteSetup:
+    return handleRewriteSetup(S, St, A, Range);
+  case ParsedAttr::AT_RewriteSetupBegin:
+    return handleRewriteSetupBegin(S, St, A, Range);
+  case ParsedAttr::AT_RewriteSetupEnd:
+    return handleRewriteSetupEnd(S, St, A, Range);
   default:
     // N.B., ClangAttrEmitter.cpp emits a diagnostic helper that ensures a
     // declaration attribute is not written on a statement, but this code is

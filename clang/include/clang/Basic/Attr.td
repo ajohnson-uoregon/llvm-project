@@ -4067,6 +4067,24 @@ def MatcherBlock : StmtAttr {
   let Documentation = [Undocumented];
 }
 
+def RewriteSetupBegin : InheritableAttr {
+  let Spellings = [Clang<"rewrite_setup_begin">];
+  let Subjects = SubjectList<[Stmt, Var], ErrorDiag, "stmts">;
+  let Documentation = [Undocumented];
+}
+
+def RewriteSetupEnd : InheritableAttr {
+  let Spellings = [Clang<"rewrite_setup_end">];
+  let Subjects = SubjectList<[Stmt, Var], ErrorDiag, "stmts">;
+  let Documentation = [Undocumented];
+}
+
+def RewriteSetup : InheritableAttr {
+  let Spellings = [Clang<"rewrite_setup">];
+  let Subjects = SubjectList<[Stmt, Var], ErrorDiag, "stmts">;
+  let Documentation = [Undocumented];
+}
+
 def HLSLNumThreads: InheritableAttr {
   let Spellings = [Microsoft<"numthreads">];
   let Args = [IntArgument<"X">, IntArgument<"Y">, IntArgument<"Z">];

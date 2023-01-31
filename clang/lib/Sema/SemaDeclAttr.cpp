@@ -3834,7 +3834,7 @@ static void handleInitPriorityAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
     S.Diag(AL.getLoc(), diag::warn_attribute_ignored) << AL;
     return;
   }
-  
+
   if (S.getLangOpts().HLSL) {
     S.Diag(AL.getLoc(), diag::err_hlsl_init_priority_unsupported);
     return;
@@ -8545,6 +8545,22 @@ static void handleCodeModifyAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
   }
 }
 
+static void handleRewriteSetupAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
+  switch (AL.getKind()) {
+    case ParsedAttr::AT_RewriteSetup:
+      D->addAttr(::new (S.Context) RewriteSetupAttr(S.Context, AL));
+      break;
+    case ParsedAttr::AT_RewriteSetupBegin:
+      D->addAttr(::new (S.Context) RewriteSetupBeginAttr(S.Context, AL));
+      break;
+    case ParsedAttr::AT_RewriteSetupEnd:
+      D->addAttr(::new (S.Context) RewriteSetupEndAttr(S.Context, AL));
+      break;
+    default:
+      llvm_unreachable("unexpected attribute kind");
+  }
+}
+
 template <typename AttrTy, typename ConflictingAttrTy>
 static AttrTy *mergeEnforceTCBAttrImpl(Sema &S, Decl *D, const AttrTy &AL) {
   // Check if the new redeclaration has different leaf-ness in the same TCB.
@@ -9402,6 +9418,12 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
   case ParsedAttr::AT_InsertCodeAfter:
   case ParsedAttr::AT_Matcher:
     handleCodeModifyAttr(S, D, AL);
+    break;
+
+  case ParsedAttr::AT_RewriteSetup:
+  case ParsedAttr::AT_RewriteSetupBegin:
+  case ParsedAttr::AT_RewriteSetupEnd:
+    handleRewriteSetupAttr(S, D, AL);
     break;
   }
 }
