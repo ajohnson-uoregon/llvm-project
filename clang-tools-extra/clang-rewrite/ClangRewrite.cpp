@@ -87,6 +87,13 @@ int main(int argc, const char** argv) {
   Tool = new ClangTool(OptionsParser.getCompilations(),
                  all_files);
 
+  for (std::string file : sources) {
+    llvm::ErrorOr<const FileEntry*> entry = Tool->getFiles().getFile(file);
+    if (entry) {
+      source_file_entries.push_back(*entry);
+    }
+  }
+
   if (norewrite_file) {
     rewrite_file = false;
   }
@@ -129,9 +136,6 @@ int main(int argc, const char** argv) {
     }
   }
 
-  RewriteCallback<StatementMatcher>::verbose = verbose;
-  RewriteCallback<StatementMatcher>::rewrite_file = rewrite_file;
-
   printf("NUM MATCHERS FOUND: %ld\n", user_matchers.size());
 
   MatchFinder Finder;
@@ -147,6 +151,21 @@ int main(int argc, const char** argv) {
     }
   }
 
+  std::ofstream temp_file(temp_file_name);
+  std::ifstream og_file(sources[0]); //TODO: multiple files
+
+  temp_file << "#include \"ClangRewriteMacros.h\"\n";
+
+  std::string line;
+  while (getline(og_file, line)) {
+    temp_file << line << "\n";
+  }
+
+  temp_file.close();
+  og_file.close();
+
+  ProcessTemp = new ClangTool(Tool->getCompilationDatabase(), {temp_file_name});
+
   RewriteCallback<ast_matchers::internal::DynTypedMatcher> **callbacks =
       new RewriteCallback<ast_matchers::internal::DynTypedMatcher> *[user_matchers.size()];
 
@@ -160,7 +179,7 @@ int main(int argc, const char** argv) {
     i++;
   }
   // actually run the rewrites
-  retval = Tool->run(newFrontendActionFactory(&Finder).get());
+  retval = ProcessTemp->run(newFrontendActionFactory(&Finder).get());
 
   // cleanup
   for (MatcherWrapper<ast_matchers::internal::DynTypedMatcher> *m : user_matchers) {

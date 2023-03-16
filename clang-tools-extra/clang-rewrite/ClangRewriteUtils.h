@@ -17,9 +17,9 @@ std::vector<const FileEntry*> source_file_entries;
 std::vector<std::string> spec_files;
 
 ClangTool* Tool;
+ClangTool* ProcessTemp;
 
-Rewriter binding_rw;
-Rewriter internal_rep_rw;
+std::string temp_file_name = "clang_rewrite_temp_source.cpp";
 
 bool isInOneOfFileIDs(SourceLocation loc, std::vector<const FileEntry*> files, SourceManager& SrcMgr) {
   return llvm::any_of(files, [&](const FileEntry* file) {
