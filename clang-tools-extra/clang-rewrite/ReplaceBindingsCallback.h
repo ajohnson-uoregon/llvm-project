@@ -40,6 +40,7 @@ public:
   std::vector<Binding> all_bindings;
   FileID fid;
   static std::vector<SourceRange> past_matches;
+  std::vector<Binding> inner_bindings;
 
   ReplaceBindingsCallback(CodeAction* action, Binding b, std::vector<Binding> bindings)
     : action(action), bind(b), all_bindings(bindings) {}
@@ -137,21 +138,51 @@ public:
     if (expr_valid) {
       printf("expr\n");
       exp->dump();
+      if (bind.name == "clang_rewrite::loop_body" ||
+          bind.qual_name == "clang_rewrite::loop_body") {
+        // go match loop_body in file - might need to rewrite file in between
+        // pull matcher/replacer pair
+        // run MatcherGenCallback to put matcher into internal_matchers
+        StatementMatcher inits_matcher = callExpr(allOf(
+          callee(functionDecl(hasName("clang_rewrite::loop_body"))),
+          hasArgument(0, cxxBindTemporaryExpr(hasSubExpr(
+            cxxConstructExpr(hasArgument(0,
+              cxxStdInitializerListExpr(hasSubExpr(materializeTemporaryExpr(hasSubExpr(
+                initListExpr(hasInit(0, cxxConstructExpr(hasArgument(0, expr(anything()).bind("body")))))
+              ))))
+            ))
+          )))
+        )).bind("matcher");
 
-      char* name_c = new char[end_offset - match_offset + 1];
-      size_t space;
-      if (buff.has_value()) {
-        memcpy(name_c, &(buff->getBufferStart()[match_offset]),
-               (end_offset - match_offset + 1) * sizeof(char));
-        name_c[end_offset - match_offset] = '\0';
-        StringRef name(name_c);
+        MatchFinder inits_finder;
+        MatcherGenCallback mgcb(/*is_internal_matcher=*/true, all_bindings);
 
-        space = Lexer::MeasureTokenLength(exp->getBeginLoc(),
-          context->getSourceManager(), context->getLangOpts());
-        printf("oh noes %lu\n", space);
+        inits_finder.addMatcher(inits_matcher, &mgcb);
 
-        exp->getExprLoc().dump(context->getSourceManager());
-        binding_rw.ReplaceText(exp->getExprLoc(), space, bind.value);
+        printf("ABOUT TO RUN THE THING\n");
+        ClangTool process_temp(Tool->getCompilationDatabase(), {"clang_rewrite_temp_source.cpp.bind_final.cpp"});
+        process_temp.run(newFrontendActionFactory(&inits_finder).get());
+        // make a fake action with code wrapped in a matcher_block
+        // run some kind of generic finder callback to generate bindings
+        // dump bindings into inner_bindings, hand back to RewriteCallback
+
+      }
+      else {
+        char* name_c = new char[end_offset - match_offset + 1];
+        size_t space;
+        if (buff.has_value()) {
+          memcpy(name_c, &(buff->getBufferStart()[match_offset]),
+                 (end_offset - match_offset + 1) * sizeof(char));
+          name_c[end_offset - match_offset] = '\0';
+          StringRef name(name_c);
+
+          space = Lexer::MeasureTokenLength(exp->getBeginLoc(),
+            context->getSourceManager(), context->getLangOpts());
+          printf("oh noes %lu\n", space);
+
+          exp->getExprLoc().dump(context->getSourceManager());
+          binding_rw.ReplaceText(exp->getExprLoc(), space, bind.value);
+        }
       }
     }
     else if (decl_valid) {
@@ -186,6 +217,7 @@ public:
 
     // Rewriter::buffer_iterator buff_iter = binding_rw.buffer_begin();
     const RewriteBuffer* buff = binding_rw.getRewriteBufferFor(fid);
+    // binding_rw.overwriteChangedFiles();
     std::error_code erc;
     raw_fd_ostream out(temp_file_name + ".bind_final.cpp", erc);
     // temp_file << binding_rw.getRewrittenText(SourceRange(file_begin, file_end));

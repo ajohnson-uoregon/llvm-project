@@ -39,6 +39,7 @@ enum BindingKind {
 };
 
 typedef struct Binding {
+  std::vector<VariantMatcher> matchers;
   std::string name;
   std::string qual_name;
   std::string value;

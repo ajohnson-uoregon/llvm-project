@@ -60,6 +60,7 @@ public:
   ASTContext* context;
   FileID fid;
   std::string newfname = temp_file_name;
+  std::string new_text = "";
 
   void run(const MatchFinder::MatchResult &result) override {
     printf("running AttrStripperCallback\n");
@@ -103,6 +104,10 @@ public:
     attr_stripper_rw.RemoveText(match->getLBracLoc(), 1); // get compound stmt {
     attr_stripper_rw.RemoveText(match->getRBracLoc(), 1); // get compound stmt }
 
+    if (attr_stripper_rw.overwriteChangedFiles())
+    {
+      printf("FILE NOT SAVED\n");
+    }
 
     const RewriteBuffer* buff = attr_stripper_rw.getRewriteBufferFor(fid);
     std::error_code erc;
@@ -111,6 +116,9 @@ public:
     raw_fd_ostream out(newfname, erc);
     buff->write(out);
     out.close();
+
+
+    new_text = attr_stripper_rw.getRewrittenText(SourceRange(match->getLBracLoc(), match->getRBracLoc()));
   }
 
   void onEndOfTranslationUnit() override {
@@ -219,6 +227,58 @@ public:
           std::pair<StringRef, StringRef> split = StringRef(n.first).split(";");
           b.name = split.first.str();
           b.qual_name = split.second.str();
+          VariantMatcher inner_matcher;
+          if (!b.name.empty() && !b.qual_name.empty()) {
+            inner_matcher =
+              constructBoundMatcher("namedDecl", "match",
+                constructMatcher("anyOf",
+                  constructMatcher("hasName", StringRef(b.name), 5),
+                  constructMatcher("hasName", StringRef(b.qual_name), 5),
+                4),
+              3);
+          }
+          else if (!b.name.empty() || !b.qual_name.empty()) {
+            std::string valid_name = b.name.empty() ? b.qual_name : b.name;
+            inner_matcher =
+              constructBoundMatcher("namedDecl", "match",
+                constructMatcher("hasName", StringRef(valid_name), 4), 3);
+          }
+          else {
+            printf("ERROR: no valid name\n");
+            return;
+          }
+          b.matchers.push_back(inner_matcher);
+
+          VariantMatcher inner_matcher2;
+          if (!b.name.empty() && !b.qual_name.empty()) {
+            inner_matcher2 =
+              constructBoundMatcher("declRefExpr", "match",
+                constructMatcher("to",
+                  constructMatcher("namedDecl",
+                    constructMatcher("anyOf",
+                      constructMatcher("hasName", StringRef(b.name), 7),
+                      constructMatcher("hasName", StringRef(b.qual_name), 7),
+                    6),
+                  5),
+                4),
+              3);
+          }
+          else if (!b.name.empty() || !b.qual_name.empty()) {
+            std::string valid_name = b.name.empty() ? b.qual_name : b.name;
+            inner_matcher2 =
+              constructBoundMatcher("declRefExpr", "match",
+                constructMatcher("to",
+                  constructMatcher("namedDecl",
+                      constructMatcher("hasName", StringRef(valid_name), 6),
+                  5),
+                4),
+              3);
+          }
+          else {
+            printf("ERROR: no valid name\n");
+            return;
+          }
+          b.matchers.push_back(inner_matcher2);
           b.value = code;
           b.kind = BindingKind::VarNameBinding;
           bindings.push_back(b);
@@ -238,6 +298,26 @@ public:
           std::pair<StringRef, StringRef> split = StringRef(n.first).split(";");
           b.name = split.first.str();
           b.qual_name = split.second.str();
+          VariantMatcher inner_matcher =
+            constructBoundMatcher("namedDecl", "match",
+              constructMatcher("anyOf",
+                constructMatcher("hasName", StringRef(b.name), 5),
+                constructMatcher("hasName", StringRef(b.qual_name), 5),
+              4),
+            3);
+          b.matchers.push_back(inner_matcher);
+          VariantMatcher inner_matcher2 =
+            constructBoundMatcher("declRefExpr", "match",
+              constructMatcher("to",
+                constructMatcher("namedDecl",
+                  constructMatcher("anyOf",
+                    constructMatcher("hasName", StringRef(b.name), 7),
+                    constructMatcher("hasName", StringRef(b.qual_name), 7),
+                  6),
+                5),
+              4),
+            3);
+          b.matchers.push_back(inner_matcher2);
           b.value = name;
           b.kind = BindingKind::VarNameBinding;
           bindings.push_back(b);
@@ -254,6 +334,16 @@ public:
           std::pair<StringRef, StringRef> split = StringRef(n.first).split(";");
           b.name = split.first.str();
           b.qual_name = split.second.str();
+          VariantMatcher inner_matcher =
+            constructBoundMatcher("expr", "match",
+              constructMatcher("hasType",
+                constructMatcher("anyOf",
+                  constructMatcher("asString", StringRef(b.name), 6),
+                  constructMatcher("asString", StringRef(b.qual_name), 6),
+                5),
+              4),
+            3);
+          b.matchers.push_back(inner_matcher);
           b.value = name;
           b.kind = BindingKind::TypeBinding;
           bindings.push_back(b);
@@ -279,13 +369,28 @@ public:
     // std::string binding_file_name = temp_file_name;
     // make temp file
     std::ofstream temp_file(temp_file_name + ".bind.cpp");
-    // now to actually do the replacements
-    for (CodeAction* action : matcher->actions) {
 
-      SourceLocation file_begin = context->getSourceManager().getLocForStartOfFile(context->getFullLoc(original_range.getBegin()).getFileID());
-      SourceLocation file_end = context->getSourceManager().getLocForEndOfFile(context->getFullLoc(original_range.getEnd()).getFileID());
+    bool first_run = true;
+    // now to actually do the replacements
+
+    SourceLocation file_begin;
+    SourceLocation file_end;
+    // if (first_run) {
+      file_begin = context->getSourceManager().getLocForStartOfFile(context->getFullLoc(original_range.getBegin()).getFileID());
+      file_end = context->getSourceManager().getLocForEndOfFile(context->getFullLoc(original_range.getEnd()).getFileID());
+    // }
+    // else {
+    //
+    // }
+
+
+
+    // for (CodeAction* action : matcher->actions) {
+    if (matcher->actions.size() == 1) {
+      CodeAction* action = matcher->actions[0];
 
       file_rw.ReplaceText(original_range, "{" + action->setup_code_snippet + "\n" + action->base_code_snippet + "}");
+      // file_rw.overwriteChangedFiles();
       //
       // file_rw.InsertText(file_begin, "#include \"ClangRewriteMacros.h\"\n");
       temp_file << file_rw.getRewrittenText(SourceRange(file_begin, file_end));
@@ -293,6 +398,7 @@ public:
 
       // replace all the bindings
       replace_bound_code(action, bindings);
+      // binding_rw.overwriteChangedFiles();
 
       // std::ofstream bind_file(binding_file_name + ".bind.final");
       //
@@ -303,8 +409,25 @@ public:
       // file_rw.resetAllRewriteBuffers(file_rw.getSourceMgr());
       bindings.clear();
       // remove the attrs in the replacements now that we're done
-      strip_attrs();
     }
+    // }
+    else {
+      printf("WARNING: only one action currently supported\n");
+    }
+
+    std::string new_code = strip_attrs();
+    file_rw.ReplaceText(original_range, new_code);
+    file_rw.overwriteChangedFiles();
+
+    // TODO
+    // get rewritten text for range in .attr.cpp
+    // copy paste over text in source.cpp
+    // repeat
+    // copy source.cpp back over og file
+
+    // file_rw.resetAllRewriteBuffers(file_rw.getSourceMgr());
+    binding_rw.resetAllRewriteBuffers(binding_rw.getSourceMgr());
+    attr_stripper_rw.resetAllRewriteBuffers(attr_stripper_rw.getSourceMgr());
 
 
   }
@@ -342,227 +465,83 @@ public:
     ClangTool binding_tool(Tool->getCompilationDatabase(), {temp_file_name + ".bind.cpp"});
 
 
-    for (Binding b : current_bindings) {
-      MatchFinder finder;
-      ReplaceBindingsCallback cb(action, b, current_bindings);
-      printf("LOOKING for things named %s or %s\n", b.name.c_str(), b.qual_name.c_str());
+    while (!current_bindings.empty()) {
+      for (Binding b : current_bindings) {
+        MatchFinder finder;
+        ReplaceBindingsCallback cb(action, b, current_bindings);
+        printf("LOOKING for things named %s or %s\n", b.name.c_str(), b.qual_name.c_str());
 
-      if (b.kind == BindingKind::VarNameBinding) {
-        if (!b.name.empty() && !b.qual_name.empty()) {
-          VariantMatcher inner_matcher =
-            constructBoundMatcher("namedDecl", "match",
-              constructMatcher("anyOf",
-                constructMatcher("hasName", StringRef(b.name), 5),
-                constructMatcher("hasName", StringRef(b.qual_name), 5),
-              4),
-            3);
-          VariantMatcher declmatcher =
-            constructMatcher("attributedStmt",
-              constructMatcher("allOf",
-                constructMatcher("hasAttr", StringRef("attr::MatcherBlock"), 2),
-                constructMatcher("hasDescendant",
-                  constructMatcher("eachOf",
-                    inner_matcher,
-                    constructMatcher("forEachDescendant", inner_matcher, 4),
-                  3),
-                2),
-              1),
-            0);
+        if (b.kind == BindingKind::VarNameBinding) {
+          for (VariantMatcher matcher : b.matchers) {
+            VariantMatcher declmatcher =
+              constructMatcher("attributedStmt",
+                constructMatcher("allOf",
+                  constructMatcher("hasAttr", StringRef("attr::MatcherBlock"), 2),
+                  constructMatcher("hasDescendant",
+                    constructMatcher("eachOf",
+                      matcher,
+                      constructMatcher("forEachDescendant", matcher, 4),
+                    3),
+                  2),
+                1),
+              0);
 
-          llvm::Optional<DynTypedMatcher> dynmatcher = declmatcher.getSingleMatcher();
-          if (dynmatcher) {
-            finder.addDynamicMatcher(*dynmatcher, &cb);
-          }
-          else {
-            printf("ERROR: bad decl matcher\n");
-            return;
+            llvm::Optional<DynTypedMatcher> dynmatcher = declmatcher.getSingleMatcher();
+            if (dynmatcher) {
+              finder.addDynamicMatcher(*dynmatcher, &cb);
+            }
+            else {
+              printf("ERROR: bad var name matcher\n");
+              return;
+            }
           }
 
-          VariantMatcher inner_matcher2 =
-            constructBoundMatcher("declRefExpr", "match",
-              constructMatcher("to",
-                constructMatcher("namedDecl",
-                  constructMatcher("anyOf",
-                    constructMatcher("hasName", StringRef(b.name), 7),
-                    constructMatcher("hasName", StringRef(b.qual_name), 7),
-                  6),
-                5),
-              4),
-            3);
-          VariantMatcher refmatcher =
-            constructMatcher("attributedStmt",
-              constructMatcher("allOf",
-                constructMatcher("hasAttr", StringRef("attr::MatcherBlock"), 2),
-                constructMatcher("hasDescendant",
-                  constructMatcher("eachOf",
-                    inner_matcher2,
-                    constructMatcher("forEachDescendant", inner_matcher2, 4),
-                  3),
-                2),
-              1),
-            0);
+        }
+        else if (b.kind == BindingKind::TypeBinding) {
+          for (VariantMatcher matcher : b.matchers) {
+            VariantMatcher declmatcher =
+              constructMatcher("attributedStmt",
+                constructMatcher("allOf",
+                  constructMatcher("hasAttr", StringRef("attr::MatcherBlock"), 2),
+                  constructMatcher("hasDescendant",
+                    constructMatcher("eachOf",
+                      matcher,
+                      constructMatcher("forEachDescendant", matcher, 4),
+                    3),
+                  2),
+                1),
+              0);
 
-          dynmatcher = refmatcher.getSingleMatcher();
-          if (dynmatcher) {
-            finder.addDynamicMatcher(*dynmatcher, &cb);
-          }
-          else {
-            printf("ERROR: bad ref matcher\n");
-            return;
+            llvm::Optional<DynTypedMatcher> dynmatcher = declmatcher.getSingleMatcher();
+            if (dynmatcher) {
+              finder.addDynamicMatcher(*dynmatcher, &cb);
+            }
+            else {
+              printf("ERROR: bad type binding matcher\n");
+              return;
+            }
           }
         }
-
-        else if (!b.name.empty() || !b.qual_name.empty()) {
-          std::string valid_name = b.name.empty() ? b.qual_name : b.name;
-
-          VariantMatcher inner_matcher =
-            constructBoundMatcher("namedDecl", "match",
-                constructMatcher("hasName", StringRef(valid_name), 4),
-            3);
-          VariantMatcher declmatcher =
-            constructMatcher("attributedStmt",
-              constructMatcher("allOf",
-                constructMatcher("hasAttr", StringRef("attr::MatcherBlock"), 2),
-                constructMatcher("hasDescendant",
-                  constructMatcher("eachOf",
-                    inner_matcher,
-                    constructMatcher("forEachDescendant", inner_matcher, 4),
-                  3),
-                2),
-              1),
-            0);
-
-          llvm::Optional<DynTypedMatcher> dynmatcher = declmatcher.getSingleMatcher();
-          if (dynmatcher) {
-            finder.addDynamicMatcher(*dynmatcher, &cb);
-          }
-          else {
-            printf("ERROR: bad qual decl matcher\n");
-            return;
-          }
-
-          VariantMatcher inner_matcher2 =
-            constructBoundMatcher("declRefExpr", "match",
-              constructMatcher("to",
-                constructMatcher("namedDecl",
-                  constructMatcher("hasName", StringRef(valid_name), 6),
-                5),
-              4),
-            3);
-
-          VariantMatcher refmatcher =
-            constructMatcher("attributedStmt",
-              constructMatcher("allOf",
-                constructMatcher("hasAttr", StringRef("attr::MatcherBlock"), 2),
-                constructMatcher("hasDescendant",
-                  constructMatcher("eachOf",
-                    inner_matcher2,
-                    constructMatcher("forEachDescendant", inner_matcher2, 4),
-                  3),
-                2),
-              1),
-            0);
-
-          dynmatcher = refmatcher.getSingleMatcher();
-          if (dynmatcher) {
-            finder.addDynamicMatcher(*dynmatcher, &cb);
-          }
-          else {
-            printf("ERROR: bad qual ref matcher\n");
-            return;
-          }
-        }
-
         else {
-          printf("ERROR: no valid name to look for\n");
-          return;
+          printf("ERROR: invalid binding kind\n");
         }
+
+
+        printf("RUNNING MATCH FINDER\n");
+        int retval = binding_tool.run(newFrontendActionFactory(&finder).get());
+        if (retval) {
+          printf("OH NOES\n");
+        }
+        // deferred_bindings.insert(deferred_bindings.begin(), cb.inner_bindings.begin(), cb.inner_bindings.end());
+
       }
-      else if (b.kind == BindingKind::TypeBinding) {
-        if (!b.name.empty() && !b.qual_name.empty()) {
-          VariantMatcher inner_matcher =
-            constructBoundMatcher("expr", "match",
-              constructMatcher("hasType",
-                constructMatcher("anyOf",
-                  constructMatcher("asString", StringRef(b.name), 6),
-                  constructMatcher("asString", StringRef(b.qual_name), 6),
-                5),
-              4),
-            3);
-
-          VariantMatcher declmatcher =
-            constructMatcher("attributedStmt",
-              constructMatcher("allOf",
-                constructMatcher("hasAttr", StringRef("attr::MatcherBlock"), 2),
-                constructMatcher("hasDescendant",
-                  constructMatcher("eachOf",
-                    inner_matcher,
-                    constructMatcher("forEachDescendant", inner_matcher, 4),
-                  3),
-                2),
-              1),
-            0);
-
-          llvm::Optional<DynTypedMatcher> dynmatcher = declmatcher.getSingleMatcher();
-          if (dynmatcher) {
-            finder.addDynamicMatcher(*dynmatcher, &cb);
-          }
-          else {
-            printf("ERROR: bad decl matcher\n");
-            return;
-          }
-        }
-
-        else if (!b.name.empty() || !b.qual_name.empty()) {
-          std::string valid_name = b.name.empty() ? b.qual_name : b.name;
-
-          VariantMatcher inner_matcher =
-            constructBoundMatcher("expr", "match",
-              constructMatcher("hasType",
-                constructMatcher("ignoringPointers",
-                  constructMatcher("asString", StringRef(valid_name), 6),
-                5),
-              4),
-            3);
-          VariantMatcher declmatcher =
-            constructMatcher("attributedStmt",
-              constructMatcher("allOf",
-                constructMatcher("hasAttr", StringRef("attr::MatcherBlock"), 2),
-                constructMatcher("hasDescendant",
-                  constructMatcher("eachOf",
-                    inner_matcher,
-                    constructMatcher("forEachDescendant", inner_matcher, 4),
-                  3),
-                2),
-              1),
-            0);
-
-          llvm::Optional<DynTypedMatcher> dynmatcher = declmatcher.getSingleMatcher();
-          if (dynmatcher) {
-            finder.addDynamicMatcher(*dynmatcher, &cb);
-          }
-          else {
-            printf("ERROR: bad decl matcher\n");
-            return;
-          }
-        }
-
-        else {
-          printf("ERROR: no valid name to look for\n");
-          return;
-        }
-      }
-
-
-      printf("RUNNING MATCH FINDER\n");
-      int retval = binding_tool.run(newFrontendActionFactory(&finder).get());
-      if (retval) {
-        printf("OH NOES\n");
-      }
+      current_bindings = deferred_bindings;
+      deferred_bindings.clear();
+      // binding_rw.overwriteChangedFiles();
     }
   }
 
-  void strip_attrs() {
+  std::string strip_attrs() {
     // strip out attributes now that we're done
     StatementMatcher attr_block_matcher = compoundStmt(allOf(
       optionally(hasAnySubstatement(declStmt(
@@ -583,9 +562,13 @@ public:
 
     int retval = process_temp.run(newFrontendActionFactory(&attr_stripper).get());
 
+    printf("OWO???\n%s", attr_strip_cb.new_text.c_str());
+
     if (retval) {
       printf("OH NOES\n");
     }
+
+    return attr_strip_cb.new_text.c_str();
   }
 };
 
