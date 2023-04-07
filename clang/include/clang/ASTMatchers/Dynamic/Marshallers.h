@@ -1050,6 +1050,58 @@ public:
   bool isPolymorphic() const override { return false; }
 };
 
+class FindAllBuilderDescriptor : public MatcherDescriptor {
+public:
+  VariantMatcher create(SourceRange NameRange, ArrayRef<ParserValue> Args,
+                        Diagnostics *Error) const override {
+    if (Args.size() != 1) {
+      Error->addError(NameRange, Diagnostics::ET_RegistryWrongArgCount)
+        << "exactly 1" << Args.size();
+      return VariantMatcher();
+    }
+
+    std::vector<DynTypedMatcher> InnerArg;
+    const ParserValue &Arg = Args[0];
+    const VariantValue &Value = Arg.Value;
+    if (!Value.isMatcher()) {
+      Error->addError(Arg.Range, Error->ET_RegistryWrongArgType)
+        << 0 << "Matcher<>" << Value.getTypeAsString();
+      return VariantMatcher();
+    }
+    llvm::Optional<DynTypedMatcher> dyn = Value.getMatcher().getSingleMatcher();
+    if (dyn.has_value()) {
+      InnerArg.push_back(dyn.value());
+      return VariantMatcher::PolymorphicMatcher(std::move(InnerArg));
+    }
+    else {
+      return VariantMatcher();
+    }
+
+  }
+
+  bool isBuilderMatcher() const override { return false; }
+
+  bool isVariadic() const override { return false; }
+
+  unsigned getNumArgs() const override { return 1; }
+
+  void getArgKinds(ASTNodeKind ThisKind, unsigned,
+                   std::vector<ArgKind> &ArgKinds) const override {
+    ArgKinds.push_back(ArgKind::MakeMatcherArg(ThisKind));
+  }
+
+  bool isConvertibleTo(ASTNodeKind Kind, unsigned *Specificity = nullptr,
+                       ASTNodeKind *LeastDerivedKind = nullptr) const override {
+    if (Specificity)
+      *Specificity = 1;
+    if (LeastDerivedKind)
+      *LeastDerivedKind = Kind;
+    return true;
+  }
+
+  bool isPolymorphic() const override { return true; }
+};
+
 /// Helper functions to select the appropriate marshaller functions.
 /// They detect the number of arguments, arguments types and return type.
 

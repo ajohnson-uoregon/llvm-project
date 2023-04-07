@@ -327,6 +327,11 @@ static Attr *handleMatcherBlock(Sema &S, Stmt *St, const ParsedAttr &A,
   return ::new (S.Context) MatcherBlockAttr(S.Context, A);
 }
 
+static Attr *handleInternalMatcherBlock(Sema &S, Stmt *St, const ParsedAttr &A,
+                            SourceRange Range) {
+  return ::new (S.Context) InternalMatcherBlockAttr(S.Context, A);
+}
+
 static Attr *handleRewriteSetup(Sema &S, Stmt *St, const ParsedAttr &A,
                             SourceRange Range) {
   return ::new (S.Context) RewriteSetupAttr(S.Context, A);
@@ -543,6 +548,8 @@ static Attr *ProcessStmtAttribute(Sema &S, Stmt *St, const ParsedAttr &A,
     return handleUnlikely(S, St, A, Range);
   case ParsedAttr::AT_MatcherBlock:
     return handleMatcherBlock(S, St, A, Range);
+  case ParsedAttr::AT_InternalMatcherBlock:
+    return handleInternalMatcherBlock(S, St, A, Range);
   case ParsedAttr::AT_RewriteSetup:
     return handleRewriteSetup(S, St, A, Range);
   case ParsedAttr::AT_RewriteSetupBegin:

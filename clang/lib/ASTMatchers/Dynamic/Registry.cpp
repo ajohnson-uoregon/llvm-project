@@ -82,6 +82,8 @@ RegistryMaps::RegistryMaps() {
 
   registerMatcher("mapAnyOf",
                   std::make_unique<internal::MapAnyOfBuilderDescriptor>());
+  registerMatcher("findAll",
+                  std::make_unique<internal::FindAllBuilderDescriptor>());
 
   REGISTER_OVERLOADED_2(callee);
   REGISTER_OVERLOADED_2(hasPrefix);

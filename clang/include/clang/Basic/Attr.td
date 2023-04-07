@@ -4067,6 +4067,12 @@ def MatcherBlock : StmtAttr {
   let Documentation = [Undocumented];
 }
 
+def InternalMatcherBlock : StmtAttr {
+  let Spellings = [Clang<"internal_matcher_block">];
+  let Subjects = SubjectList<[CompoundStmt], ErrorDiag, "compound stmts">;
+  let Documentation = [Undocumented];
+}
+
 def RewriteSetupBegin : InheritableAttr {
   let Spellings = [Clang<"rewrite_setup_begin">];
   let Subjects = SubjectList<[Stmt, Var], ErrorDiag, "stmts">;

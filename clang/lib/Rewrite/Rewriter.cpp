@@ -473,6 +473,7 @@ bool Rewriter::overwriteChangedFiles() {
                              AllWritten);
     if (File.ok()) {
       I->second.write(File.getStream());
+      File.getStream().flush();
     }
   }
   return !AllWritten;
