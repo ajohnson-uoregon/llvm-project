@@ -38,12 +38,33 @@ enum BindingKind {
   VarNameBinding,
 };
 
+typedef struct Location {
+  int begin_line = -1;
+  int begin_col = -1;
+  int end_line = -1;
+  int end_col = -1;
+
+  bool operator==(Location a) const {
+    if (a.begin_line == begin_line &&
+        a.begin_col == begin_col &&
+        a.end_line == end_line &&
+        a.end_col == end_col) {
+      return true;
+    }
+    return false;
+  }
+} Location;
+
+
+
 typedef struct Binding {
   std::vector<VariantMatcher> matchers;
   std::string name;
   std::string qual_name;
   std::string value;
   BindingKind kind;
+  bool has_valid_range = false;
+  Location valid_over;
 } Binding;
 
 struct bindings_compare {
@@ -67,7 +88,8 @@ struct bindings_eq {
     if (b1.name == b2.name &&
         b1.qual_name == b2.qual_name &&
         b1.value == b2.value &&
-        b1.kind == b2.kind) {
+        b1.kind == b2.kind &&
+        b1.valid_over == b2.valid_over) {
       return true;
     }
     return false;

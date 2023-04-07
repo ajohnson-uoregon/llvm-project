@@ -31,6 +31,19 @@ namespace clang {
 namespace rewrite_tool {
 
 extern Rewriter binding_rw;
+extern std::vector<Binding> create_bindings(const MatchFinder::MatchResult& result, ASTContext* context);
+
+template <typename T>
+const T* findFirstChild(const Stmt* stmt) {
+  for (auto i = stmt->child_begin(); i != stmt->child_end(); i++) {
+    if (const T* node = dyn_cast<T>(*i)) {
+      // printf("FOUND IT\n");
+      return node;
+    }
+    return findFirstChild<T>(*i);
+  }
+  return nullptr;
+}
 
 class ReplaceBindingsCallback : public MatchFinder::MatchCallback {
 public:
@@ -53,8 +66,8 @@ public:
     context = result.Context;
     binding_rw.setSourceMgr(context->getSourceManager(), context->getLangOpts());
 
-    const Expr* exp = result.Nodes.getNodeAs<Expr>("match");
-    const NamedDecl* decl = result.Nodes.getNodeAs<NamedDecl>("match");
+    const Expr* exp = result.Nodes.getNodeAs<Expr>("clang_rewrite_match");
+    const NamedDecl* decl = result.Nodes.getNodeAs<NamedDecl>("clang_rewrite_match");
 
     bool expr_valid = true;
     bool decl_valid = true;
@@ -91,14 +104,6 @@ public:
       match_range = SourceRange(decl->getBeginLoc(), decl->getEndLoc());
     }
 
-    if (std::find(past_matches.begin(), past_matches.end(), match_range) != past_matches.end()) {
-      printf("duplicate match\n");
-      return;
-    }
-    else {
-      past_matches.push_back(match_range);
-    }
-
     FullSourceLoc begin;
     FullSourceLoc end;
     FullSourceLoc match;
@@ -122,6 +127,13 @@ public:
     printf("FOUND match for binding at %d:%d - %d:%d\n",
            begin_line, begin_col, end_line, end_col);
 
+    if (bind.has_valid_range) {
+      if (!locIsInRangeHard(bind.valid_over, begin_line, begin_col, end_line, end_col)) {
+        printf("match not in binding's valid range\n");
+        return;
+      }
+    }
+
     fid = begin.getFileID();
     unsigned int begin_offset = begin.getFileOffset();
     unsigned int end_offset = end.getFileOffset();
@@ -130,6 +142,14 @@ public:
     if (begin_offset == end_offset) {
       printf("one char match, luls\n");
       end_offset += 1;
+    }
+
+    if (std::find(past_matches.begin(), past_matches.end(), match_range) != past_matches.end()) {
+      printf("duplicate match\n");
+      return;
+    }
+    else {
+      past_matches.push_back(match_range);
     }
 
     llvm::Optional<llvm::MemoryBufferRef> buff =
@@ -154,6 +174,7 @@ public:
           )))
         )).bind("matcher");
 
+        // TODO: only find matches within range?
         MatchFinder inits_finder;
         MatcherGenCallback mgcb(/*is_internal_matcher=*/true, all_bindings);
 
@@ -162,8 +183,104 @@ public:
         printf("ABOUT TO RUN THE THING\n");
         ClangTool process_temp(Tool->getCompilationDatabase(), {"clang_rewrite_temp_source.cpp.bind_final.cpp"});
         process_temp.run(newFrontendActionFactory(&inits_finder).get());
-        // make a fake action with code wrapped in a matcher_block
-        // run some kind of generic finder callback to generate bindings
+        // rewrite file with b.value wrapped in internal matcher_block attr
+        // to do that we need the callexpr
+        DynTypedNodeList Parents = context->getParents(*exp);
+        llvm::SmallVector<DynTypedNode, 8> Stack(Parents.begin(), Parents.end());
+        const CallExpr* call; // DO NOT try to get the location of this
+        std::string matcher_text = "";
+        std::string replacer_text = "";
+        while (!Stack.empty()) {
+          const auto &CurNode = Stack.back();
+          Stack.pop_back();
+          if (const CompoundStmt* comp = CurNode.get<CompoundStmt>()) {
+            begin = context->getFullLoc(comp->getLBracLoc());
+            end = context->getFullLoc(comp->getRBracLoc());
+            match = begin;
+            break;
+          }
+          else if (const CallExpr* callexpr = CurNode.get<CallExpr>()) {
+            if (callexpr->getDirectCallee()->getQualifiedNameAsString() ==
+                "clang_rewrite::loop_body") {
+                  call = callexpr;
+                  const Expr* arg = callexpr->getArg(0);
+                  const InitListExpr* initlist = findFirstChild<InitListExpr>(arg);
+                  const Expr* matcher = cast<CXXConstructExpr>(initlist->getInit(0))->getArg(0);
+                  const Expr* replacer = cast<CXXConstructExpr>(initlist->getInit(0))->getArg(1);
+
+                  FullSourceLoc m_begin = context->getFullLoc(matcher->getBeginLoc());
+                  FullSourceLoc m_end = context->getFullLoc(matcher->getEndLoc());
+
+                  FullSourceLoc r_begin = context->getFullLoc(replacer->getBeginLoc());
+                  FullSourceLoc r_end = context->getFullLoc(replacer->getEndLoc());
+
+                  matcher_text = binding_rw.getRewrittenText(SourceRange(m_begin,
+                    Lexer::getLocForEndOfToken(m_end, 0, context->getSourceManager(), context->getLangOpts())));
+                  replacer_text = binding_rw.getRewrittenText(SourceRange(r_begin,
+                    Lexer::getLocForEndOfToken(r_end, 0, context->getSourceManager(), context->getLangOpts())));
+
+                  matcher_text = matcher_text.substr(0, matcher_text.size()-1);
+                  replacer_text = replacer_text.substr(0, replacer_text.size()-1);
+                  printf("matcher text? %s\n", matcher_text.c_str());
+                  printf("replacer text? %s\n", replacer_text.c_str());
+            }
+            llvm::append_range(Stack, context->getParents(CurNode));
+          }
+          else {
+            llvm::append_range(Stack, context->getParents(CurNode));
+          }
+        }
+
+        begin_line = begin.getSpellingLineNumber();
+        begin_col = begin.getSpellingColumnNumber();
+        end_line = end.getSpellingLineNumber();
+        end_col = end.getSpellingColumnNumber();
+        printf("TRUE match for binding at %d:%d - %d:%d\n",
+               begin_line, begin_col, end_line, end_col);
+
+        begin_offset = begin.getFileOffset();
+        end_offset = end.getFileOffset();
+
+        size_t space = end_offset - begin_offset + 1;
+        printf("space %lu\n", space);
+
+        binding_rw.ReplaceText(begin, space, bind.value);
+        // binding_rw.overwriteChangedFiles();
+
+        int num_lines = std::count(bind.value.begin(), bind.value.end(), '\n');
+        printf("num lines = %d\n", num_lines);
+
+        int num_cols = bind.value.size() - bind.value.rfind("\n");
+        printf("num cols = %d\n", num_cols);
+        // run some kind of generic finder callback to generate bindings from
+        // match itself
+        std::vector<Binding> internal_bindings = create_bindings(result, context);
+        printf("internal bindings:\n");
+        for (Binding b : internal_bindings) {
+          b.has_valid_range = true;
+          b.valid_over = {begin_line, begin_col, begin_line+num_lines, num_cols};
+          dump_binding(b);
+        }
+        inner_bindings.insert(inner_bindings.begin(), internal_bindings.begin(), internal_bindings.end());
+        // generate bindings from matchers we made with mgcb
+        for (auto m : internal_matchers) {
+          if (locIsInRangeHard(begin_line, begin_col, end_line, end_col,
+                m->getLine(), m->getCol())) {
+            Binding b;
+            b.matchers = {VariantMatcher::SingleMatcher(m->getMatcher())};
+            b.name = matcher_text;
+            b.qual_name = matcher_text;
+            b.value = replacer_text;
+            b.kind = BindingKind::VarNameBinding;
+            b.has_valid_range = true;
+            b.valid_over = {begin_line, begin_col, begin_line+num_lines, num_cols};
+            inner_bindings.push_back(b);
+          }
+        }
+        printf("inner bindings\n");
+        for (Binding b : inner_bindings) {
+          dump_binding(b);
+        }
         // dump bindings into inner_bindings, hand back to RewriteCallback
 
       }
@@ -210,6 +327,8 @@ public:
   }
 
   void onEndOfTranslationUnit() override {
+    binding_rw.overwriteChangedFiles();
+
     // std::ofstream temp_file(temp_file_name + ".bind_final.cpp");
     //
     // SourceLocation file_begin = context->getSourceManager().getLocForStartOfFile(fid);
@@ -221,9 +340,13 @@ public:
     std::error_code erc;
     raw_fd_ostream out(temp_file_name + ".bind_final.cpp", erc);
     // temp_file << binding_rw.getRewrittenText(SourceRange(file_begin, file_end));
-    buff->write(out);
+    if (buff) {
+      buff->write(out);
+    }
+
     out.close();
     // temp_file.close();
+    binding_rw.resetAllRewriteBuffers(binding_rw.getSourceMgr());
   }
 
 };

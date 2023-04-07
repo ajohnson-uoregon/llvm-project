@@ -73,17 +73,17 @@ public:
       return is_literal(ref->getDecl());
     }
 
-    std::string is_internal_literal(NamedDecl* decl) {
+    bool is_internal_literal(NamedDecl* decl) {
       for (Binding b : internal_literals) {
-        if (decl->getNameAsString() == b.name ||
-            decl->getQualifiedNameAsString() == b.qual_name) {
-          return b.value;
+        if (decl->getNameAsString() == b.value ||
+            decl->getQualifiedNameAsString() == b.value) {
+          return true;
         }
       }
-      return "";
+      return false;
     }
 
-    std::string is_internal_literal(DeclRefExpr* ref) {
+    bool is_internal_literal(DeclRefExpr* ref) {
       return is_internal_literal(ref->getDecl());
     }
 
@@ -165,9 +165,9 @@ public:
           fxn->set_is_literal(true);
           fxn->set_name(callee->getNameAsString(), callee->getQualifiedNameAsString());
         }
-        else if (is_internal_matcher && is_internal_literal(callee) != "") {
+        else if (is_internal_matcher && is_internal_literal(callee)) {
           fxn->set_is_literal(true);
-          fxn->set_name(is_internal_literal(callee), is_internal_literal(callee));
+          fxn->set_name(callee->getNameAsString(), callee->getQualifiedNameAsString());
         }
         else {
           fxn->bind_to(callee->getNameAsString());
@@ -199,9 +199,9 @@ public:
           fxn->set_is_literal(true);
           fxn->set_name(kern->getNameAsString(), kern->getQualifiedNameAsString());
         }
-        else if (is_internal_matcher && is_internal_literal(kern) != "") {
+        else if (is_internal_matcher && is_internal_literal(kern)) {
           fxn->set_is_literal(true);
-          fxn->set_name(is_internal_literal(kern), is_internal_literal(kern));
+          fxn->set_name(kern->getNameAsString(), kern->getQualifiedNameAsString());
         }
         else {
           fxn->bind_to(kern->getNameAsString());
@@ -271,13 +271,13 @@ public:
         std::string ty = decl->getType().getAsString();
         valuedecl->set_type(ty);
       }
-      else if (is_internal_matcher && is_internal_literal(ref) != "") {
+      else if (is_internal_matcher && is_internal_literal(ref)) {
         Node* declref = add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref) +1);
         declref->set_ignore_casts(true);
         declref->set_is_literal(true);
         add_node(MT::to, "to()", 1);
         Node* valuedecl = add_node(MT::valueDecl, "valueDecl()", 0);
-        valuedecl->set_name(is_internal_literal(ref), is_internal_literal(ref));
+        valuedecl->set_name(name, qualname);
         std::string ty = decl->getType().getAsString();
         valuedecl->set_type(ty);
       }

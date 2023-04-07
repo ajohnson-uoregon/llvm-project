@@ -132,6 +132,196 @@ public:
   }
 };
 
+std::vector<Binding> create_bindings(const MatchFinder::MatchResult &result,
+                                     ASTContext* context) {
+  printf("making list of bindings\n");
+  std::vector<Binding> bindings;
+  for (std::pair<std::string, DynTypedNode> n : result.Nodes.getMap()) {
+    llvm::outs() << n.first << " : \n";
+    // n.second.dump(llvm::outs(), *context);
+
+    const Stmt *stmt = result.Nodes.getNodeAs<Stmt>(n.first);
+    const NamedDecl *decl = result.Nodes.getNodeAs<NamedDecl>(n.first);
+    const Type *type = result.Nodes.getNodeAs<Type>(n.first);
+
+    if (stmt) {
+      SourceRange code_range = stmt->getSourceRange();
+      code_range.print(llvm::outs(), context->getSourceManager()); printf("\n");
+
+      FullSourceLoc code_begin = context->getFullLoc(code_range.getBegin());
+
+      // some nodes (like declRefExpr) have begin == end, so we want to get the
+      // end of the *token*
+      // others (like callExpr) have ending pointing to the start of the last
+      // token (eg, ')' ), but we want to get that too
+      // so in general it's best to just get the loc of the end of the token
+      FullSourceLoc code_end = context->getFullLoc(Lexer::getLocForEndOfToken(
+          code_range.getEnd(), 0, context->getSourceManager(),
+          context->getLangOpts()));
+
+      // if we can't get a valid beginning *and* end, skip this one
+      if (!code_begin.isValid() || !code_end.isValid()) {
+        continue;
+      }
+
+      FileID fid = code_begin.getFileID();
+      unsigned int begin_offset = code_begin.getFileOffset();
+      unsigned int end_offset = code_end.getFileOffset();
+
+      printf("begin offset %u\n", begin_offset);
+      printf("end offset   %u\n", end_offset);
+      printf("array length %u\n", end_offset - begin_offset);
+
+      llvm::Optional<llvm::MemoryBufferRef> buff =
+          context->getSourceManager().getBufferOrNone(fid);
+
+      char *code_c = new char[end_offset - begin_offset + 1];
+      if (buff.has_value()) {
+        memcpy(code_c, &(buff->getBufferStart()[begin_offset]),
+               (end_offset - begin_offset + 1) * sizeof(char));
+        code_c[end_offset - begin_offset] =
+            '\0'; // force null terminated for Reasons
+        printf("code??? %s\n", code_c);
+      } else {
+        printf("no buffer :<\n");
+      }
+      std::string code(code_c);
+      delete[] code_c;
+
+      llvm::outs() << "\n";
+
+      Binding b;
+      if (n.first != "clang_rewrite_top_level_match" && n.first != "clang_rewrite_match") {
+        std::pair<StringRef, StringRef> split = StringRef(n.first).split(";");
+        b.name = split.first.str();
+        b.qual_name = split.second.str();
+        VariantMatcher inner_matcher;
+        if (!b.name.empty() && !b.qual_name.empty()) {
+          inner_matcher =
+            constructBoundMatcher("namedDecl", "clang_rewrite_match",
+              constructMatcher("anyOf",
+                constructMatcher("hasName", StringRef(b.name), 5),
+                constructMatcher("hasName", StringRef(b.qual_name), 5),
+              4),
+            3);
+        }
+        else if (!b.name.empty() || !b.qual_name.empty()) {
+          std::string valid_name = b.name.empty() ? b.qual_name : b.name;
+          inner_matcher =
+            constructBoundMatcher("namedDecl", "clang_rewrite_match",
+              constructMatcher("hasName", StringRef(valid_name), 4), 3);
+        }
+        else {
+          printf("ERROR: no valid name\n");
+        }
+        b.matchers.push_back(inner_matcher);
+
+        VariantMatcher inner_matcher2;
+        if (!b.name.empty() && !b.qual_name.empty()) {
+          inner_matcher2 =
+            constructBoundMatcher("declRefExpr", "clang_rewrite_match",
+              constructMatcher("to",
+                constructMatcher("namedDecl",
+                  constructMatcher("anyOf",
+                    constructMatcher("hasName", StringRef(b.name), 7),
+                    constructMatcher("hasName", StringRef(b.qual_name), 7),
+                  6),
+                5),
+              4),
+            3);
+        }
+        else if (!b.name.empty() || !b.qual_name.empty()) {
+          std::string valid_name = b.name.empty() ? b.qual_name : b.name;
+          inner_matcher2 =
+            constructBoundMatcher("declRefExpr", "clang_rewrite_match",
+              constructMatcher("to",
+                constructMatcher("namedDecl",
+                    constructMatcher("hasName", StringRef(valid_name), 6),
+                5),
+              4),
+            3);
+        }
+        else {
+          printf("ERROR: no valid name\n");
+        }
+        b.matchers.push_back(inner_matcher2);
+        b.value = code;
+        b.kind = BindingKind::VarNameBinding;
+        bindings.push_back(b);
+      }
+    }
+    else if (decl) {
+      std::string name = decl->getNameAsString();
+      std::string qualified_name = decl->getQualifiedNameAsString();
+      printf("name: %s\n", name.c_str());
+      printf("qualified name: %s\n", qualified_name.c_str());
+
+      // n.second.dump(llvm::outs(), *context);
+      llvm::outs() << "\n";
+
+      Binding b;
+      if (n.first != "clang_rewrite_top_level_match" && n.first != "clang_rewrite_match") {
+        std::pair<StringRef, StringRef> split = StringRef(n.first).split(";");
+        b.name = split.first.str();
+        b.qual_name = split.second.str();
+        VariantMatcher inner_matcher =
+          constructBoundMatcher("namedDecl", "clang_rewrite_match",
+            constructMatcher("anyOf",
+              constructMatcher("hasName", StringRef(b.name), 5),
+              constructMatcher("hasName", StringRef(b.qual_name), 5),
+            4),
+          3);
+        b.matchers.push_back(inner_matcher);
+        VariantMatcher inner_matcher2 =
+          constructBoundMatcher("declRefExpr", "clang_rewrite_match",
+            constructMatcher("to",
+              constructMatcher("namedDecl",
+                constructMatcher("anyOf",
+                  constructMatcher("hasName", StringRef(b.name), 7),
+                  constructMatcher("hasName", StringRef(b.qual_name), 7),
+                6),
+              5),
+            4),
+          3);
+        b.matchers.push_back(inner_matcher2);
+        b.value = name;
+        b.kind = BindingKind::VarNameBinding;
+        bindings.push_back(b);
+      }
+    }
+    else if (type) {
+      std::string name = QualType(type, 0).getAsString();
+      printf("type name: %s\n", name.c_str());
+      // n.second.dump(llvm::outs(), *context);
+      llvm::outs() << "\n";
+
+      Binding b;
+      if (n.first != "clang_rewrite_top_level_match" && n.first != "clang_rewrite_match") {
+        std::pair<StringRef, StringRef> split = StringRef(n.first).split(";");
+        b.name = split.first.str();
+        b.qual_name = split.second.str();
+        VariantMatcher inner_matcher =
+          constructBoundMatcher("expr", "clang_rewrite_match",
+            constructMatcher("hasType",
+              constructMatcher("anyOf",
+                constructMatcher("asString", StringRef(b.name), 6),
+                constructMatcher("asString", StringRef(b.qual_name), 6),
+              5),
+            4),
+          3);
+        b.matchers.push_back(inner_matcher);
+        b.value = name;
+        b.kind = BindingKind::TypeBinding;
+        bindings.push_back(b);
+      }
+    }
+    else {
+      printf("ERROR: unknown node kind in NodeMap\n");
+    }
+  }
+  return bindings;
+}
+
 template <class T>
 class RewriteCallback : public MatchFinder::MatchCallback {
 public:
@@ -167,192 +357,7 @@ public:
     }
 
     // create list of bindings
-    printf("making list of bindings\n");
-    for (std::pair<std::string, DynTypedNode> n : result.Nodes.getMap()) {
-      llvm::outs() << n.first << " : \n";
-      // n.second.dump(llvm::outs(), *context);
-
-      const Stmt *stmt = result.Nodes.getNodeAs<Stmt>(n.first);
-      const NamedDecl *decl = result.Nodes.getNodeAs<NamedDecl>(n.first);
-      const Type *type = result.Nodes.getNodeAs<Type>(n.first);
-
-      if (stmt) {
-        SourceRange code_range = stmt->getSourceRange();
-        code_range.print(llvm::outs(), context->getSourceManager()); printf("\n");
-
-        FullSourceLoc code_begin = context->getFullLoc(code_range.getBegin());
-
-        // some nodes (like declRefExpr) have begin == end, so we want to get the
-        // end of the *token*
-        // others (like callExpr) have ending pointing to the start of the last
-        // token (eg, ')' ), but we want to get that too
-        // so in general it's best to just get the loc of the end of the token
-        FullSourceLoc code_end = context->getFullLoc(Lexer::getLocForEndOfToken(
-            code_range.getEnd(), 0, context->getSourceManager(),
-            context->getLangOpts()));
-
-        // if we can't get a valid beginning *and* end, skip this one
-        if (!code_begin.isValid() || !code_end.isValid()) {
-          continue;
-        }
-
-        FileID fid = code_begin.getFileID();
-        unsigned int begin_offset = code_begin.getFileOffset();
-        unsigned int end_offset = code_end.getFileOffset();
-
-        printf("begin offset %u\n", begin_offset);
-        printf("end offset   %u\n", end_offset);
-        printf("array length %u\n", end_offset - begin_offset);
-
-        llvm::Optional<llvm::MemoryBufferRef> buff =
-            context->getSourceManager().getBufferOrNone(fid);
-
-        char *code_c = new char[end_offset - begin_offset + 1];
-        if (buff.has_value()) {
-          memcpy(code_c, &(buff->getBufferStart()[begin_offset]),
-                 (end_offset - begin_offset + 1) * sizeof(char));
-          code_c[end_offset - begin_offset] =
-              '\0'; // force null terminated for Reasons
-          printf("code??? %s\n", code_c);
-        } else {
-          printf("no buffer :<\n");
-        }
-        std::string code(code_c);
-        delete[] code_c;
-
-        llvm::outs() << "\n";
-
-        Binding b;
-        if (n.first != "clang_rewrite_top_level_match") {
-          std::pair<StringRef, StringRef> split = StringRef(n.first).split(";");
-          b.name = split.first.str();
-          b.qual_name = split.second.str();
-          VariantMatcher inner_matcher;
-          if (!b.name.empty() && !b.qual_name.empty()) {
-            inner_matcher =
-              constructBoundMatcher("namedDecl", "match",
-                constructMatcher("anyOf",
-                  constructMatcher("hasName", StringRef(b.name), 5),
-                  constructMatcher("hasName", StringRef(b.qual_name), 5),
-                4),
-              3);
-          }
-          else if (!b.name.empty() || !b.qual_name.empty()) {
-            std::string valid_name = b.name.empty() ? b.qual_name : b.name;
-            inner_matcher =
-              constructBoundMatcher("namedDecl", "match",
-                constructMatcher("hasName", StringRef(valid_name), 4), 3);
-          }
-          else {
-            printf("ERROR: no valid name\n");
-            return;
-          }
-          b.matchers.push_back(inner_matcher);
-
-          VariantMatcher inner_matcher2;
-          if (!b.name.empty() && !b.qual_name.empty()) {
-            inner_matcher2 =
-              constructBoundMatcher("declRefExpr", "match",
-                constructMatcher("to",
-                  constructMatcher("namedDecl",
-                    constructMatcher("anyOf",
-                      constructMatcher("hasName", StringRef(b.name), 7),
-                      constructMatcher("hasName", StringRef(b.qual_name), 7),
-                    6),
-                  5),
-                4),
-              3);
-          }
-          else if (!b.name.empty() || !b.qual_name.empty()) {
-            std::string valid_name = b.name.empty() ? b.qual_name : b.name;
-            inner_matcher2 =
-              constructBoundMatcher("declRefExpr", "match",
-                constructMatcher("to",
-                  constructMatcher("namedDecl",
-                      constructMatcher("hasName", StringRef(valid_name), 6),
-                  5),
-                4),
-              3);
-          }
-          else {
-            printf("ERROR: no valid name\n");
-            return;
-          }
-          b.matchers.push_back(inner_matcher2);
-          b.value = code;
-          b.kind = BindingKind::VarNameBinding;
-          bindings.push_back(b);
-        }
-      }
-      else if (decl) {
-        std::string name = decl->getNameAsString();
-        std::string qualified_name = decl->getQualifiedNameAsString();
-        printf("name: %s\n", name.c_str());
-        printf("qualified name: %s\n", qualified_name.c_str());
-
-        // n.second.dump(llvm::outs(), *context);
-        llvm::outs() << "\n";
-
-        Binding b;
-        if (n.first != "clang_rewrite_top_level_match") {
-          std::pair<StringRef, StringRef> split = StringRef(n.first).split(";");
-          b.name = split.first.str();
-          b.qual_name = split.second.str();
-          VariantMatcher inner_matcher =
-            constructBoundMatcher("namedDecl", "match",
-              constructMatcher("anyOf",
-                constructMatcher("hasName", StringRef(b.name), 5),
-                constructMatcher("hasName", StringRef(b.qual_name), 5),
-              4),
-            3);
-          b.matchers.push_back(inner_matcher);
-          VariantMatcher inner_matcher2 =
-            constructBoundMatcher("declRefExpr", "match",
-              constructMatcher("to",
-                constructMatcher("namedDecl",
-                  constructMatcher("anyOf",
-                    constructMatcher("hasName", StringRef(b.name), 7),
-                    constructMatcher("hasName", StringRef(b.qual_name), 7),
-                  6),
-                5),
-              4),
-            3);
-          b.matchers.push_back(inner_matcher2);
-          b.value = name;
-          b.kind = BindingKind::VarNameBinding;
-          bindings.push_back(b);
-        }
-      }
-      else if (type) {
-        std::string name = QualType(type, 0).getAsString();
-        printf("type name: %s\n", name.c_str());
-        // n.second.dump(llvm::outs(), *context);
-        llvm::outs() << "\n";
-
-        Binding b;
-        if (n.first != "clang_rewrite_top_level_match") {
-          std::pair<StringRef, StringRef> split = StringRef(n.first).split(";");
-          b.name = split.first.str();
-          b.qual_name = split.second.str();
-          VariantMatcher inner_matcher =
-            constructBoundMatcher("expr", "match",
-              constructMatcher("hasType",
-                constructMatcher("anyOf",
-                  constructMatcher("asString", StringRef(b.name), 6),
-                  constructMatcher("asString", StringRef(b.qual_name), 6),
-                5),
-              4),
-            3);
-          b.matchers.push_back(inner_matcher);
-          b.value = name;
-          b.kind = BindingKind::TypeBinding;
-          bindings.push_back(b);
-        }
-      }
-      else {
-        printf("ERROR: unknown node kind in NodeMap\n");
-      }
-    }
+    bindings = create_bindings(result, context);
 
     SourceRange original_range;
     std::string original_file;
@@ -370,20 +375,12 @@ public:
     // make temp file
     std::ofstream temp_file(temp_file_name + ".bind.cpp");
 
-    bool first_run = true;
     // now to actually do the replacements
 
     SourceLocation file_begin;
     SourceLocation file_end;
-    // if (first_run) {
-      file_begin = context->getSourceManager().getLocForStartOfFile(context->getFullLoc(original_range.getBegin()).getFileID());
-      file_end = context->getSourceManager().getLocForEndOfFile(context->getFullLoc(original_range.getEnd()).getFileID());
-    // }
-    // else {
-    //
-    // }
-
-
+    file_begin = context->getSourceManager().getLocForStartOfFile(context->getFullLoc(original_range.getBegin()).getFileID());
+    file_end = context->getSourceManager().getLocForEndOfFile(context->getFullLoc(original_range.getEnd()).getFileID());
 
     // for (CodeAction* action : matcher->actions) {
     if (matcher->actions.size() == 1) {
@@ -429,7 +426,6 @@ public:
     binding_rw.resetAllRewriteBuffers(binding_rw.getSourceMgr());
     attr_stripper_rw.resetAllRewriteBuffers(attr_stripper_rw.getSourceMgr());
 
-
   }
 
   void onEndOfTranslationUnit() override {}
@@ -462,13 +458,14 @@ public:
                         std::inserter(current_bindings, current_bindings.begin()),
                         bindings_compare());
 
-    ClangTool binding_tool(Tool->getCompilationDatabase(), {temp_file_name + ".bind.cpp"});
+
 
 
     while (!current_bindings.empty()) {
       for (Binding b : current_bindings) {
+        ClangTool binding_tool(Tool->getCompilationDatabase(), {temp_file_name + ".bind.cpp"});
         MatchFinder finder;
-        ReplaceBindingsCallback cb(action, b, current_bindings);
+        ReplaceBindingsCallback cb(action, b, all_bindings);
         printf("LOOKING for things named %s or %s\n", b.name.c_str(), b.qual_name.c_str());
 
         if (b.kind == BindingKind::VarNameBinding) {
@@ -532,8 +529,8 @@ public:
         if (retval) {
           printf("OH NOES\n");
         }
-        // deferred_bindings.insert(deferred_bindings.begin(), cb.inner_bindings.begin(), cb.inner_bindings.end());
-
+        deferred_bindings.insert(deferred_bindings.begin(), cb.inner_bindings.begin(), cb.inner_bindings.end());
+        cb.inner_bindings.clear();
       }
       current_bindings = deferred_bindings;
       deferred_bindings.clear();
