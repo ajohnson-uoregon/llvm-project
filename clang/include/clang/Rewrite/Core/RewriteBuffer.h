@@ -40,6 +40,12 @@ public:
     const char* orig_c = orig.c_str();
     Buffer.assign(&orig_c[0], &orig_c[orig.size()]);
   }
+
+  void clearBuffer() {
+    Deltas.resetTree();
+    Buffer.clear();
+  }
+  
   using iterator = RewriteRope::const_iterator;
 
   iterator begin() const { return Buffer.begin(); }

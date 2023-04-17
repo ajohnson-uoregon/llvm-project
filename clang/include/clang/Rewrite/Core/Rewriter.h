@@ -224,6 +224,13 @@ public:
     }
   }
 
+  void clearAllRewriteBuffers(SourceManager& SourceMgr) {
+    for (std::map<FileID, RewriteBuffer>::iterator i = RewriteBuffers.begin(); i != RewriteBuffers.end(); i++) {
+      i->second.clearBuffer();
+    }
+    RewriteBuffers.clear();
+  }
+
   // Iterators over rewrite buffers.
   buffer_iterator buffer_begin() { return RewriteBuffers.begin(); }
   buffer_iterator buffer_end() { return RewriteBuffers.end(); }

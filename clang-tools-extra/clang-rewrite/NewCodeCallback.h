@@ -146,7 +146,7 @@ public:
     printf("end offset   %u\n", end_offset);
     printf("array length %u\n", end_offset - begin_offset);
 
-    llvm::Optional<llvm::MemoryBufferRef> buff =
+    std::optional<llvm::MemoryBufferRef> buff =
         context->getSourceManager().getBufferOrNone(fid);
 
     char *body_code_c = new char[end_offset - begin_offset + 2];
@@ -179,7 +179,7 @@ public:
       unsigned int begin_offset = setup_begin.getFileOffset();
       unsigned int end_offset = setup_end.getFileOffset();
 
-      llvm::Optional<llvm::MemoryBufferRef> buff =
+      std::optional<llvm::MemoryBufferRef> buff =
         context->getSourceManager().getBufferOrNone(fid);
 
       char* setup_code_c = new char[end_offset - begin_offset + 2];

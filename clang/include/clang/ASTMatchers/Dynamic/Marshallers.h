@@ -1068,7 +1068,7 @@ public:
         << 0 << "Matcher<>" << Value.getTypeAsString();
       return VariantMatcher();
     }
-    llvm::Optional<DynTypedMatcher> dyn = Value.getMatcher().getSingleMatcher();
+    std::optional<DynTypedMatcher> dyn = Value.getMatcher().getSingleMatcher();
     if (dyn.has_value()) {
       InnerArg.push_back(dyn.value());
       return VariantMatcher::PolymorphicMatcher(std::move(InnerArg));

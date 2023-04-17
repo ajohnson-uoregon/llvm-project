@@ -589,7 +589,7 @@ private:
       if (sm != MT::fakeNode) {
         handle_pending();
       }
-      while (branch_points.back().second == 0) {
+      while (!branch_points.empty() && branch_points.back().second == 0) {
         branch_points.pop_back();
         if (!branch_points.empty()) {
           branch_points.back().second--;
@@ -824,7 +824,7 @@ public:
     printf("ACTUAL MATCHER\n");
     VariantMatcher varmatcher = make_matcher(matcher, 0);
 
-    llvm::Optional<DynTypedMatcher> dynmatcher = varmatcher.getSingleMatcher();
+    std::optional<DynTypedMatcher> dynmatcher = varmatcher.getSingleMatcher();
     if (dynmatcher && decl_valid) {
       MatcherWrapper<DynTypedMatcher>* m = new MatcherWrapper<DynTypedMatcher>(*dynmatcher, matcher_name,
         context->getSourceManager().getFilename(decl->getBeginLoc()).str(),

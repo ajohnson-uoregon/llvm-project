@@ -172,7 +172,7 @@ std::vector<Binding> create_bindings(const MatchFinder::MatchResult &result,
       printf("end offset   %u\n", end_offset);
       printf("array length %u\n", end_offset - begin_offset);
 
-      llvm::Optional<llvm::MemoryBufferRef> buff =
+      std::optional<llvm::MemoryBufferRef> buff =
           context->getSourceManager().getBufferOrNone(fid);
 
       char *code_c = new char[end_offset - begin_offset + 1];
@@ -373,7 +373,7 @@ public:
 
     // std::string binding_file_name = temp_file_name;
     // make temp file
-    std::ofstream temp_file(temp_file_name + ".bind.cpp");
+    std::ofstream temp_file(temp_file_name +  "." + std::to_string(num_bind_files) + ".bind.cpp");
 
     // now to actually do the replacements
 
@@ -463,10 +463,11 @@ public:
 
     while (!current_bindings.empty()) {
       for (Binding b : current_bindings) {
-        ClangTool binding_tool(Tool->getCompilationDatabase(), {temp_file_name + ".bind.cpp"});
+        ClangTool binding_tool(Tool->getCompilationDatabase(), {temp_file_name + "." + std::to_string(num_bind_files) + ".bind.cpp"});
+        binding_tool.setRestoreWorkingDir(false);
         MatchFinder finder;
         ReplaceBindingsCallback cb(action, b, all_bindings);
-        printf("LOOKING for things named %s or %s\n", b.name.c_str(), b.qual_name.c_str());
+        printf("LOOKING for things named %s or %s in %s\n", b.name.c_str(), b.qual_name.c_str(), std::string(temp_file_name + "." + std::to_string(num_bind_files) + ".bind.cpp").c_str());
 
         if (b.kind == BindingKind::VarNameBinding) {
           for (VariantMatcher matcher : b.matchers) {
@@ -483,7 +484,7 @@ public:
                 1),
               0);
 
-            llvm::Optional<DynTypedMatcher> dynmatcher = declmatcher.getSingleMatcher();
+            std::optional<DynTypedMatcher> dynmatcher = declmatcher.getSingleMatcher();
             if (dynmatcher) {
               finder.addDynamicMatcher(*dynmatcher, &cb);
             }
@@ -509,7 +510,7 @@ public:
                 1),
               0);
 
-            llvm::Optional<DynTypedMatcher> dynmatcher = declmatcher.getSingleMatcher();
+            std::optional<DynTypedMatcher> dynmatcher = declmatcher.getSingleMatcher();
             if (dynmatcher) {
               finder.addDynamicMatcher(*dynmatcher, &cb);
             }
@@ -532,6 +533,13 @@ public:
         deferred_bindings.insert(deferred_bindings.begin(), cb.inner_bindings.begin(), cb.inner_bindings.end());
         cb.inner_bindings.clear();
       }
+      printf("DEFERRED BINDINGS\n");
+      for (Binding b : deferred_bindings) {
+        dump_binding(b);
+      }
+      auto last = std::unique(deferred_bindings.begin(), deferred_bindings.end());
+      deferred_bindings.erase(last, deferred_bindings.end());
+
       current_bindings = deferred_bindings;
       deferred_bindings.clear();
       // binding_rw.overwriteChangedFiles();

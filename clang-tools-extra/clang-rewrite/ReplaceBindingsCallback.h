@@ -54,6 +54,7 @@ public:
   FileID fid;
   static std::vector<SourceRange> past_matches;
   std::vector<Binding> inner_bindings;
+  static int line_delta;
 
   ReplaceBindingsCallback(CodeAction* action, Binding b, std::vector<Binding> bindings)
     : action(action), bind(b), all_bindings(bindings) {}
@@ -69,11 +70,17 @@ public:
     const Expr* exp = result.Nodes.getNodeAs<Expr>("clang_rewrite_match");
     const NamedDecl* decl = result.Nodes.getNodeAs<NamedDecl>("clang_rewrite_match");
 
+    // TODO: can I condense the two names into one?
+    if (!exp && !decl) {
+      exp = result.Nodes.getNodeAs<Expr>("clang_rewrite_top_level_match");
+      decl = result.Nodes.getNodeAs<NamedDecl>("clang_rewrite_top_level_match");
+    }
+
     bool expr_valid = true;
     bool decl_valid = true;
 
     if (!exp ||
-        !context->getSourceManager().getFilename(exp->getBeginLoc()).endswith("clang_rewrite_temp_source.cpp.bind.cpp"))
+        !context->getSourceManager().getFilename(exp->getBeginLoc()).endswith("clang_rewrite_temp_source.cpp." + std::to_string(num_bind_files) + ".bind.cpp"))
          {
       if (exp) printf("filename??? %s\n", context->getSourceManager().getFilename(exp->getBeginLoc()).str().c_str());
       printf("ERROR: invalid expr binding match loc\n");
@@ -81,7 +88,7 @@ public:
     }
 
     if (!decl ||
-        !context->getSourceManager().getFilename(decl->getBeginLoc()).endswith("clang_rewrite_temp_source.cpp.bind.cpp")) {
+        !context->getSourceManager().getFilename(decl->getBeginLoc()).endswith("clang_rewrite_temp_source.cpp." + std::to_string(num_bind_files) + ".bind.cpp")) {
       if (decl) printf("filename??? %s\n", context->getSourceManager().getFilename(decl->getBeginLoc()).str().c_str());
       printf("ERROR: invalid decl binding match loc\n");
       decl_valid = false;
@@ -152,7 +159,7 @@ public:
       past_matches.push_back(match_range);
     }
 
-    llvm::Optional<llvm::MemoryBufferRef> buff =
+    std::optional<llvm::MemoryBufferRef> buff =
       context->getSourceManager().getBufferOrNone(fid);
 
     if (expr_valid) {
@@ -254,11 +261,17 @@ public:
         printf("num cols = %d\n", num_cols);
         // run some kind of generic finder callback to generate bindings from
         // match itself
+
         std::vector<Binding> internal_bindings = create_bindings(result, context);
         printf("internal bindings:\n");
         for (Binding b : internal_bindings) {
           b.has_valid_range = true;
-          b.valid_over = {begin_line, begin_col, begin_line+num_lines, num_cols};
+          if (num_lines == 0) {
+            b.valid_over = {begin_line+line_delta, begin_col, begin_line+num_lines+line_delta, begin_col+num_cols};
+          }
+          else {
+            b.valid_over = {begin_line+line_delta, begin_col, begin_line+num_lines+line_delta, num_cols};
+          }
           dump_binding(b);
         }
         inner_bindings.insert(inner_bindings.begin(), internal_bindings.begin(), internal_bindings.end());
@@ -273,7 +286,12 @@ public:
             b.value = replacer_text;
             b.kind = BindingKind::VarNameBinding;
             b.has_valid_range = true;
-            b.valid_over = {begin_line, begin_col, begin_line+num_lines, num_cols};
+            if (num_lines == 0) {
+              b.valid_over = {begin_line+line_delta, begin_col, begin_line+num_lines+line_delta, begin_col+num_cols};
+            }
+            else {
+              b.valid_over = {begin_line+line_delta, begin_col, begin_line+num_lines+line_delta, num_cols};
+            }
             inner_bindings.push_back(b);
           }
         }
@@ -283,22 +301,74 @@ public:
         }
         // dump bindings into inner_bindings, hand back to RewriteCallback
 
+        // TODO: this is a hack, do it better
+        line_delta += num_lines - (end_line-begin_line);
       }
       else {
-        char* name_c = new char[end_offset - match_offset + 1];
-        size_t space;
-        if (buff.has_value()) {
-          memcpy(name_c, &(buff->getBufferStart()[match_offset]),
-                 (end_offset - match_offset + 1) * sizeof(char));
-          name_c[end_offset - match_offset] = '\0';
-          StringRef name(name_c);
+        if (isa<DeclRefExpr>(exp)) {
+          char* name_c = new char[end_offset - match_offset + 1];
+          size_t space;
+          if (buff.has_value()) {
+            memcpy(name_c, &(buff->getBufferStart()[match_offset]),
+                   (end_offset - match_offset + 1) * sizeof(char));
+            name_c[end_offset - match_offset] = '\0';
+            StringRef name(name_c);
 
-          space = Lexer::MeasureTokenLength(exp->getBeginLoc(),
-            context->getSourceManager(), context->getLangOpts());
-          printf("oh noes %lu\n", space);
+            space = Lexer::MeasureTokenLength(exp->getBeginLoc(),
+              context->getSourceManager(), context->getLangOpts());
+            printf("oh noes %lu\n", space);
 
-          exp->getExprLoc().dump(context->getSourceManager());
-          binding_rw.ReplaceText(exp->getExprLoc(), space, bind.value);
+            exp->getExprLoc().dump(context->getSourceManager());
+            binding_rw.ReplaceText(exp->getExprLoc(), space, bind.value);
+          }
+        }
+        else {
+          // get true range
+          // we can trust begin and begin_line/_col
+          FullSourceLoc true_end = context->getFullLoc(
+            Lexer::getLocForEndOfToken(end, 1, context->getSourceManager(), context->getLangOpts()));
+
+          begin_line = begin.getSpellingLineNumber();
+          begin_col = begin.getSpellingColumnNumber();
+          end_line = true_end.getSpellingLineNumber();
+          end_col = true_end.getSpellingColumnNumber();
+          printf("TRUE match for binding at %d:%d - %d:%d\n",
+                 begin_line, begin_col, end_line, end_col);
+
+          begin_offset = begin.getFileOffset();
+          end_offset = true_end.getFileOffset();
+
+          size_t space = end_offset - begin_offset + 1;
+          printf("space %lu\n", space);
+
+          // replace true range
+          binding_rw.ReplaceText(begin, space, bind.value);
+
+          int num_lines = std::count(bind.value.begin(), bind.value.end(), '\n');
+          printf("num lines = %d\n", num_lines);
+
+          int num_cols = bind.value.size() - bind.value.rfind("\n");
+          printf("num cols = %d\n", num_cols);
+
+          // create bindings from result
+          std::vector<Binding> internal_bindings = create_bindings(result, context);
+          printf("internal bindings:\n");
+          for (Binding& b : internal_bindings) {
+            b.has_valid_range = true;
+            if (num_lines == 0) {
+              b.valid_over = {begin_line+line_delta, begin_col, begin_line+num_lines+line_delta, begin_col+num_cols};
+            }
+            else {
+              b.valid_over = {begin_line+line_delta, begin_col, begin_line+num_lines+line_delta, num_cols};
+            }
+
+            dump_binding(b);
+          }
+          inner_bindings.insert(inner_bindings.begin(), internal_bindings.begin(), internal_bindings.end());
+          // hand bindings back to RewriteCallback
+
+          // TODO: this is a hack, do it better
+          line_delta += num_lines - (end_line-begin_line);
         }
       }
     }
@@ -327,7 +397,7 @@ public:
   }
 
   void onEndOfTranslationUnit() override {
-    binding_rw.overwriteChangedFiles();
+    // binding_rw.overwriteChangedFiles();
 
     // std::ofstream temp_file(temp_file_name + ".bind_final.cpp");
     //
@@ -345,13 +415,22 @@ public:
     }
 
     out.close();
+
+    num_bind_files++;
+    raw_fd_ostream out_numbered(temp_file_name + "." + std::to_string(num_bind_files) + ".bind.cpp", erc);
+    if (buff) {
+      buff->write(out_numbered);
+    }
+    out_numbered.close();
     // temp_file.close();
-    binding_rw.resetAllRewriteBuffers(binding_rw.getSourceMgr());
+    binding_rw.clearAllRewriteBuffers(binding_rw.getSourceMgr());
+    line_delta = 0;
   }
 
 };
 
 std::vector<SourceRange> ReplaceBindingsCallback::past_matches;
+int ReplaceBindingsCallback::line_delta = 0;
 
 }
 } // namespaces

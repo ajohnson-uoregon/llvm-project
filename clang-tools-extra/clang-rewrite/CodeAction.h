@@ -65,6 +65,17 @@ typedef struct Binding {
   BindingKind kind;
   bool has_valid_range = false;
   Location valid_over;
+
+  bool operator== (const Binding& b1) const {
+    if (b1.name == name &&
+        b1.qual_name == qual_name &&
+        b1.value == value &&
+        b1.kind == kind &&
+        b1.valid_over == valid_over) {
+      return true;
+    }
+    return false;
+  }
 } Binding;
 
 struct bindings_compare {

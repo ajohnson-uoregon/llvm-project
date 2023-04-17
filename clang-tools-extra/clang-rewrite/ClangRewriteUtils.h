@@ -21,6 +21,7 @@ ClangTool* Tool;
 ClangTool* ProcessTemp;
 
 std::string temp_file_name = "clang_rewrite_temp_source.cpp";
+int num_bind_files = 0;
 
 bool isInOneOfFileIDs(clang::SourceLocation loc, std::vector<const FileEntry*> files, SourceManager& SrcMgr) {
   return llvm::any_of(files, [&](const FileEntry* file) {
@@ -79,8 +80,10 @@ bool locIsInRangeHard(clang::rewrite_tool::Location l,
 void dump_binding(clang::rewrite_tool::Binding b) {
   printf("name: %s\n", b.name.c_str());
   printf("qual name: %s\n", b.qual_name.c_str());
-  printf("valid over: %d:%d - %d:%d\n", b.valid_over.begin_line,
-    b.valid_over.begin_col, b.valid_over.end_line, b.valid_over.end_col);
+  if (b.has_valid_range) {
+    printf("valid over: %d:%d - %d:%d\n", b.valid_over.begin_line,
+      b.valid_over.begin_col, b.valid_over.end_line, b.valid_over.end_col);
+  }
   printf("\tvalue: %s\n", b.value.c_str());
   printf("\n");
 }

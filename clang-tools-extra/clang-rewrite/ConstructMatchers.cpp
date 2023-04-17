@@ -79,7 +79,7 @@ VariantMatcher constructMatcher(StringRef MatcherName, int tab,
   if (!Error) {
     Error = &DummyError;
   }
-  llvm::Optional<MatcherCtor> Ctor = R::lookupMatcherCtor(MatcherName);
+  std::optional<MatcherCtor> Ctor = R::lookupMatcherCtor(MatcherName);
   VariantMatcher Out;
   if (Ctor) {
     Out = R::constructMatcher(*Ctor, {}, Args(), Error);
@@ -103,7 +103,7 @@ VariantMatcher constructMatcher(StringRef MatcherName,
   if (!Error) {
     Error = &DummyError;
   }
-  llvm::Optional<MatcherCtor> Ctor = R::lookupMatcherCtor(MatcherName);
+  std::optional<MatcherCtor> Ctor = R::lookupMatcherCtor(MatcherName);
   VariantMatcher Out;
   if (Ctor) {
     Out = R::constructMatcher(*Ctor, {}, Args(Arg1), Error);
@@ -132,7 +132,7 @@ VariantMatcher constructMatcher(StringRef MatcherName,
   if (!Error) {
     Error = &DummyError;
   }
-  llvm::Optional<MatcherCtor> Ctor = R::lookupMatcherCtor(MatcherName);
+  std::optional<MatcherCtor> Ctor = R::lookupMatcherCtor(MatcherName);
   VariantMatcher Out;
   if (Ctor) {
     Out = R::constructMatcher(*Ctor, {}, Args(Arg1, Arg2), Error);
@@ -164,7 +164,7 @@ VariantMatcher constructMatcher(StringRef MatcherName,
   if (!Error) {
     Error = &DummyError;
   }
-  llvm::Optional<MatcherCtor> Ctor = R::lookupMatcherCtor(MatcherName);
+  std::optional<MatcherCtor> Ctor = R::lookupMatcherCtor(MatcherName);
   VariantMatcher Out;
   if (Ctor) {
     Out = R::constructMatcher(*Ctor, {}, Args(args), Error);
@@ -196,7 +196,7 @@ VariantMatcher constructBoundMatcher(StringRef MatcherName,
   if (!Error) {
     Error = &DummyError;
   }
-  llvm::Optional<MatcherCtor> Ctor = R::lookupMatcherCtor(MatcherName);
+  std::optional<MatcherCtor> Ctor = R::lookupMatcherCtor(MatcherName);
   VariantMatcher Out;
   if (Ctor) {
     Out = R::constructBoundMatcher(*Ctor, {}, BoundName, Args(), Error);
@@ -221,7 +221,7 @@ VariantMatcher constructBoundMatcher(StringRef MatcherName,
   if (!Error) {
     Error = &DummyError;
   }
-  llvm::Optional<MatcherCtor> Ctor = R::lookupMatcherCtor(MatcherName);
+  std::optional<MatcherCtor> Ctor = R::lookupMatcherCtor(MatcherName);
   VariantMatcher Out;
   if (Ctor) {
     Out = R::constructBoundMatcher(*Ctor, {}, BoundName, Args(Arg1), Error);
@@ -251,7 +251,7 @@ VariantMatcher constructBoundMatcher(StringRef MatcherName,
   if (!Error) {
     Error = &DummyError;
   }
-  llvm::Optional<MatcherCtor> Ctor = R::lookupMatcherCtor(MatcherName);
+  std::optional<MatcherCtor> Ctor = R::lookupMatcherCtor(MatcherName);
   VariantMatcher Out;
   if (Ctor) {
     Out = R::constructBoundMatcher(*Ctor, {}, BoundName, Args(Arg1, Arg2), Error);
@@ -284,7 +284,7 @@ VariantMatcher constructBoundMatcher(StringRef MatcherName,
   if (!Error) {
     Error = &DummyError;
   }
-  llvm::Optional<MatcherCtor> Ctor = R::lookupMatcherCtor(MatcherName);
+  std::optional<MatcherCtor> Ctor = R::lookupMatcherCtor(MatcherName);
   VariantMatcher Out;
   if (Ctor) {
     Out = R::constructBoundMatcher(*Ctor, {}, BoundName, Args(args), Error);
