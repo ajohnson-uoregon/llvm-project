@@ -51,13 +51,15 @@ public:
   CodeAction* action;
   Binding bind;
   std::vector<Binding> all_bindings;
+  std::vector<Binding>* current_bindings;
   FileID fid;
   static std::vector<SourceRange> past_matches;
   std::vector<Binding> inner_bindings;
   static int line_delta;
+  static int col_delta;
 
-  ReplaceBindingsCallback(CodeAction* action, Binding b, std::vector<Binding> bindings)
-    : action(action), bind(b), all_bindings(bindings) {}
+  ReplaceBindingsCallback(CodeAction* action, Binding b, std::vector<Binding>& all_bindings, std::vector<Binding>* current_bindings)
+    : action(action), bind(b), all_bindings(all_bindings), current_bindings(current_bindings) {}
 
   void onStartOfTranslationUnit() override {}
 
@@ -136,7 +138,9 @@ public:
 
     if (bind.has_valid_range) {
       if (!locIsInRangeHard(bind.valid_over, begin_line, begin_col, end_line, end_col)) {
-        printf("match not in binding's valid range\n");
+        printf("match not in binding's valid range (%d:%d - %d:%d)\n",
+          bind.valid_over.begin_line, bind.valid_over.begin_col,
+          bind.valid_over.end_line, bind.valid_over.end_col);
         return;
       }
     }
@@ -262,6 +266,8 @@ public:
         // run some kind of generic finder callback to generate bindings from
         // match itself
 
+        update_bindings(begin_line, begin_col, end_line, end_col, num_cols);
+
         std::vector<Binding> internal_bindings = create_bindings(result, context);
         printf("internal bindings:\n");
         for (Binding b : internal_bindings) {
@@ -320,6 +326,9 @@ public:
 
             exp->getExprLoc().dump(context->getSourceManager());
             binding_rw.ReplaceText(exp->getExprLoc(), space, bind.value);
+
+            int num_cols = bind.value.size() - bind.value.rfind("\n");
+            update_bindings(begin_line, begin_col, end_line, end_col, num_cols);
           }
         }
         else {
@@ -349,6 +358,8 @@ public:
 
           int num_cols = bind.value.size() - bind.value.rfind("\n");
           printf("num cols = %d\n", num_cols);
+
+          update_bindings(begin_line, begin_col, end_line, end_col, num_cols);
 
           // create bindings from result
           std::vector<Binding> internal_bindings = create_bindings(result, context);
@@ -391,6 +402,9 @@ public:
         }
 
         binding_rw.ReplaceText(decl->getLocation(), space, bind.value);
+
+        int num_cols = bind.value.size() - bind.value.rfind("\n");
+        update_bindings(begin_line, begin_col, end_line, end_col, num_cols);
       }
       delete[] name_c;
     }
@@ -408,24 +422,65 @@ public:
     const RewriteBuffer* buff = binding_rw.getRewriteBufferFor(fid);
     // binding_rw.overwriteChangedFiles();
     std::error_code erc;
-    raw_fd_ostream out(temp_file_name + ".bind_final.cpp", erc);
     // temp_file << binding_rw.getRewrittenText(SourceRange(file_begin, file_end));
     if (buff) {
+      raw_fd_ostream out(temp_file_name + ".bind_final.cpp", erc);
       buff->write(out);
+      out.close();
     }
 
-    out.close();
-
-    num_bind_files++;
-    raw_fd_ostream out_numbered(temp_file_name + "." + std::to_string(num_bind_files) + ".bind.cpp", erc);
     if (buff) {
+      num_bind_files++;
+      raw_fd_ostream out_numbered(temp_file_name + "." + std::to_string(num_bind_files) + ".bind.cpp", erc);
       buff->write(out_numbered);
+      out_numbered.close();
     }
-    out_numbered.close();
+
     // temp_file.close();
     binding_rw.clearAllRewriteBuffers(binding_rw.getSourceMgr());
     line_delta = 0;
   }
+
+  // same as checking whether it starts in the range 0:0 - start of valid_over
+  bool startsBefore(int begin_line, int begin_col, Binding b) {
+    return locIsInRangeHard(0, 0, b.valid_over.begin_line, b.valid_over.begin_col,
+      begin_line, begin_col);
+  }
+
+  bool startsInside(int begin_line, int begin_col, Binding b) {
+    return locIsInRangeHard(b.valid_over.begin_line, b.valid_over.begin_col,
+      b.valid_over.end_line, b.valid_over.end_col, begin_line, begin_col);
+  }
+
+  void update_bindings(int begin_line, int begin_col, int end_line, int end_col, int last_line_cols) {
+    for (Binding& b : *current_bindings) {
+      if (startsBefore(begin_line, begin_col, b)) {
+        // move the whole dang thing
+        // update valid_over begin_line and begin_col
+        b.valid_over.begin_line += end_line - begin_line;
+        if (begin_line == end_line) {
+          b.valid_over.begin_col += last_line_cols;
+        }
+        // update valid_over end_line and end_col
+        b.valid_over.end_line += end_line - begin_line;
+        if (begin_line == end_line) {
+          b.valid_over.end_col += last_line_cols;
+        }
+      }
+      else if (startsInside(begin_line, begin_col, b)) {
+        // move the end
+        // update valid_over end_line and end_col
+        b.valid_over.end_line += end_line - begin_line;
+        if (begin_line == end_line) {
+          b.valid_over.end_col += last_line_cols;
+        }
+      }
+      printf("UPDATING???\n");
+      dump_binding(b);
+    }
+  }
+
+
 
 };
 

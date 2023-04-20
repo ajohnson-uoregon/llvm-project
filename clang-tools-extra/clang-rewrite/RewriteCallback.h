@@ -122,6 +122,7 @@ public:
   }
 
   void onEndOfTranslationUnit() override {
+    attr_stripper_rw.clearAllRewriteBuffers(attr_stripper_rw.getSourceMgr());
     // const RewriteBuffer* buff = attr_stripper_rw.getRewriteBufferFor(fid);
     // std::error_code erc;
     // std::string newfname = temp_file_name + ".final";
@@ -462,12 +463,13 @@ public:
 
 
     while (!current_bindings.empty()) {
-      for (Binding b : current_bindings) {
+      for (Binding& b : current_bindings) {
         ClangTool binding_tool(Tool->getCompilationDatabase(), {temp_file_name + "." + std::to_string(num_bind_files) + ".bind.cpp"});
         binding_tool.setRestoreWorkingDir(false);
         MatchFinder finder;
-        ReplaceBindingsCallback cb(action, b, all_bindings);
+        ReplaceBindingsCallback cb(action, b, all_bindings, &current_bindings);
         printf("LOOKING for things named %s or %s in %s\n", b.name.c_str(), b.qual_name.c_str(), std::string(temp_file_name + "." + std::to_string(num_bind_files) + ".bind.cpp").c_str());
+        dump_binding(b);
 
         if (b.kind == BindingKind::VarNameBinding) {
           for (VariantMatcher matcher : b.matchers) {
@@ -533,12 +535,14 @@ public:
         deferred_bindings.insert(deferred_bindings.begin(), cb.inner_bindings.begin(), cb.inner_bindings.end());
         cb.inner_bindings.clear();
       }
+
+      auto last = std::unique(deferred_bindings.begin(), deferred_bindings.end());
+      deferred_bindings.erase(last, deferred_bindings.end());
+
       printf("DEFERRED BINDINGS\n");
       for (Binding b : deferred_bindings) {
         dump_binding(b);
       }
-      auto last = std::unique(deferred_bindings.begin(), deferred_bindings.end());
-      deferred_bindings.erase(last, deferred_bindings.end());
 
       current_bindings = deferred_bindings;
       deferred_bindings.clear();
@@ -564,7 +568,7 @@ public:
     attr_stripper.addMatcher(attr_block_matcher, &attr_strip_cb);
 
     ClangTool process_temp(Tool->getCompilationDatabase(), {"clang_rewrite_temp_source.cpp.bind_final.cpp"});
-
+    process_temp.setRestoreWorkingDir(false);
     int retval = process_temp.run(newFrontendActionFactory(&attr_stripper).get());
 
     printf("OWO???\n%s", attr_strip_cb.new_text.c_str());
