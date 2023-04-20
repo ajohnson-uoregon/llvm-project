@@ -181,6 +181,22 @@ int main(int argc, const char** argv) {
   // actually run the rewrites
   retval = ProcessTemp->run(newFrontendActionFactory(&Finder).get());
 
+  std::ofstream new_file(sources[0] + ".rewrite.cpp");
+  std::ifstream rewritten_file(temp_file_name);
+
+  bool first_line = true; // skip the include we threw in
+  while(getline(rewritten_file, line)) {
+    if (!first_line) {
+      new_file << line << "\n";
+    }
+    else {
+      first_line = false;
+    }
+  }
+
+  new_file.close();
+  rewritten_file.close();
+
   // cleanup
   for (MatcherWrapper<ast_matchers::internal::DynTypedMatcher> *m : user_matchers) {
     delete m;
