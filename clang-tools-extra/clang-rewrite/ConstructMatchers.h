@@ -16,17 +16,18 @@ namespace clang {
 namespace rewrite_tool {
 
 enum class MatcherType {
-  fakeNode,                 // 0
+  fakeNode,                     // 0
   anyOf,
   arraySubscriptExpr,
   binaryOperator,
   callee,
   callExpr,
+  capturedStmt,
   characterLiteral,
-  compoundLiteral,
+  compoundLiteralExpr,
   compoundStmt,
-  cudaKernelCallExpr,
-  cxxBoolLiteral,         // 10
+  cudaKernelCallExpr,           // 10
+  cxxBoolLiteral,               //
   cxxConstructExpr,
   cxxDefaultArgExpr,
   cxxFunctionalCastExpr,  //
@@ -35,34 +36,107 @@ enum class MatcherType {
   declStmt,
   equals,
   expr,
-  fixedPointLiteral,
-  floatLiteral,           // 20
+  fixedPointLiteral,            // 20
+  floatLiteral,                 //
   forStmt,                //
   functionDecl,
+  hasAssociatedStmt,
   hasBody,
+  hasCapturedStmt,
   hasCondition,
   hasExpectedReturnType,
   hasIncrement,           //
-  hasInitializer,         //
+  hasInitializer,             // 30
   hasLHS,                 //
   hasLoopInit,
-  hasOperatorName,        // 30
+  hasOperatorName,              //
   hasReturnValue,         //
   hasRHS,
   hasSubExpr,
   hasType,
   ifStmt,
   ignoringParenImpCasts,
-  integerLiteral,         //
-  loopBody,               // macro
-  parenExpr,              //
-  pointerType,            // 40
+  integerLiteral,                 // 40
+  loopBody,                     // macro
+  ompAtomicDirective,
+  ompBarrierDirective,
+  ompCancelDirective,
+  ompCancellationPointDirective,
+  ompCriticalDirective,
+  ompDepobjDirective,
+  ompDispatchDirective,
+  ompErrorDirective,
+  ompFlushDirective,          // 50
+  ompInteropDirective,
+  ompMaskedDirective,
+  ompMasterDirective,
+  ompMetaDirective,
+  ompOrderedDirective,
+  ompParallelDirective,
+  ompParallelMaskedDirective,
+  ompParallelMasterDirective,
+  ompParallelSectionsDirective,
+  ompScanDirective,         // 60
+  ompSectionDirective,
+  ompSectionsDirective,
+  ompSingleDirective,
+  ompTargetDataDirective,
+  ompTargetDirective,
+  ompTargetEnterDataDirective,
+  ompTargetExitDataDirective,
+  ompTargetParallelDirective,
+  ompTargetTeamsDirective,
+  ompTargetUpdateDirective,         // 70
+  ompTaskDirective,
+  ompTaskgroupDirective,
+  ompTaskwaitDirective,
+  ompTaskyieldDirective,
+  ompTeamsDirective,
+  ompDistributeDirective,
+  ompDistributeParallelForDirective,
+  ompDistributeParallelForSimdDirective,
+  ompDistributeSimdDirective,
+  ompForDirective,              // 80
+  ompForSimdDirective,
+  ompGenericLoopDirective,
+  ompMaskedTaskLoopDirective,
+  ompMaskedTaskLoopSimdDirective,
+  ompMasterTaskLoopDirective,
+  ompMasterTaskLoopSimdDirective,
+  ompParallelForDirective,
+  ompParallelForSimdDirective,
+  ompParallelGenericLoopDirective,
+  ompParallelMaskedTaskLoopDirective,       // 90
+  ompParallelMaskedTaskLoopSimdDirective,
+  ompParallelMasterTaskLoopDirective,
+  ompParallelMasterTaskLoopSimdDirective,
+  ompSimdDirective,
+  ompTargetParallelForDirective,
+  ompTargetParallelForSimdDirective,
+  ompTargetParallelGenericLoopDirective,
+  ompTargetSimdDirective,
+  ompTargetTeamsDistributeDirective,
+  ompTargetTeamsDistributeParallelForDirective,     // 100
+  ompTargetTeamsDistributeParallelForSimdDirective,
+  ompTargetTeamsDistributeSimdDirective,
+  ompTargetTeamsGenericLoopDirective,
+  ompTaskLoopDirective,
+  ompTaskLoopSimdDirective,
+  ompTeamsDistributeDirective,
+  ompTeamsDistributeParallelForDirective,
+  ompTeamsDistributeParallelForSimdDirective,
+  ompTeamsDistributeSimdDirective,
+  ompTeamsGenericLoopDirective,             // 110
+  ompTileDirective,
+  ompUnrollDirective,
+  parenExpr,                    //
+  pointerType,                  //
   pointee,                //
   returnStmt,             //
   stringLiteral,
   to,
   type,
-  unaryOperator,
+  unaryOperator,              // 120
   valueDecl,
   varDecl,                //
 };

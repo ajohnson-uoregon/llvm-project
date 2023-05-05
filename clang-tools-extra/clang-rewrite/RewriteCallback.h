@@ -364,7 +364,12 @@ public:
     std::string original_file;
 
     if (smatch) {
-      original_range = SourceRange(smatch->getBeginLoc(), smatch->getEndLoc());
+      if (const OMPExecutableDirective* prag = dyn_cast<OMPExecutableDirective>(smatch)) {
+        original_range = SourceRange(prag->getBeginLoc(), prag->getAssociatedStmt()->getEndLoc());
+      }
+      else {
+        original_range = SourceRange(smatch->getBeginLoc(), smatch->getEndLoc());
+      }
       original_file = context->getSourceManager().getFilename(smatch->getBeginLoc());
     }
     else if (dmatch) {

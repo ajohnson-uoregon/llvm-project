@@ -958,110 +958,225 @@ VariantMatcher make_matcher(Node* root, int level) {
   switch(root->matcher_type) {
     case MT::anyOf:
       return handle_anyOf(root, level);
-      break;
     case MT::arraySubscriptExpr:
       return handle_arraySubscriptExpr(root, level);
-      break;
     case MT::binaryOperator:
       return handle_binaryOperator(root, level);
-      break;
     case MT::callee:
       return handle_non_bindable_node(root, "callee", level);
-      break;
     case MT::callExpr:
       return handle_callExpr(root, "callExpr", level);
-      break;
+    case MT::capturedStmt:
+      return handle_bindable_node(root, "capturedStmt", level);
     case MT::compoundStmt:
       return handle_compoundStmt(root, level);
-      break;
+    case MT::compoundLiteralExpr:
+      return handle_bindable_node(root, "compoundLiteralExpr", level);
     case MT::cudaKernelCallExpr:
       return handle_callExpr(root, "cudaKernelCallExpr", level);
-      break;
     case MT::cxxOperatorCallExpr:
       return handle_callExpr(root, "cxxOperatorCallExpr", level);
-      break;
     // case MT::cxxDefaultArgExpr:
     //   return handle_non_bindable_node(root, "cxxDefaultArgExpr", level);
-    //   break;
-    case MT::declRefExpr: //TODO: figure out literals and to()
+    case MT::declRefExpr:
       return handle_declRefExpr(root, level);
-      break;
     case MT::declStmt:
       return handle_declStmt(root, level);
-      break;
     case MT::equals:
       return handle_non_bindable_node(root, "equals", level);
-      break;
     case MT::expr:
       return handle_bindable_node(root, "expr", level);
-      break;
     case MT::floatLiteral:
       return handle_bindable_node(root, "floatLiteral", level);
-      break;
     case MT::forStmt:
       return handle_forStmt(root, level);
-      break;
     case MT::functionDecl:
       return handle_bindable_node(root, "functionDecl", level);
-      break;
+    case MT::hasAssociatedStmt:
+      return handle_non_bindable_node(root, "hasAssociatedStmt", level);
+    case MT::hasCapturedStmt:
+      return handle_non_bindable_node(root, "hasCapturedStmt", level);
     case MT::hasExpectedReturnType:
       return handle_non_bindable_node(root, "hasExpectedReturnType", level);
-      break;
     case MT::hasInitializer:
       return handle_non_bindable_node(root, "hasInitializer", level);
-      break;
     case MT::hasOperatorName:
       return handle_non_bindable_node(root, "hasOperatorName", level);
-      break;
     case MT::hasReturnValue:
       return handle_non_bindable_node(root, "hasReturnValue", level);
-      break;
     case MT::hasSubExpr:
       return handle_non_bindable_node(root, "hasSubExpr", level);
-      break;
     case MT::hasType:
       return handle_non_bindable_node(root, "hasType", level);
-      break;
     case MT::ifStmt:
       return handle_ifStmt(root, level);
-      break;
     case MT::ignoringParenImpCasts:
       return handle_non_bindable_node(root, "ignoringParenImpCasts", level);
-      break;
     case MT::integerLiteral:
       return handle_bindable_node(root, "integerLiteral", level);
-      break;
+    case MT::ompAtomicDirective:
+      return handle_bindable_node(root, "ompAtomicDirective", level);
+    case MT::ompBarrierDirective:
+      return handle_bindable_node(root, "ompBarrierDirective", level);
+    case MT::ompCancelDirective:
+      return handle_bindable_node(root, "ompCancelDirective", level);
+    case MT::ompCancellationPointDirective:
+      return handle_bindable_node(root, "ompCancellationPointDirective", level);
+    case MT::ompCriticalDirective:
+      return handle_bindable_node(root, "ompCriticalDirective", level);
+    case MT::ompDepobjDirective:
+      return handle_bindable_node(root, "ompDepobjDirective", level);
+    case MT::ompDispatchDirective:
+      return handle_bindable_node(root, "ompDispatchDirective", level);
+    case MT::ompErrorDirective:
+      return handle_bindable_node(root, "ompErrorDirective", level);
+    case MT::ompFlushDirective:
+      return handle_bindable_node(root, "ompFlushDirective", level);
+    case MT::ompInteropDirective:
+      return handle_bindable_node(root, "ompInteropDirective", level);
+    case MT::ompMaskedDirective:
+      return handle_bindable_node(root, "ompMaskedDirective", level);
+    case MT::ompMasterDirective:
+      return handle_bindable_node(root, "ompMasterDirective", level);
+    case MT::ompMetaDirective:
+      return handle_bindable_node(root, "ompMetaDirective", level);
+    case MT::ompOrderedDirective:
+      return handle_bindable_node(root, "ompOrderedDirective", level);
+    case MT::ompParallelDirective:
+      return handle_bindable_node(root, "ompParallelDirective", level);
+    case MT::ompParallelMaskedDirective:
+      return handle_bindable_node(root, "ompParallelMaskedDirective", level);
+    case MT::ompParallelMasterDirective:
+      return handle_bindable_node(root, "ompParallelMasterDirective", level);
+    case MT::ompParallelSectionsDirective:
+      return handle_bindable_node(root, "ompParallelSectionsDirective", level);
+    case MT::ompScanDirective:
+      return handle_bindable_node(root, "ompScanDirective", level);
+    case MT::ompSectionDirective:
+      return handle_bindable_node(root, "ompSectionDirective", level);
+    case MT::ompSectionsDirective:
+      return handle_bindable_node(root, "ompSectionsDirective", level);
+    case MT::ompSingleDirective:
+      return handle_bindable_node(root, "ompSingleDirective", level);
+    case MT::ompTargetDataDirective:
+      return handle_bindable_node(root, "ompTargetDataDirective", level);
+    case MT::ompTargetDirective:
+      return handle_bindable_node(root, "ompTargetDirective", level);
+    case MT::ompTargetEnterDataDirective:
+      return handle_bindable_node(root, "ompTargetEnterDataDirective", level);
+    case MT::ompTargetExitDataDirective:
+      return handle_bindable_node(root, "ompTargetExitDataDirective", level);
+    case MT::ompTargetParallelDirective:
+      return handle_bindable_node(root, "ompTargetParallelDirective", level);
+    case MT::ompTargetTeamsDirective:
+      return handle_bindable_node(root, "ompTargetTeamsDirective", level);
+    case MT::ompTargetUpdateDirective:
+      return handle_bindable_node(root, "ompTargetUpdateDirective", level);
+    case MT::ompTaskDirective:
+      return handle_bindable_node(root, "ompTaskDirective", level);
+    case MT::ompTaskgroupDirective:
+      return handle_bindable_node(root, "ompTaskgroupDirective", level);
+    case MT::ompTaskwaitDirective:
+      return handle_bindable_node(root, "ompTaskwaitDirective", level);
+    case MT::ompTaskyieldDirective:
+      return handle_bindable_node(root, "ompTaskyieldDirective", level);
+    case MT::ompTeamsDirective:
+      return handle_bindable_node(root, "ompTeamsDirective", level);
+    case MT::ompDistributeDirective:
+      return handle_bindable_node(root, "ompDistributeDirective", level);
+    case MT::ompDistributeParallelForDirective:
+      return handle_bindable_node(root, "ompDistributeParallelForDirective", level);
+    case MT::ompDistributeParallelForSimdDirective:
+      return handle_bindable_node(root, "ompDistributeParallelForSimdDirective", level);
+    case MT::ompDistributeSimdDirective:
+      return handle_bindable_node(root, "ompDistributeSimdDirective", level);
+    case MT::ompForDirective:
+      return handle_bindable_node(root, "ompForDirective", level);
+    case MT::ompForSimdDirective:
+      return handle_bindable_node(root, "ompForSimdDirective", level);
+    case MT::ompGenericLoopDirective:
+      return handle_bindable_node(root, "ompGenericLoopDirective", level);
+    case MT::ompMaskedTaskLoopDirective:
+      return handle_bindable_node(root, "ompMaskedTaskLoopDirective", level);
+    case MT::ompMaskedTaskLoopSimdDirective:
+      return handle_bindable_node(root, "ompMaskedTaskLoopSimdDirective", level);
+    case MT::ompMasterTaskLoopDirective:
+      return handle_bindable_node(root, "ompMasterTaskLoopDirective", level);
+    case MT::ompMasterTaskLoopSimdDirective:
+      return handle_bindable_node(root, "ompMasterTaskLoopSimdDirective", level);
+    case MT::ompParallelForDirective:
+      return handle_bindable_node(root, "ompParallelForDirective", level);
+    case MT::ompParallelForSimdDirective:
+      return handle_bindable_node(root, "ompParallelForSimdDirective", level);
+    case MT::ompParallelGenericLoopDirective:
+      return handle_bindable_node(root, "ompParallelGenericLoopDirective", level);
+    case MT::ompParallelMaskedTaskLoopDirective:
+      return handle_bindable_node(root, "ompParallelMaskedTaskLoopDirective", level);
+    case MT::ompParallelMaskedTaskLoopSimdDirective:
+      return handle_bindable_node(root, "ompParallelMaskedTaskLoopSimdDirective", level);
+    case MT::ompParallelMasterTaskLoopDirective:
+      return handle_bindable_node(root, "ompParallelMasterTaskLoopDirective", level);
+    case MT::ompParallelMasterTaskLoopSimdDirective:
+      return handle_bindable_node(root, "ompParallelMasterTaskLoopSimdDirective", level);
+    case MT::ompSimdDirective:
+      return handle_bindable_node(root, "ompSimdDirective", level);
+    case MT::ompTargetParallelForDirective:
+      return handle_bindable_node(root, "ompTargetParallelForDirective", level);
+    case MT::ompTargetParallelForSimdDirective:
+      return handle_bindable_node(root, "ompTargetParallelForSimdDirective", level);
+    case MT::ompTargetParallelGenericLoopDirective:
+      return handle_bindable_node(root, "ompTargetParallelGenericLoopDirective", level);
+    case MT::ompTargetSimdDirective:
+      return handle_bindable_node(root, "ompTargetSimdDirective", level);
+    case MT::ompTargetTeamsDistributeDirective:
+      return handle_bindable_node(root, "ompTargetTeamsDistributeDirective", level);
+    case MT::ompTargetTeamsDistributeParallelForDirective:
+      return handle_bindable_node(root, "ompTargetTeamsDistributeParallelForDirective", level);
+    case MT::ompTargetTeamsDistributeParallelForSimdDirective:
+      return handle_bindable_node(root, "ompTargetTeamsDistributeParallelForSimdDirective", level);
+    case MT::ompTargetTeamsDistributeSimdDirective:
+      return handle_bindable_node(root, "ompTargetTeamsDistributeSimdDirective", level);
+    case MT::ompTargetTeamsGenericLoopDirective:
+      return handle_bindable_node(root, "ompTargetTeamsGenericLoopDirective", level);
+    case MT::ompTaskLoopDirective:
+      return handle_bindable_node(root, "ompTaskLoopDirective", level);
+    case MT::ompTaskLoopSimdDirective:
+      return handle_bindable_node(root, "ompTaskLoopSimdDirective", level);
+    case MT::ompTeamsDistributeDirective:
+      return handle_bindable_node(root, "ompTeamsDistributeDirective", level);
+    case MT::ompTeamsDistributeParallelForDirective:
+      return handle_bindable_node(root, "ompTeamsDistributeParallelForDirective", level);
+    case MT::ompTeamsDistributeParallelForSimdDirective:
+      return handle_bindable_node(root, "ompTeamsDistributeParallelForSimdDirective", level);
+    case MT::ompTeamsDistributeSimdDirective:
+      return handle_bindable_node(root, "ompTeamsDistributeSimdDirective", level);
+    case MT::ompTeamsGenericLoopDirective:
+      return handle_bindable_node(root, "ompTeamsGenericLoopDirective", level);
+    case MT::ompTileDirective:
+      return handle_bindable_node(root, "ompTileDirective", level);
+    case MT::ompUnrollDirective:
+      return handle_bindable_node(root, "ompUnrollDirective", level);
     case MT::parenExpr:
       return handle_bindable_node(root, "parenExpr", level);
-      break;
     case MT::pointerType:
       return handle_bindable_node(root, "pointerType", level);
-      break;
     case MT::pointee:
       return handle_bindable_node(root, "pointee", level);
-      break;
     case MT::returnStmt:
       return handle_bindable_node(root, "returnStmt", level);
-      break;
     case MT::to:
       return handle_non_bindable_node(root, "to", level);
-      break;
     case MT::type:
       return handle_bindable_node(root, "type", level);
-      break;
     case MT::unaryOperator:
       return handle_unaryOperator(root, level);
-      break;
     case MT::valueDecl:
       return handle_bindable_node(root, "valueDecl", level);
-      break;
     case MT::varDecl:
       return handle_bindable_node(root, "varDecl", level);
-      break;
     default:
       printf("ERROR: unimplemented matcher type %d\n", (int) root->matcher_type);
       return VariantMatcher();
-      break;
   }
 }
 

@@ -213,27 +213,29 @@ public:
           else if (const CallExpr* callexpr = CurNode.get<CallExpr>()) {
             if (callexpr->getDirectCallee()->getQualifiedNameAsString() ==
                 "clang_rewrite::loop_body") {
-                  call = callexpr;
-                  const Expr* arg = callexpr->getArg(0);
-                  const InitListExpr* initlist = findFirstChild<InitListExpr>(arg);
-                  const Expr* matcher = cast<CXXConstructExpr>(initlist->getInit(0))->getArg(0);
-                  const Expr* replacer = cast<CXXConstructExpr>(initlist->getInit(0))->getArg(1);
+              call = callexpr;
+              if (callexpr->getNumArgs() > 0) {
+                const Expr* arg = callexpr->getArg(0);
+                const InitListExpr* initlist = findFirstChild<InitListExpr>(arg);
+                const Expr* matcher = cast<CXXConstructExpr>(initlist->getInit(0))->getArg(0);
+                const Expr* replacer = cast<CXXConstructExpr>(initlist->getInit(0))->getArg(1);
 
-                  FullSourceLoc m_begin = context->getFullLoc(matcher->getBeginLoc());
-                  FullSourceLoc m_end = context->getFullLoc(matcher->getEndLoc());
+                FullSourceLoc m_begin = context->getFullLoc(matcher->getBeginLoc());
+                FullSourceLoc m_end = context->getFullLoc(matcher->getEndLoc());
 
-                  FullSourceLoc r_begin = context->getFullLoc(replacer->getBeginLoc());
-                  FullSourceLoc r_end = context->getFullLoc(replacer->getEndLoc());
+                FullSourceLoc r_begin = context->getFullLoc(replacer->getBeginLoc());
+                FullSourceLoc r_end = context->getFullLoc(replacer->getEndLoc());
 
-                  matcher_text = binding_rw.getRewrittenText(SourceRange(m_begin,
-                    Lexer::getLocForEndOfToken(m_end, 0, context->getSourceManager(), context->getLangOpts())));
-                  replacer_text = binding_rw.getRewrittenText(SourceRange(r_begin,
-                    Lexer::getLocForEndOfToken(r_end, 0, context->getSourceManager(), context->getLangOpts())));
+                matcher_text = binding_rw.getRewrittenText(SourceRange(m_begin,
+                  Lexer::getLocForEndOfToken(m_end, 0, context->getSourceManager(), context->getLangOpts())));
+                replacer_text = binding_rw.getRewrittenText(SourceRange(r_begin,
+                  Lexer::getLocForEndOfToken(r_end, 0, context->getSourceManager(), context->getLangOpts())));
 
-                  matcher_text = matcher_text.substr(0, matcher_text.size()-1);
-                  replacer_text = replacer_text.substr(0, replacer_text.size()-1);
-                  printf("matcher text? %s\n", matcher_text.c_str());
-                  printf("replacer text? %s\n", replacer_text.c_str());
+                matcher_text = matcher_text.substr(0, matcher_text.size()-1);
+                replacer_text = replacer_text.substr(0, replacer_text.size()-1);
+                printf("matcher text? %s\n", matcher_text.c_str());
+                printf("replacer text? %s\n", replacer_text.c_str());
+              }
             }
             llvm::append_range(Stack, context->getParents(CurNode));
           }
