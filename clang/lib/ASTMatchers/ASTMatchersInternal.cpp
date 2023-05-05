@@ -1084,8 +1084,152 @@ const internal::VariadicDynCastAllOfMatcher<Stmt, OMPExecutableDirective>
     ompExecutableDirective;
 const internal::VariadicDynCastAllOfMatcher<OMPClause, OMPDefaultClause>
     ompDefaultClause;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPAtomicDirective>
+        ompAtomicDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPBarrierDirective>
+        ompBarrierDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPCancelDirective>
+        ompCancelDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPCancellationPointDirective>
+        ompCancellationPointDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPCriticalDirective>
+        ompCriticalDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPDepobjDirective>
+        ompDepobjDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPDispatchDirective>
+        ompDispatchDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPErrorDirective>
+        ompErrorDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPFlushDirective>
+        ompFlushDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPInteropDirective>
+        ompInteropDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPMaskedDirective>
+        ompMaskedDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPMasterDirective>
+        ompMasterDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPMetaDirective>
+        ompMetaDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPOrderedDirective>
+        ompOrderedDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPParallelDirective>
+        ompParallelDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPParallelMaskedDirective>
+        ompParallelMaskedDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPParallelMasterDirective>
+        ompParallelMasterDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPParallelSectionsDirective>
+        ompParallelSectionsDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPScanDirective>
+        ompScanDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPSectionDirective>
+        ompSectionDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPSectionsDirective>
+        ompSectionsDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPSingleDirective>
+        ompSingleDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTargetDataDirective>
+        ompTargetDataDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTargetDirective>
+        ompTargetDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTargetEnterDataDirective>
+        ompTargetEnterDataDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTargetExitDataDirective>
+        ompTargetExitDataDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTargetParallelDirective>
+        ompTargetParallelDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTargetTeamsDirective>
+        ompTargetTeamsDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTargetUpdateDirective>
+        ompTargetUpdateDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTaskDirective>
+        ompTaskDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTaskgroupDirective>
+        ompTaskgroupDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTaskwaitDirective>
+        ompTaskwaitDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTaskyieldDirective>
+        ompTaskyieldDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTeamsDirective>
+        ompTeamsDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPDistributeDirective>
+        ompDistributeDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPDistributeParallelForDirective>
+        ompDistributeParallelForDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPDistributeParallelForSimdDirective>
+        ompDistributeParallelForSimdDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPDistributeSimdDirective>
+        ompDistributeSimdDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPForDirective>
+        ompForDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPForSimdDirective>
+        ompForSimdDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPGenericLoopDirective>
+        ompGenericLoopDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPMaskedTaskLoopDirective>
+        ompMaskedTaskLoopDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPMaskedTaskLoopSimdDirective>
+        ompMaskedTaskLoopSimdDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPMasterTaskLoopDirective>
+        ompMasterTaskLoopDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPMasterTaskLoopSimdDirective>
+        ompMasterTaskLoopSimdDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPParallelForDirective>
+        ompParallelForDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPParallelForSimdDirective>
+        ompParallelForSimdDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPParallelGenericLoopDirective>
+        ompParallelGenericLoopDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPParallelMaskedTaskLoopDirective>
+        ompParallelMaskedTaskLoopDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPParallelMaskedTaskLoopSimdDirective>
+        ompParallelMaskedTaskLoopSimdDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPParallelMasterTaskLoopDirective>
+        ompParallelMasterTaskLoopDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPParallelMasterTaskLoopSimdDirective>
+        ompParallelMasterTaskLoopSimdDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPSimdDirective>
+        ompSimdDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTargetParallelForDirective>
+        ompTargetParallelForDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTargetParallelForSimdDirective>
+        ompTargetParallelForSimdDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTargetParallelGenericLoopDirective>
+        ompTargetParallelGenericLoopDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTargetSimdDirective>
+        ompTargetSimdDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTargetTeamsDistributeDirective>
+        ompTargetTeamsDistributeDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTargetTeamsDistributeParallelForDirective>
+        ompTargetTeamsDistributeParallelForDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTargetTeamsDistributeParallelForSimdDirective>
+        ompTargetTeamsDistributeParallelForSimdDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTargetTeamsDistributeSimdDirective>
+        ompTargetTeamsDistributeSimdDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTargetTeamsGenericLoopDirective>
+        ompTargetTeamsGenericLoopDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTaskLoopDirective>
+        ompTaskLoopDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTaskLoopSimdDirective>
+        ompTaskLoopSimdDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTeamsDistributeDirective>
+        ompTeamsDistributeDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTeamsDistributeParallelForDirective>
+        ompTeamsDistributeParallelForDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTeamsDistributeParallelForSimdDirective>
+        ompTeamsDistributeParallelForSimdDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTeamsDistributeSimdDirective>
+        ompTeamsDistributeSimdDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTeamsGenericLoopDirective>
+        ompTeamsGenericLoopDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPTileDirective>
+        ompTileDirective;
+const internal::VariadicDynCastAllOfMatcher<Stmt, OMPUnrollDirective>
+        ompUnrollDirective;
 const internal::VariadicDynCastAllOfMatcher<Decl, CXXDeductionGuideDecl>
     cxxDeductionGuideDecl;
+const internal::VariadicDynCastAllOfMatcher<Stmt, CapturedStmt> capturedStmt;
+const internal::VariadicDynCastAllOfMatcher<Decl, CapturedDecl> capturedDecl;
 
 } // end namespace ast_matchers
 } // end namespace clang
