@@ -10,6 +10,7 @@
 #include "clang/Lex/Token.h"
 
 #include "CodeAction.h"
+#include "SetupCallback.h"
 
 #include <string>
 #include <vector>
@@ -164,34 +165,20 @@ public:
     delete[] body_code_c;
 
     // grab setup code
-    const DeclStmt* setup = result.Nodes.getNodeAs<DeclStmt>("setup");
-    if (setup && !context->getSourceManager().isWrittenInMainFile(setup->getBeginLoc())) {
-      printf("ERROR: invalid setup\n");
-      return;
-    }
+    // TODO: make yet another callback to go searching for all setup code in range
+    StatementMatcher setup_match =
+      declStmt(containsAnyDeclaration(varDecl(
+        hasAttr(attr::RewriteSetup)
+      ))).bind("setup");
 
-    std::string setup_code = "";
-    if (setup) {
-      FullSourceLoc setup_begin = context->getFullLoc(setup->getBeginLoc());
-      FullSourceLoc setup_end = context->getFullLoc(setup->getEndLoc());
+    SetupCallback setupcb({begin_line, begin_col, end_line, end_col});
+    MatchFinder setup_finder;
 
-      FileID fid = setup_begin.getFileID();
-      unsigned int begin_offset = setup_begin.getFileOffset();
-      unsigned int end_offset = setup_end.getFileOffset();
+    setup_finder.addMatcher(setup_match, &setupcb);
 
-      std::optional<llvm::MemoryBufferRef> buff =
-        context->getSourceManager().getBufferOrNone(fid);
+    int retval = Tool->run(newFrontendActionFactory(&setup_finder).get());
 
-      char* setup_code_c = new char[end_offset - begin_offset + 2];
-      if (buff.has_value()) {
-        memcpy(setup_code_c, &(buff->getBufferStart()[begin_offset]),
-                (end_offset - begin_offset + 2) * sizeof(char));
-        setup_code_c[end_offset - begin_offset + 1] = '\0';
-        setup_code = std::string(setup_code_c);
-        printf("setup code??? %s\n", setup_code_c);
-      }
-      delete[] setup_code_c;
-    }
+    std::string setup_code = setupcb.setup_code;
 
     CodeAction *act =
         new CodeAction(body_code, setup_code, action_name, kind, matcher_names,

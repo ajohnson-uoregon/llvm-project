@@ -53,7 +53,7 @@ public:
   std::vector<Binding> all_bindings;
   std::vector<Binding>* current_bindings;
   FileID fid;
-  static std::vector<SourceRange> past_matches;
+  static std::vector<Location> past_matches;
   std::vector<Binding> inner_bindings;
   static int line_delta;
   static int col_delta;
@@ -155,12 +155,16 @@ public:
       end_offset += 1;
     }
 
-    if (std::find(past_matches.begin(), past_matches.end(), match_range) != past_matches.end()) {
+    if (std::find(past_matches.begin(), past_matches.end(),
+        (Location){begin_line, begin_col, end_line, end_col}) != past_matches.end()) {
       printf("duplicate match\n");
+      for (Location l : past_matches) {
+        printf("\t{%d:%d-%d:%d}\n", l.begin_line, l.begin_col, l.end_line, l.end_col);
+      }
       return;
     }
     else {
-      past_matches.push_back(match_range);
+      past_matches.push_back({begin_line, begin_col, end_line, end_col});
     }
 
     std::optional<llvm::MemoryBufferRef> buff =
@@ -441,6 +445,7 @@ public:
     // temp_file.close();
     binding_rw.clearAllRewriteBuffers(binding_rw.getSourceMgr());
     line_delta = 0;
+    past_matches.clear();
   }
 
   // same as checking whether it starts in the range 0:0 - start of valid_over
@@ -486,7 +491,7 @@ public:
 
 };
 
-std::vector<SourceRange> ReplaceBindingsCallback::past_matches;
+std::vector<Location> ReplaceBindingsCallback::past_matches;
 int ReplaceBindingsCallback::line_delta = 0;
 
 }

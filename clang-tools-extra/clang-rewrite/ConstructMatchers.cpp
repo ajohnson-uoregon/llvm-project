@@ -557,6 +557,11 @@ VariantMatcher handle_callExpr(Node* root, std::string call_type, int level) {
               constructMatcher("cxxDefaultArgExpr", constructMatcher("anything", level+7), level+6), level+5));
           }
         }
+
+        if (child_matchers.size() < 1) {
+          child_matchers.push_back(constructMatcher("anything", level+5));
+        }
+        return handle_bindable_children(root, child_matchers, "cudaKernelCallExpr", level);
       }
       else if (child->matcher_type == MT::callee) {
         child_matchers.push_back(make_matcher(child, level+5));

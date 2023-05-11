@@ -77,6 +77,11 @@ bool locIsInRangeHard(clang::rewrite_tool::Location l,
          locIsInRangeHard(l.begin_line, l.begin_col, l.end_line, l.end_col, my_end_line, my_end_col);
 }
 
+bool locIsInRangeHard(clang::rewrite_tool::Location l,
+                      int my_begin_line, int my_begin_col) {
+  return locIsInRangeHard(l.begin_line, l.begin_col, l.end_line, l.end_col, my_begin_line, my_begin_col);
+}
+
 void dump_binding(clang::rewrite_tool::Binding b) {
   printf("name: %s\n", b.name.c_str());
   printf("qual name: %s\n", b.qual_name.c_str());

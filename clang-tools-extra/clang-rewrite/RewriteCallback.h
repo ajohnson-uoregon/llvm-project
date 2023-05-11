@@ -265,29 +265,54 @@ std::vector<Binding> create_bindings(const MatchFinder::MatchResult &result,
         std::pair<StringRef, StringRef> split = StringRef(n.first).split(";");
         b.name = split.first.str();
         b.qual_name = split.second.str();
-        VariantMatcher inner_matcher =
-          constructBoundMatcher("namedDecl", "clang_rewrite_match",
-            constructMatcher("anyOf",
-              constructMatcher("hasName", StringRef(b.name), 5),
-              constructMatcher("hasName", StringRef(b.qual_name), 5),
-            4),
-          3);
-        b.matchers.push_back(inner_matcher);
-        VariantMatcher inner_matcher2 =
-          constructBoundMatcher("declRefExpr", "clang_rewrite_match",
-            constructMatcher("to",
-              constructMatcher("namedDecl",
-                constructMatcher("anyOf",
-                  constructMatcher("hasName", StringRef(b.name), 7),
-                  constructMatcher("hasName", StringRef(b.qual_name), 7),
-                6),
-              5),
-            4),
-          3);
-        b.matchers.push_back(inner_matcher2);
-        b.value = name;
-        b.kind = BindingKind::VarNameBinding;
-        bindings.push_back(b);
+        if (!b.name.empty() && !b.qual_name.empty()) {
+          VariantMatcher inner_matcher =
+            constructBoundMatcher("namedDecl", "clang_rewrite_match",
+              constructMatcher("anyOf",
+                constructMatcher("hasName", StringRef(b.name), 5),
+                constructMatcher("hasName", StringRef(b.qual_name), 5),
+              4),
+            3);
+          b.matchers.push_back(inner_matcher);
+          VariantMatcher inner_matcher2 =
+            constructBoundMatcher("declRefExpr", "clang_rewrite_match",
+              constructMatcher("to",
+                constructMatcher("namedDecl",
+                  constructMatcher("anyOf",
+                    constructMatcher("hasName", StringRef(b.name), 7),
+                    constructMatcher("hasName", StringRef(b.qual_name), 7),
+                  6),
+                5),
+              4),
+            3);
+          b.matchers.push_back(inner_matcher2);
+          b.value = name;
+          b.kind = BindingKind::VarNameBinding;
+          bindings.push_back(b);
+        }
+        else if (!b.name.empty() || !b.qual_name.empty()) {
+          std::string valid_name = b.name.empty() ? b.qual_name : b.name;
+          VariantMatcher inner_matcher =
+            constructBoundMatcher("namedDecl", "clang_rewrite_match",
+              constructMatcher("hasName", StringRef(valid_name), 4),
+            3);
+          b.matchers.push_back(inner_matcher);
+          VariantMatcher inner_matcher2 =
+            constructBoundMatcher("declRefExpr", "clang_rewrite_match",
+              constructMatcher("to",
+                constructMatcher("namedDecl",
+                    constructMatcher("hasName", StringRef(valid_name), 6),
+                5),
+              4),
+            3);
+          b.matchers.push_back(inner_matcher2);
+          b.value = name;
+          b.kind = BindingKind::VarNameBinding;
+          bindings.push_back(b);
+        }
+        else {
+          printf("ERROR: no valid name for decl\n");
+        }
       }
     }
     else if (type) {
