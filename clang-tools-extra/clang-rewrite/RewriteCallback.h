@@ -55,6 +55,55 @@ public:
   }
 };
 
+class SetupStripperCallback : public MatchFinder::MatchCallback {
+public:
+  ASTContext* context;
+  FileID fid;
+  std::string newfname = temp_file_name;
+
+
+  void run(const MatchFinder::MatchResult &result) override {
+    printf("running SetupStripperCallback\n");
+
+    context = result.Context;
+    attr_stripper_rw.setSourceMgr(context->getSourceManager(), context->getLangOpts());
+
+    const DeclStmt* setup = result.Nodes.getNodeAs<DeclStmt>("setup");
+
+    if (!setup) {
+      printf("ERROR: invalid setup section match\n");
+      return;
+    }
+
+    FullSourceLoc full_loc(setup->getBeginLoc(), context->getSourceManager());
+    fid = full_loc.getFileID();
+
+    SourceRange setup_range(setup->getBeginLoc(), setup->getEndLoc());
+    setup_range.print(llvm::outs(), context->getSourceManager());
+    setup->dump();
+    attr_stripper_rw.RemoveText(setup_range);
+
+    if (attr_stripper_rw.overwriteChangedFiles())
+    {
+      printf("FILE NOT SAVED\n");
+    }
+
+    const RewriteBuffer* buff = attr_stripper_rw.getRewriteBufferFor(fid);
+    std::error_code erc;
+    newfname = newfname + ".attr.cpp";
+
+    if (buff) {
+      raw_fd_ostream out(newfname, erc);
+      buff->write(out);
+      out.close();
+    }
+  }
+
+  void onEndOfTranslationUnit() override {
+    attr_stripper_rw.clearAllRewriteBuffers(attr_stripper_rw.getSourceMgr());
+  }
+};
+
 class AttrStripperCallback : public MatchFinder::MatchCallback {
 public:
   ASTContext* context;
@@ -69,11 +118,10 @@ public:
     attr_stripper_rw.setSourceMgr(context->getSourceManager(), context->getLangOpts());
 
     const CompoundStmt* match = result.Nodes.getNodeAs<CompoundStmt>("match");
-    const DeclStmt* setup = result.Nodes.getNodeAs<DeclStmt>("setup");
     const AttributedStmt* body = result.Nodes.getNodeAs<AttributedStmt>("body");
 
     // TODO: check if in temp file?
-    if (!match) {
+    if (!match && !body) {
       printf("ERROR: invalid attr match\n");
       return;
     }
@@ -81,25 +129,13 @@ public:
     FullSourceLoc full_loc(match->getBeginLoc(), context->getSourceManager());
     fid = full_loc.getFileID();
 
-    if (setup) {
-      SourceRange setup_range(setup->getBeginLoc(), setup->getEndLoc());
-      setup_range.print(llvm::outs(), context->getSourceManager());
-      setup->dump();
-      attr_stripper_rw.RemoveText(setup_range);
-    }
-
-    if (body) {
-      SourceRange body_range(body->getBeginLoc(), body->getEndLoc());
-      body_range.print(llvm::outs(), context->getSourceManager());
-      const Stmt* inner = body->getSubStmt();
-      SourceRange inner_range(inner->getBeginLoc(), inner->getEndLoc());
-      inner_range.print(llvm::outs(), context->getSourceManager());
-      attr_stripper_rw.RemoveText(SourceRange(body->getBeginLoc(), inner->getBeginLoc())); // get attr and {
-      attr_stripper_rw.RemoveText(body->getEndLoc(), 1); // get close }
-    }
-    else {
-      printf("ERROR: no matcher_block attr to erase?\n");
-    }
+    SourceRange body_range(body->getBeginLoc(), body->getEndLoc());
+    body_range.print(llvm::outs(), context->getSourceManager());
+    const Stmt* inner = body->getSubStmt();
+    SourceRange inner_range(inner->getBeginLoc(), inner->getEndLoc());
+    inner_range.print(llvm::outs(), context->getSourceManager());
+    attr_stripper_rw.RemoveText(SourceRange(body->getBeginLoc(), inner->getBeginLoc())); // get attr and {
+    attr_stripper_rw.RemoveText(body->getEndLoc(), 1); // get close }
 
     attr_stripper_rw.RemoveText(match->getLBracLoc(), 1); // get compound stmt {
     attr_stripper_rw.RemoveText(match->getRBracLoc(), 1); // get compound stmt }
@@ -113,10 +149,11 @@ public:
     std::error_code erc;
     newfname = newfname + ".attr.cpp";
 
-    raw_fd_ostream out(newfname, erc);
-    buff->write(out);
-    out.close();
-
+    if (buff) {
+      raw_fd_ostream out(newfname, erc);
+      buff->write(out);
+      out.close();
+    }
 
     new_text = attr_stripper_rw.getRewrittenText(SourceRange(match->getLBracLoc(), match->getRBracLoc()));
   }
@@ -199,18 +236,26 @@ std::vector<Binding> create_bindings(const MatchFinder::MatchResult &result,
         VariantMatcher inner_matcher;
         if (!b.name.empty() && !b.qual_name.empty()) {
           inner_matcher =
-            constructBoundMatcher("namedDecl", "clang_rewrite_match",
-              constructMatcher("anyOf",
-                constructMatcher("hasName", StringRef(b.name), 5),
-                constructMatcher("hasName", StringRef(b.qual_name), 5),
+            constructMatcher("declStmt",
+              constructMatcher("containsAnyDeclaration",
+                constructBoundMatcher("namedDecl", "clang_rewrite_match",
+                  constructMatcher("anyOf",
+                    constructMatcher("hasName", StringRef(b.name), 7),
+                    constructMatcher("hasName", StringRef(b.qual_name), 7),
+                  6),
+                5),
               4),
             3);
         }
         else if (!b.name.empty() || !b.qual_name.empty()) {
           std::string valid_name = b.name.empty() ? b.qual_name : b.name;
           inner_matcher =
-            constructBoundMatcher("namedDecl", "clang_rewrite_match",
-              constructMatcher("hasName", StringRef(valid_name), 4), 3);
+            constructMatcher("declStmt",
+              constructMatcher("containsAnyDeclaration",
+                constructBoundMatcher("namedDecl", "clang_rewrite_match",
+                  constructMatcher("hasName", StringRef(valid_name), 6), 5),
+              4),
+            3);
         }
         else {
           printf("ERROR: no valid name\n");
@@ -267,10 +312,14 @@ std::vector<Binding> create_bindings(const MatchFinder::MatchResult &result,
         b.qual_name = split.second.str();
         if (!b.name.empty() && !b.qual_name.empty()) {
           VariantMatcher inner_matcher =
-            constructBoundMatcher("namedDecl", "clang_rewrite_match",
-              constructMatcher("anyOf",
-                constructMatcher("hasName", StringRef(b.name), 5),
-                constructMatcher("hasName", StringRef(b.qual_name), 5),
+            constructMatcher("declStmt",
+              constructMatcher("containsAnyDeclaration",
+                constructBoundMatcher("namedDecl", "clang_rewrite_match",
+                  constructMatcher("anyOf",
+                    constructMatcher("hasName", StringRef(b.name), 7),
+                    constructMatcher("hasName", StringRef(b.qual_name), 7),
+                  6),
+                5),
               4),
             3);
           b.matchers.push_back(inner_matcher);
@@ -293,8 +342,11 @@ std::vector<Binding> create_bindings(const MatchFinder::MatchResult &result,
         else if (!b.name.empty() || !b.qual_name.empty()) {
           std::string valid_name = b.name.empty() ? b.qual_name : b.name;
           VariantMatcher inner_matcher =
-            constructBoundMatcher("namedDecl", "clang_rewrite_match",
-              constructMatcher("hasName", StringRef(valid_name), 4),
+            constructMatcher("declStmt",
+              constructMatcher("containsAnyDeclaration",
+                constructBoundMatcher("namedDecl", "clang_rewrite_match",
+                  constructMatcher("hasName", StringRef(valid_name), 6), 5),
+              4),
             3);
           b.matchers.push_back(inner_matcher);
           VariantMatcher inner_matcher2 =
@@ -582,24 +634,35 @@ public:
 
   std::string strip_attrs() {
     // strip out attributes now that we're done
-    StatementMatcher attr_block_matcher = compoundStmt(allOf(
-      optionally(hasAnySubstatement(declStmt(
-        containsAnyDeclaration(varDecl(hasAttr(attr::RewriteSetup)))
-      ).bind("setup"))),
+    StatementMatcher attr_block_matcher = compoundStmt(
       hasAnySubstatement(attributedStmt(allOf(
         hasAttr(attr::MatcherBlock),
         hasSubStmt(compoundStmt(anything()))
       )).bind("body"))
-    )).bind("match");
+    ).bind("match");
+
+    StatementMatcher setup_matcher = declStmt(
+      containsAnyDeclaration(varDecl(hasAttr(attr::RewriteSetup)))
+    ).bind("setup");
+
+    MatchFinder setup_stripper;
+    SetupStripperCallback setup_strip_cb;
+
+    setup_stripper.addMatcher(setup_matcher, &setup_strip_cb);
+
+    ClangTool process_setup(Tool->getCompilationDatabase(), {"clang_rewrite_temp_source.cpp.bind_final.cpp"});
+    process_setup.setRestoreWorkingDir(false);
+    int retval = process_setup.run(newFrontendActionFactory(&setup_stripper).get());
 
     MatchFinder attr_stripper;
     AttrStripperCallback attr_strip_cb;
 
     attr_stripper.addMatcher(attr_block_matcher, &attr_strip_cb);
+    attr_stripper.addMatcher(setup_matcher, &attr_strip_cb);
 
     ClangTool process_temp(Tool->getCompilationDatabase(), {"clang_rewrite_temp_source.cpp.bind_final.cpp"});
     process_temp.setRestoreWorkingDir(false);
-    int retval = process_temp.run(newFrontendActionFactory(&attr_stripper).get());
+    retval = process_temp.run(newFrontendActionFactory(&attr_stripper).get());
 
     printf("OWO???\n%s", attr_strip_cb.new_text.c_str());
 
