@@ -321,14 +321,20 @@ public:
           char* name_c = new char[end_offset - match_offset + 1];
           size_t space;
           if (buff.has_value()) {
-            memcpy(name_c, &(buff->getBufferStart()[match_offset]),
-                   (end_offset - match_offset + 1) * sizeof(char));
-            name_c[end_offset - match_offset] = '\0';
-            StringRef name(name_c);
-
             space = Lexer::MeasureTokenLength(exp->getBeginLoc(),
               context->getSourceManager(), context->getLangOpts());
             printf("oh noes %lu\n", space);
+
+            memcpy(name_c, &(buff->getBufferStart()[match_offset]),
+                   (space + 1) * sizeof(char));
+            name_c[space] = '\0';
+            StringRef name(name_c);
+
+            if (name != StringRef(bind.name) && name != StringRef(bind.qual_name)) {
+              printf("%s\n", name_c);
+              printf("OH HENLO\n");
+              return;
+            }
 
             exp->getExprLoc().dump(context->getSourceManager());
             binding_rw.ReplaceText(exp->getExprLoc(), space, bind.value);
@@ -393,26 +399,62 @@ public:
       printf("decl\n");
       decl->dump();
 
-      char* name_c = new char[end_offset - match_offset + 1];
-      size_t space;
-      if (buff.has_value()) {
-        memcpy(name_c, &(buff->getBufferStart()[match_offset]),
-               (end_offset - match_offset + 1) * sizeof(char));
-        name_c[end_offset - match_offset] = '\0';
-        StringRef name(name_c);
-        if (name.find(" ") != StringRef::npos) {
-          space = name.find(" ");
+      if (bind.kind == VarNameBinding) {
+        char* name_c = new char[end_offset - match_offset + 1];
+        size_t space;
+        if (buff.has_value()) {
+          // memcpy(name_c, &(buff->getBufferStart()[match_offset]),
+          //        (end_offset - match_offset + 1) * sizeof(char));
+          // name_c[end_offset - match_offset] = '\0';
+          // StringRef name(name_c);
+          // if (name.find(" ") != StringRef::npos) {
+          //   space = name.find(" ");
+          // }
+          // else {
+          //   space = 1;
+          // }
+
+          space = Lexer::MeasureTokenLength(decl->getLocation(),
+            context->getSourceManager(), context->getLangOpts());
+          printf("oh noes decl %lu\n", space);
+
+          binding_rw.ReplaceText(decl->getLocation(), space, bind.value);
+
+          int num_cols = bind.value.size() - bind.value.rfind("\n");
+          update_bindings(begin_line, begin_col, end_line, end_col, num_cols);
         }
-        else {
-          space = 1;
+        delete[] name_c;
+      }
+      else if (bind.kind == TypeBinding) {
+        auto tok = Lexer::findNextToken(decl->getBeginLoc(), context->getSourceManager(), context->getLangOpts());
+        SourceLocation loc = decl->getBeginLoc();
+        loc.dump(context->getSourceManager());
+        Lexer::getLocForEndOfToken(loc, 1, context->getSourceManager(), context->getLangOpts()).dump(context->getSourceManager());
+        SourceRange rng(loc, Lexer::getLocForEndOfToken(loc, 1, context->getSourceManager(), context->getLangOpts()));
+        printf("TOKEN?? %s\n", Lexer::getSourceText(Lexer::getAsCharRange(rng, context->getSourceManager(), context->getLangOpts()),
+            context->getSourceManager(), context->getLangOpts()).str().c_str());
+
+        int i = 0;
+        while (tok && bind.name != Lexer::getSourceText(Lexer::getAsCharRange(rng, context->getSourceManager(), context->getLangOpts()),
+            context->getSourceManager(), context->getLangOpts()) && i < 20) {
+          printf("TOKEN?? %s\n", Lexer::getSourceText(Lexer::getAsCharRange(rng, context->getSourceManager(), context->getLangOpts()),
+              context->getSourceManager(), context->getLangOpts()).str().c_str());
+          loc = Lexer::getLocForEndOfToken(loc, 0, context->getSourceManager(), context->getLangOpts());
+          rng = SourceRange(loc, Lexer::getLocForEndOfToken(loc, 1, context->getSourceManager(), context->getLangOpts()));
+          tok = Lexer::findNextToken(loc, context->getSourceManager(), context->getLangOpts());
+          i++;
         }
 
-        binding_rw.ReplaceText(decl->getLocation(), space, bind.value);
+        size_t space = Lexer::MeasureTokenLength(loc, context->getSourceManager(), context->getLangOpts());
+        printf("oh noes template %lu\n", space);
+
+        binding_rw.ReplaceText(loc, space, bind.value);
 
         int num_cols = bind.value.size() - bind.value.rfind("\n");
         update_bindings(begin_line, begin_col, end_line, end_col, num_cols);
       }
-      delete[] name_c;
+
+
     }
   }
 

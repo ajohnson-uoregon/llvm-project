@@ -10,6 +10,7 @@
 #include "clang/Lex/Token.h"
 
 #include "clang/AST/ASTConsumer.h"
+// #include "clang/AST/OpenMPClause.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Type.h"
 #include "clang/Frontend/CompilerInstance.h"
@@ -74,7 +75,9 @@ public:
     }
 
     bool is_internal_literal(NamedDecl* decl) {
+      printf("internal literals\n");
       for (Binding b : internal_literals) {
+        printf("%s\n", b.value.c_str());
         if (decl->getNameAsString() == b.value ||
             decl->getQualifiedNameAsString() == b.value) {
           return true;
@@ -90,6 +93,28 @@ public:
     int getNumChildren(Stmt* stmt) {
       int num_children = 0;
       for (auto iter = stmt->child_begin(); iter != stmt->child_end(); iter++) {
+        num_children++;
+      }
+      return num_children;
+    }
+
+    int getNumChildren(OMPReductionClause* clause) {
+      int num_children = 0;
+      for (auto lhs : clause->lhs_exprs()) {
+        num_children++;
+      }
+      for (auto rhs : clause->rhs_exprs()) {
+        num_children++;
+      }
+      for (auto op : clause->reduction_ops()) {
+        num_children++;
+      }
+      return num_children;
+    }
+
+    int getNumChildren(OMPClause* clause) {
+      int num_children = 0;
+      for (auto iter : clause->children()) {
         num_children++;
       }
       return num_children;
@@ -236,11 +261,36 @@ public:
       return true;
     }
 
+    bool VisitCXXDeleteExpr(CXXDeleteExpr* expr) {
+      add_node(MT::cxxDeleteExpr, "cxxDeleteExpr()", 2);
+      if (expr->isArrayForm()) {
+        add_node(MT::isArrayForm, "isArrayForm()", 0);
+      }
+      else {
+        add_node(MT::isNotArrayForm, "isNotArrayForm()", 0);
+      }
+
+      add_node(MT::hasDeleteArg, "hasDeleteArg()", getNumChildren(expr));
+      return true;
+    }
+
     bool VisitCXXFunctionalCastExpr(CXXFunctionalCastExpr* cast) {
       std::string ty = cast->getTypeAsWritten().getAsString();
       //this needs to be put on the *child* of the cast, not the cast itself
       set_type_on_child(ty);
       add_node(MT::fakeNode, "cxxFunctionalCastExpr", getNumChildren(cast));
+      return true;
+    }
+
+    bool VisitCXXNewExpr(CXXNewExpr* expr) {
+      add_node(MT::cxxNewExpr, "cxxNewExpr()", 1);
+      if (expr->isArray()) {
+        add_node(MT::hasArraySize, "hasArraySize()", getNumChildren(expr));
+      }
+      else {
+        add_node(MT::hasNewInitializer, "hasNewInitializer()", getNumChildren(expr));
+      }
+
       return true;
     }
 
@@ -252,10 +302,10 @@ public:
         add_node(MT::callee, "callee()", 1);
         Node* fxn = add_node(MT::functionDecl, "functionDecl()", 0);
         fxn->set_is_literal(true);
-        fxn->set_name(callee->getNameAsString(), callee->getNameAsString());
+        fxn->set_name(callee->getNameAsString(), callee->getQualifiedNameAsString());
       }
       else {
-        add_node(MT::callExpr, "cxxOperatorCallExpr()", getNumChildren(call));
+        add_node(MT::cxxOperatorCallExpr, "cxxOperatorCallExpr()", getNumChildren(call));
       }
       return true;
     }
@@ -270,20 +320,22 @@ public:
       if (is_literal(ref)) {
         Node* declref = add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref) +1);
         declref->set_ignore_casts(true);
-        declref->set_is_literal(true);
+        // declref->set_is_literal(true);
         add_node(MT::to, "to()", 1);
         Node* valuedecl = add_node(MT::valueDecl, "valueDecl()", 0);
         valuedecl->set_name(name, qualname);
+        valuedecl->set_is_literal(true);
         std::string ty = decl->getType().getAsString();
         valuedecl->set_type(ty);
       }
       else if (is_internal_matcher && is_internal_literal(ref)) {
         Node* declref = add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref) +1);
-        declref->set_ignore_casts(true);
-        declref->set_is_literal(true);
+        // declref->set_ignore_casts(true);
+        // declref->set_is_literal(true);
         add_node(MT::to, "to()", 1);
         Node* valuedecl = add_node(MT::valueDecl, "valueDecl()", 0);
         valuedecl->set_name(name, qualname);
+        valuedecl->set_is_literal(true);
         std::string ty = decl->getType().getAsString();
         valuedecl->set_type(ty);
       }
@@ -395,428 +447,380 @@ public:
     }
 
     bool VisitOMPAtomicDirective(OMPAtomicDirective* dir) {
-      add_node(MT::ompAtomicDirective, "ompAtomicDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+        add_node(MT::ompAtomicDirective, "ompAtomicDirective()", getNumChildren(dir) + dir->getNumClauses());
 
-      return true;
+        return true;
     }
     bool VisitOMPBarrierDirective(OMPBarrierDirective* dir) {
-      add_node(MT::ompBarrierDirective, "ompBarrierDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompBarrierDirective, "ompBarrierDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPCancelDirective(OMPCancelDirective* dir) {
-      add_node(MT::ompCancelDirective, "ompCancelDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompCancelDirective, "ompCancelDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPCancellationPointDirective(OMPCancellationPointDirective* dir) {
-      add_node(MT::ompCancellationPointDirective, "ompCancellationPointDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompCancellationPointDirective, "ompCancellationPointDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPCriticalDirective(OMPCriticalDirective* dir) {
-      add_node(MT::ompCriticalDirective, "ompCriticalDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompCriticalDirective, "ompCriticalDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPDepobjDirective(OMPDepobjDirective* dir) {
-      add_node(MT::ompDepobjDirective, "ompDepobjDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompDepobjDirective, "ompDepobjDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPDispatchDirective(OMPDispatchDirective* dir) {
-      add_node(MT::ompDispatchDirective, "ompDispatchDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompDispatchDirective, "ompDispatchDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPErrorDirective(OMPErrorDirective* dir) {
-      add_node(MT::ompErrorDirective, "ompErrorDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompErrorDirective, "ompErrorDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPFlushDirective(OMPFlushDirective* dir) {
-      add_node(MT::ompFlushDirective, "ompFlushDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompFlushDirective, "ompFlushDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPInteropDirective(OMPInteropDirective* dir) {
-      add_node(MT::ompInteropDirective, "ompInteropDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompInteropDirective, "ompInteropDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPMaskedDirective(OMPMaskedDirective* dir) {
-      add_node(MT::ompMaskedDirective, "ompMaskedDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompMaskedDirective, "ompMaskedDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPMasterDirective(OMPMasterDirective* dir) {
-      add_node(MT::ompMasterDirective, "ompMasterDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompMasterDirective, "ompMasterDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPMetaDirective(OMPMetaDirective* dir) {
-      add_node(MT::ompMetaDirective, "ompMetaDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompMetaDirective, "ompMetaDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPOrderedDirective(OMPOrderedDirective* dir) {
-      add_node(MT::ompOrderedDirective, "ompOrderedDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompOrderedDirective, "ompOrderedDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPParallelDirective(OMPParallelDirective* dir) {
-      add_node(MT::ompParallelDirective, "ompParallelDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompParallelDirective, "ompParallelDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPParallelMaskedDirective(OMPParallelMaskedDirective* dir) {
-      add_node(MT::ompParallelMaskedDirective, "ompParallelMaskedDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompParallelMaskedDirective, "ompParallelMaskedDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPParallelMasterDirective(OMPParallelMasterDirective* dir) {
-      add_node(MT::ompParallelMasterDirective, "ompParallelMasterDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompParallelMasterDirective, "ompParallelMasterDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPParallelSectionsDirective(OMPParallelSectionsDirective* dir) {
-      add_node(MT::ompParallelSectionsDirective, "ompParallelSectionsDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompParallelSectionsDirective, "ompParallelSectionsDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPScanDirective(OMPScanDirective* dir) {
-      add_node(MT::ompScanDirective, "ompScanDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompScanDirective, "ompScanDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPSectionDirective(OMPSectionDirective* dir) {
-      add_node(MT::ompSectionDirective, "ompSectionDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompSectionDirective, "ompSectionDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPSectionsDirective(OMPSectionsDirective* dir) {
-      add_node(MT::ompSectionsDirective, "ompSectionsDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompSectionsDirective, "ompSectionsDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPSingleDirective(OMPSingleDirective* dir) {
-      add_node(MT::ompSingleDirective, "ompSingleDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompSingleDirective, "ompSingleDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTargetDataDirective(OMPTargetDataDirective* dir) {
-      add_node(MT::ompTargetDataDirective, "ompTargetDataDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTargetDataDirective, "ompTargetDataDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTargetDirective(OMPTargetDirective* dir) {
-      add_node(MT::ompTargetDirective, "ompTargetDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTargetDirective, "ompTargetDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTargetEnterDataDirective(OMPTargetEnterDataDirective* dir) {
-      add_node(MT::ompTargetEnterDataDirective, "ompTargetEnterDataDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTargetEnterDataDirective, "ompTargetEnterDataDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTargetExitDataDirective(OMPTargetExitDataDirective* dir) {
-      add_node(MT::ompTargetExitDataDirective, "ompTargetExitDataDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTargetExitDataDirective, "ompTargetExitDataDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTargetParallelDirective(OMPTargetParallelDirective* dir) {
-      add_node(MT::ompTargetParallelDirective, "ompTargetParallelDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTargetParallelDirective, "ompTargetParallelDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTargetTeamsDirective(OMPTargetTeamsDirective* dir) {
-      add_node(MT::ompTargetTeamsDirective, "ompTargetTeamsDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTargetTeamsDirective, "ompTargetTeamsDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTargetUpdateDirective(OMPTargetUpdateDirective* dir) {
-      add_node(MT::ompTargetUpdateDirective, "ompTargetUpdateDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTargetUpdateDirective, "ompTargetUpdateDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTaskDirective(OMPTaskDirective* dir) {
-      add_node(MT::ompTaskDirective, "ompTaskDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTaskDirective, "ompTaskDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTaskgroupDirective(OMPTaskgroupDirective* dir) {
-      add_node(MT::ompTaskgroupDirective, "ompTaskgroupDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTaskgroupDirective, "ompTaskgroupDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTaskwaitDirective(OMPTaskwaitDirective* dir) {
-      add_node(MT::ompTaskwaitDirective, "ompTaskwaitDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTaskwaitDirective, "ompTaskwaitDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTaskyieldDirective(OMPTaskyieldDirective* dir) {
-      add_node(MT::ompTaskyieldDirective, "ompTaskyieldDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTaskyieldDirective, "ompTaskyieldDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTeamsDirective(OMPTeamsDirective* dir) {
-      add_node(MT::ompTeamsDirective, "ompTeamsDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTeamsDirective, "ompTeamsDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPDistributeDirective(OMPDistributeDirective* dir) {
-      add_node(MT::ompDistributeDirective, "ompDistributeDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompDistributeDirective, "ompDistributeDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPDistributeParallelForDirective(OMPDistributeParallelForDirective* dir) {
-      add_node(MT::ompDistributeParallelForDirective, "ompDistributeParallelForDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompDistributeParallelForDirective, "ompDistributeParallelForDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPDistributeParallelForSimdDirective(OMPDistributeParallelForSimdDirective* dir) {
-      add_node(MT::ompDistributeParallelForSimdDirective, "ompDistributeParallelForSimdDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompDistributeParallelForSimdDirective, "ompDistributeParallelForSimdDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPDistributeSimdDirective(OMPDistributeSimdDirective* dir) {
-      add_node(MT::ompDistributeSimdDirective, "ompDistributeSimdDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompDistributeSimdDirective, "ompDistributeSimdDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPForDirective(OMPForDirective* dir) {
-      add_node(MT::ompForDirective, "ompForDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompForDirective, "ompForDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPForSimdDirective(OMPForSimdDirective* dir) {
-      add_node(MT::ompForSimdDirective, "ompForSimdDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompForSimdDirective, "ompForSimdDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPGenericLoopDirective(OMPGenericLoopDirective* dir) {
-      add_node(MT::ompGenericLoopDirective, "ompGenericLoopDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompGenericLoopDirective, "ompGenericLoopDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPMaskedTaskLoopDirective(OMPMaskedTaskLoopDirective* dir) {
-      add_node(MT::ompMaskedTaskLoopDirective, "ompMaskedTaskLoopDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompMaskedTaskLoopDirective, "ompMaskedTaskLoopDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPMaskedTaskLoopSimdDirective(OMPMaskedTaskLoopSimdDirective* dir) {
-      add_node(MT::ompMaskedTaskLoopSimdDirective, "ompMaskedTaskLoopSimdDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompMaskedTaskLoopSimdDirective, "ompMaskedTaskLoopSimdDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPMasterTaskLoopDirective(OMPMasterTaskLoopDirective* dir) {
-      add_node(MT::ompMasterTaskLoopDirective, "ompMasterTaskLoopDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompMasterTaskLoopDirective, "ompMasterTaskLoopDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPMasterTaskLoopSimdDirective(OMPMasterTaskLoopSimdDirective* dir) {
-      add_node(MT::ompMasterTaskLoopSimdDirective, "ompMasterTaskLoopSimdDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompMasterTaskLoopSimdDirective, "ompMasterTaskLoopSimdDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPParallelForDirective(OMPParallelForDirective* dir) {
-      add_node(MT::ompParallelForDirective, "ompParallelForDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
-
+      add_node(MT::ompParallelForDirective, "ompParallelForDirective()", getNumChildren(dir) + dir->getNumClauses());
+      printf("num children %d\n", getNumChildren(dir));
+      printf("num clauses %d\n", dir->getNumClauses());
       return true;
     }
     bool VisitOMPParallelForSimdDirective(OMPParallelForSimdDirective* dir) {
-      add_node(MT::ompParallelForSimdDirective, "ompParallelForSimdDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompParallelForSimdDirective, "ompParallelForSimdDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPParallelGenericLoopDirective(OMPParallelGenericLoopDirective* dir) {
-      add_node(MT::ompParallelGenericLoopDirective, "ompParallelGenericLoopDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompParallelGenericLoopDirective, "ompParallelGenericLoopDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPParallelMaskedTaskLoopDirective(OMPParallelMaskedTaskLoopDirective* dir) {
-      add_node(MT::ompParallelMaskedTaskLoopDirective, "ompParallelMaskedTaskLoopDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompParallelMaskedTaskLoopDirective, "ompParallelMaskedTaskLoopDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPParallelMaskedTaskLoopSimdDirective(OMPParallelMaskedTaskLoopSimdDirective* dir) {
-      add_node(MT::ompParallelMaskedTaskLoopSimdDirective, "ompParallelMaskedTaskLoopSimdDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompParallelMaskedTaskLoopSimdDirective, "ompParallelMaskedTaskLoopSimdDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPParallelMasterTaskLoopDirective(OMPParallelMasterTaskLoopDirective* dir) {
-      add_node(MT::ompParallelMasterTaskLoopDirective, "ompParallelMasterTaskLoopDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompParallelMasterTaskLoopDirective, "ompParallelMasterTaskLoopDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPParallelMasterTaskLoopSimdDirective(OMPParallelMasterTaskLoopSimdDirective* dir) {
-      add_node(MT::ompParallelMasterTaskLoopSimdDirective, "ompParallelMasterTaskLoopSimdDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompParallelMasterTaskLoopSimdDirective, "ompParallelMasterTaskLoopSimdDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPSimdDirective(OMPSimdDirective* dir) {
-      add_node(MT::ompSimdDirective, "ompSimdDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompSimdDirective, "ompSimdDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTargetParallelForDirective(OMPTargetParallelForDirective* dir) {
-      add_node(MT::ompTargetParallelForDirective, "ompTargetParallelForDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTargetParallelForDirective, "ompTargetParallelForDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTargetParallelForSimdDirective(OMPTargetParallelForSimdDirective* dir) {
-      add_node(MT::ompTargetParallelForSimdDirective, "ompTargetParallelForSimdDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTargetParallelForSimdDirective, "ompTargetParallelForSimdDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTargetParallelGenericLoopDirective(OMPTargetParallelGenericLoopDirective* dir) {
-      add_node(MT::ompTargetParallelGenericLoopDirective, "ompTargetParallelGenericLoopDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTargetParallelGenericLoopDirective, "ompTargetParallelGenericLoopDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTargetSimdDirective(OMPTargetSimdDirective* dir) {
-      add_node(MT::ompTargetSimdDirective, "ompTargetSimdDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTargetSimdDirective, "ompTargetSimdDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTargetTeamsDistributeDirective(OMPTargetTeamsDistributeDirective* dir) {
-      add_node(MT::ompTargetTeamsDistributeDirective, "ompTargetTeamsDistributeDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTargetTeamsDistributeDirective, "ompTargetTeamsDistributeDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTargetTeamsDistributeParallelForDirective(OMPTargetTeamsDistributeParallelForDirective* dir) {
-      add_node(MT::ompTargetTeamsDistributeParallelForDirective, "ompTargetTeamsDistributeParallelForDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTargetTeamsDistributeParallelForDirective, "ompTargetTeamsDistributeParallelForDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTargetTeamsDistributeParallelForSimdDirective(OMPTargetTeamsDistributeParallelForSimdDirective* dir) {
-      add_node(MT::ompTargetTeamsDistributeParallelForSimdDirective, "ompTargetTeamsDistributeParallelForSimdDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTargetTeamsDistributeParallelForSimdDirective, "ompTargetTeamsDistributeParallelForSimdDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTargetTeamsDistributeSimdDirective(OMPTargetTeamsDistributeSimdDirective* dir) {
-      add_node(MT::ompTargetTeamsDistributeSimdDirective, "ompTargetTeamsDistributeSimdDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTargetTeamsDistributeSimdDirective, "ompTargetTeamsDistributeSimdDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTargetTeamsGenericLoopDirective(OMPTargetTeamsGenericLoopDirective* dir) {
-      add_node(MT::ompTargetTeamsGenericLoopDirective, "ompTargetTeamsGenericLoopDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTargetTeamsGenericLoopDirective, "ompTargetTeamsGenericLoopDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTaskLoopDirective(OMPTaskLoopDirective* dir) {
-      add_node(MT::ompTaskLoopDirective, "ompTaskLoopDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTaskLoopDirective, "ompTaskLoopDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTaskLoopSimdDirective(OMPTaskLoopSimdDirective* dir) {
-      add_node(MT::ompTaskLoopSimdDirective, "ompTaskLoopSimdDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTaskLoopSimdDirective, "ompTaskLoopSimdDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTeamsDistributeDirective(OMPTeamsDistributeDirective* dir) {
-      add_node(MT::ompTeamsDistributeDirective, "ompTeamsDistributeDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTeamsDistributeDirective, "ompTeamsDistributeDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTeamsDistributeParallelForDirective(OMPTeamsDistributeParallelForDirective* dir) {
-      add_node(MT::ompTeamsDistributeParallelForDirective, "ompTeamsDistributeParallelForDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTeamsDistributeParallelForDirective, "ompTeamsDistributeParallelForDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTeamsDistributeParallelForSimdDirective(OMPTeamsDistributeParallelForSimdDirective* dir) {
-      add_node(MT::ompTeamsDistributeParallelForSimdDirective, "ompTeamsDistributeParallelForSimdDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTeamsDistributeParallelForSimdDirective, "ompTeamsDistributeParallelForSimdDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTeamsDistributeSimdDirective(OMPTeamsDistributeSimdDirective* dir) {
-      add_node(MT::ompTeamsDistributeSimdDirective, "ompTeamsDistributeSimdDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTeamsDistributeSimdDirective, "ompTeamsDistributeSimdDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTeamsGenericLoopDirective(OMPTeamsGenericLoopDirective* dir) {
-      add_node(MT::ompTeamsGenericLoopDirective, "ompTeamsGenericLoopDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTeamsGenericLoopDirective, "ompTeamsGenericLoopDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPTileDirective(OMPTileDirective* dir) {
-      add_node(MT::ompTileDirective, "ompTileDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompTileDirective, "ompTileDirective()", getNumChildren(dir) + dir->getNumClauses());
 
       return true;
     }
     bool VisitOMPUnrollDirective(OMPUnrollDirective* dir) {
-      add_node(MT::ompUnrollDirective, "ompUnrollDirective()", 1);
-      add_node(MT::hasAssociatedStmt, "hasAssociatedStmt()", getNumChildren(dir));
+      add_node(MT::ompUnrollDirective, "ompUnrollDirective()", getNumChildren(dir) + dir->getNumClauses());
+
+      return true;
+    }
+
+    bool VisitOMPReductionClause(OMPReductionClause* clause) {
+      add_node(MT::ompReductionClause, "ompReductionClause", getNumChildren(clause));
+      printf("clause num children %d\n", getNumChildren(clause));
+      for (auto lhs : clause->lhs_exprs()) {
+        lhs->dump();
+        add_node(MT::hasAnyLHSExpr, "hasAnyLHSExpr()", 1);
+        TraverseStmt(lhs);
+      }
+      for (auto rhs : clause->rhs_exprs()) {
+        rhs->dump();
+        add_node(MT::hasAnyRHSExpr, "hasAnyRHSExpr()", 1);
+        TraverseStmt(rhs);
+      }
+      for (auto op : clause->reduction_ops()) {
+        op->dump();
+        add_node(MT::hasAnyReductionOp, "hasAnyReductionOp()", 1);
+        TraverseStmt(op);
+      }
 
       return true;
     }

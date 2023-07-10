@@ -105,19 +105,9 @@ AST_MATCHER_P(CUDAKernelCallExpr, cudaStream, internal::Matcher<Expr>,
   return false;
 }
 
-/// TODO
-/// ignoringPointersAndReferences -- matches base type, ignoring any
-/// enclosing pointers or references on the type -- look at refs more
-AST_MATCHER_P(Type, ignoringPointers, internal::Matcher<Type>,
-              InnerMatcher) {
-  const Type* type = &Node;
-  while (type->isPointerType()) {
-      type = type->getPointeeType().getTypePtr();
-  }
-  return InnerMatcher.matches(*type, Finder, Builder);
-    // else if (t.isReferenceType()) {
-    //
-    // }
+AST_MATCHER(OMPExecutableDirective, hasNoClauses) {
+  unsigned int num_clauses = Node.getNumClauses();
+  return num_clauses == 0;
 }
 
 }

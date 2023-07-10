@@ -291,6 +291,29 @@ std::vector<Binding> create_bindings(const MatchFinder::MatchResult &result,
           printf("ERROR: no valid name\n");
         }
         b.matchers.push_back(inner_matcher2);
+
+        VariantMatcher inner_matcher3;
+        if (!b.name.empty() && !b.qual_name.empty()) {
+          inner_matcher3 =
+            constructBoundMatcher("parmVarDecl", "clang_rewrite_match",
+              constructMatcher("anyOf",
+                constructMatcher("hasName", StringRef(b.name), 5),
+                constructMatcher("hasName", StringRef(b.qual_name), 5),
+            4),
+          3);
+        }
+        else if (!b.name.empty() || !b.qual_name.empty()) {
+          std::string valid_name = b.name.empty() ? b.qual_name : b.name;
+          inner_matcher3 =
+            constructBoundMatcher("parmVarDecl", "clang_rewrite_match",
+              constructMatcher("hasName", StringRef(valid_name), 4),
+          3);
+        }
+        else {
+          printf("ERROR: no valid name\n");
+        }
+        b.matchers.push_back(inner_matcher3);
+
         b.value = code;
         b.kind = BindingKind::VarNameBinding;
         bindings.push_back(b);
@@ -378,19 +401,88 @@ std::vector<Binding> create_bindings(const MatchFinder::MatchResult &result,
         std::pair<StringRef, StringRef> split = StringRef(n.first).split(";");
         b.name = split.first.str();
         b.qual_name = split.second.str();
-        VariantMatcher inner_matcher =
-          constructBoundMatcher("expr", "clang_rewrite_match",
-            constructMatcher("hasType",
-              constructMatcher("anyOf",
-                constructMatcher("asString", StringRef(b.name), 6),
-                constructMatcher("asString", StringRef(b.qual_name), 6),
-              5),
-            4),
-          3);
-        b.matchers.push_back(inner_matcher);
-        b.value = name;
-        b.kind = BindingKind::TypeBinding;
-        bindings.push_back(b);
+        if (!b.name.empty() && !b.qual_name.empty()) {
+          VariantMatcher inner_matcher =
+            constructBoundMatcher("expr", "clang_rewrite_match",
+              constructMatcher("hasType",
+                constructMatcher("ignoringPointers",
+                  constructMatcher("anyOf",
+                    constructMatcher("asString", StringRef(b.name), 7),
+                    constructMatcher("asString", StringRef(b.qual_name), 7),
+                  6),
+                5),
+              4),
+            3);
+          b.matchers.push_back(inner_matcher);
+
+          VariantMatcher inner_matcher2 =
+            constructBoundMatcher("valueDecl", "clang_rewrite_match",
+              constructMatcher("hasType",
+                constructMatcher("elaboratedType",
+                  constructMatcher("namesType",
+                    constructMatcher("templateSpecializationType",
+                      constructMatcher("hasAnyTemplateArgument",
+                        constructMatcher("templateArgument",
+                          constructMatcher("refersToType",
+                            constructMatcher("ignoringPointers",
+                              constructMatcher("anyOf",
+                                constructMatcher("asString", StringRef(b.name), 13),
+                                constructMatcher("asString", StringRef(b.qual_name), 13),
+                              12),
+                            11),
+                          10),
+                        9),
+                      8),
+                    7),
+                  6),
+                5),
+              4),
+            3);
+          b.matchers.push_back(inner_matcher2);
+          b.value = name;
+          b.kind = BindingKind::TypeBinding;
+          bindings.push_back(b);
+        }
+        else if (!b.name.empty() || !b.qual_name.empty()) {
+          std::string valid_name = b.name.empty() ? b.qual_name : b.name;
+          VariantMatcher inner_matcher =
+            constructBoundMatcher("expr", "clang_rewrite_match",
+              constructMatcher("hasType",
+                constructMatcher("ignoringPointers",
+                  constructMatcher("asString", StringRef(valid_name), 6),
+                5),
+              4),
+            3);
+          b.matchers.push_back(inner_matcher);
+
+          VariantMatcher inner_matcher2 =
+            constructBoundMatcher("valueDecl", "clang_rewrite_match",
+              constructMatcher("hasType",
+                constructMatcher("elaboratedType",
+                  constructMatcher("namesType",
+                    constructMatcher("templateSpecializationType",
+                      constructMatcher("hasAnyTemplateArgument",
+                        constructMatcher("templateArgument",
+                          constructMatcher("refersToType",
+                            constructMatcher("ignoringPointers",
+                              constructMatcher("asString", StringRef(valid_name), 12),
+                            11),
+                          10),
+                        9),
+                      8),
+                    7),
+                  6),
+                5),
+              4),
+            3);
+          b.matchers.push_back(inner_matcher2);
+          b.value = name;
+          b.kind = BindingKind::TypeBinding;
+          bindings.push_back(b);
+        }
+        else {
+          printf("ERROR: no valid name for type\n");
+        }
       }
     }
     else {
@@ -469,7 +561,22 @@ public:
     if (matcher->actions.size() == 1) {
       CodeAction* action = matcher->actions[0];
 
-      file_rw.ReplaceText(original_range, "{" + action->setup_code_snippet + "\n" + action->base_code_snippet + "}");
+      std::string setup_adjustment = "";
+      if (dmatch) {
+        printf("DECL\n");
+      }
+      else if (smatch) {
+        printf("STMT\n");
+        for (Binding b : bindings) {
+          if (b.kind == TypeBinding) {
+            setup_adjustment += "class [[clang::rewrite_setup]] " + b.name + " {};\n";
+          }
+        }
+      }
+      file_rw.ReplaceText(original_range, "{" +
+            action->setup_code_snippet + "\n" +
+            setup_adjustment + "\n" +
+            action->base_code_snippet + "}");
       // file_rw.overwriteChangedFiles();
       //
       // file_rw.InsertText(file_begin, "#include \"ClangRewriteMacros.h\"\n");
@@ -645,10 +752,15 @@ public:
       containsAnyDeclaration(varDecl(hasAttr(attr::RewriteSetup)))
     ).bind("setup");
 
+    StatementMatcher class_setup_matcher = declStmt(
+      containsAnyDeclaration(cxxRecordDecl(hasAttr(attr::RewriteSetup)))
+    ).bind("setup");
+
     MatchFinder setup_stripper;
     SetupStripperCallback setup_strip_cb;
 
     setup_stripper.addMatcher(setup_matcher, &setup_strip_cb);
+    setup_stripper.addMatcher(class_setup_matcher, &setup_strip_cb);
 
     ClangTool process_setup(Tool->getCompilationDatabase(), {"clang_rewrite_temp_source.cpp.bind_final.cpp"});
     process_setup.setRestoreWorkingDir(false);

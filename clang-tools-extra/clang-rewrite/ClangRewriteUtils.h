@@ -108,7 +108,8 @@ namespace dynamic {
     REGISTER_MATCHER(cudaSharedMemPerBlock);
     REGISTER_MATCHER(cudaStream);
     REGISTER_MATCHER(hasExpectedReturnType);
-    REGISTER_MATCHER(ignoringPointers);
+    REGISTER_MATCHER(hasNoClauses);
+    // REGISTER_MATCHER(ignoringPointers);
   }
 
 }

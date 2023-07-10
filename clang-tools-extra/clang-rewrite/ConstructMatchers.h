@@ -30,116 +30,134 @@ enum class MatcherType {
   cxxBoolLiteral,               //
   cxxConstructExpr,
   cxxDefaultArgExpr,
+  cxxDeleteExpr,
   cxxFunctionalCastExpr,  //
+  cxxNewExpr,
   cxxOperatorCallExpr,    //
   declRefExpr,
   declStmt,
-  equals,
-  expr,
-  fixedPointLiteral,            // 20
+  equals,                         // 20
+  expr,                          //
+  fixedPointLiteral,            //
   floatLiteral,                 //
   forStmt,                //
   functionDecl,
-  hasAssociatedStmt,
-  hasBody,
-  hasCapturedStmt,
-  hasCondition,
+  hasAnyLHSExpr,
+  hasAnyReductionOp,
+  hasAnyRHSExpr,
+  hasArraySize,
+  hasAssociatedStmt,              // 30
+  hasBody,                       //
+  hasCapturedStmt,              //
+  hasCondition,               //
+  hasDeleteArg,
   hasExpectedReturnType,
   hasIncrement,           //
-  hasInitializer,             // 30
+  hasInitializer,             //
   hasLHS,                 //
   hasLoopInit,
+  hasNewInitializer,             // 40
   hasOperatorName,              //
   hasReturnValue,         //
-  hasRHS,
-  hasSubExpr,
-  hasType,
+  hasRHS,                         //
+  hasSubExpr,                     //
+  hasType,                        //
   ifStmt,
   ignoringParenImpCasts,
-  integerLiteral,                 // 40
+  integerLiteral,                 //
+  isArrayForm,
+  isNotArrayForm,               // 50
   loopBody,                     // macro
   ompAtomicDirective,
-  ompBarrierDirective,
-  ompCancelDirective,
-  ompCancellationPointDirective,
-  ompCriticalDirective,
-  ompDepobjDirective,
+  ompBarrierDirective,                //
+  ompCancelDirective,                 //
+  ompCancellationPointDirective,      //
+  ompCriticalDirective,             //
+  ompDepobjDirective,             //
   ompDispatchDirective,
   ompErrorDirective,
-  ompFlushDirective,          // 50
-  ompInteropDirective,
+  ompFlushDirective,                  // 60
+  ompInteropDirective,                //
   ompMaskedDirective,
-  ompMasterDirective,
-  ompMetaDirective,
-  ompOrderedDirective,
-  ompParallelDirective,
-  ompParallelMaskedDirective,
+  ompMasterDirective,                 //
+  ompMetaDirective,                   //
+  ompOrderedDirective,                //
+  ompParallelDirective,           //
+  ompParallelMaskedDirective,     //
   ompParallelMasterDirective,
   ompParallelSectionsDirective,
-  ompScanDirective,         // 60
-  ompSectionDirective,
+  ompScanDirective,                   // 70
+  ompSectionDirective,                  //
   ompSectionsDirective,
-  ompSingleDirective,
-  ompTargetDataDirective,
-  ompTargetDirective,
-  ompTargetEnterDataDirective,
-  ompTargetExitDataDirective,
+  ompSingleDirective,                   //
+  ompTargetDataDirective,               //
+  ompTargetDirective,                  //
+  ompTargetEnterDataDirective,         //
+  ompTargetExitDataDirective,         //
   ompTargetParallelDirective,
   ompTargetTeamsDirective,
-  ompTargetUpdateDirective,         // 70
-  ompTaskDirective,
+  ompTargetUpdateDirective,             // 80
+  ompTaskDirective,                     //
   ompTaskgroupDirective,
-  ompTaskwaitDirective,
-  ompTaskyieldDirective,
-  ompTeamsDirective,
-  ompDistributeDirective,
-  ompDistributeParallelForDirective,
+  ompTaskwaitDirective,                 //
+  ompTaskyieldDirective,                //
+  ompTeamsDirective,                    //
+  ompDistributeDirective,                 //
+  ompDistributeParallelForDirective,      //
   ompDistributeParallelForSimdDirective,
   ompDistributeSimdDirective,
-  ompForDirective,              // 80
-  ompForSimdDirective,
+  ompForDirective,                          // 90
+  ompForSimdDirective,                      //
   ompGenericLoopDirective,
-  ompMaskedTaskLoopDirective,
-  ompMaskedTaskLoopSimdDirective,
-  ompMasterTaskLoopDirective,
-  ompMasterTaskLoopSimdDirective,
-  ompParallelForDirective,
+  ompMaskedTaskLoopDirective,                 //
+  ompMaskedTaskLoopSimdDirective,             //
+  ompMasterTaskLoopDirective,                 //
+  ompMasterTaskLoopSimdDirective,            //
+  ompParallelForDirective,                  //
   ompParallelForSimdDirective,
   ompParallelGenericLoopDirective,
-  ompParallelMaskedTaskLoopDirective,       // 90
-  ompParallelMaskedTaskLoopSimdDirective,
+  ompParallelMaskedTaskLoopDirective,             // 100
+  ompParallelMaskedTaskLoopSimdDirective,         //
   ompParallelMasterTaskLoopDirective,
-  ompParallelMasterTaskLoopSimdDirective,
-  ompSimdDirective,
-  ompTargetParallelForDirective,
-  ompTargetParallelForSimdDirective,
-  ompTargetParallelGenericLoopDirective,
+  ompParallelMasterTaskLoopSimdDirective,         //
+  ompSimdDirective,                               //
+  ompTargetParallelForDirective,                  //
+  ompTargetParallelForSimdDirective,              //
+  ompTargetParallelGenericLoopDirective,        //
   ompTargetSimdDirective,
   ompTargetTeamsDistributeDirective,
-  ompTargetTeamsDistributeParallelForDirective,     // 100
-  ompTargetTeamsDistributeParallelForSimdDirective,
+  ompTargetTeamsDistributeParallelForDirective,       // 110
+  ompTargetTeamsDistributeParallelForSimdDirective,   //
   ompTargetTeamsDistributeSimdDirective,
-  ompTargetTeamsGenericLoopDirective,
-  ompTaskLoopDirective,
-  ompTaskLoopSimdDirective,
-  ompTeamsDistributeDirective,
-  ompTeamsDistributeParallelForDirective,
+  ompTargetTeamsGenericLoopDirective,             //
+  ompTaskLoopDirective,                           //
+  ompTaskLoopSimdDirective,                       //
+  ompTeamsDistributeDirective,                    //
+  ompTeamsDistributeParallelForDirective,         //
   ompTeamsDistributeParallelForSimdDirective,
   ompTeamsDistributeSimdDirective,
-  ompTeamsGenericLoopDirective,             // 110
-  ompTileDirective,
+  ompTeamsGenericLoopDirective,             // 120
+  ompTileDirective,                         //
   ompUnrollDirective,
+  ompReductionClause,                     //
   parenExpr,                    //
   pointerType,                  //
   pointee,                //
   returnStmt,             //
   stringLiteral,
   to,
-  type,
-  unaryOperator,              // 120
+  type,                         // 130
+  unaryOperator,              //
   valueDecl,
   varDecl,                //
 };
+
+static std::vector<MatcherType> singletons = {
+  MatcherType::isArrayForm,
+  MatcherType::isNotArrayForm
+};
+
+bool is_singleton(MatcherType ty);
 
 class Node {
 public:

@@ -19,7 +19,7 @@ namespace clang {
 namespace rewrite_tool {
 
 
-std::vector<std::string> clang_rewrite_literals;
+std::vector<std::string> clang_rewrite_literals = {".reduction.lhs"};
 
 DeclarationMatcher literal_vector = varDecl(hasName("clang_rewrite_literal_names")).bind("literals");
 
