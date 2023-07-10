@@ -1004,6 +1004,23 @@ AST_MATCHER_P_OVERLOAD(Expr, ignoringParens, internal::Matcher<Expr>,
   return InnerMatcher.matches(*E, Finder, Builder);
 }
 
+/// TODO
+/// ignoringPointersAndReferences -- matches base type, ignoring any
+/// enclosing pointers or references on the type -- look at refs more
+AST_MATCHER_P(QualType, ignoringPointers, internal::Matcher<QualType>,
+              InnerMatcher) {
+  QualType qualtype = Node;
+  while (qualtype->isPointerType()) {
+      qualtype = qualtype->getPointeeType();
+      printf("type string???? %s\n", qualtype.getAsString().c_str());
+      qualtype.dump();
+  }
+  return InnerMatcher.matches(qualtype, Finder, Builder);
+    // else if (t.isReferenceType()) {
+    //
+    // }
+}
+
 /// Matches expressions that are instantiation-dependent even if it is
 /// neither type- nor value-dependent.
 ///
@@ -1954,6 +1971,23 @@ extern const internal::VariadicDynCastAllOfMatcher<Stmt, CXXNewExpr> cxxNewExpr;
 ///   matches 'delete X'.
 extern const internal::VariadicDynCastAllOfMatcher<Stmt, CXXDeleteExpr>
     cxxDeleteExpr;
+
+AST_MATCHER_P(CXXDeleteExpr, hasDeleteArg, internal::Matcher<Expr>,
+              InnerMatcher) {
+  return InnerMatcher.matches(*Node.getArgument(), Finder, Builder);
+}
+
+AST_MATCHER(CXXDeleteExpr, isArrayForm) {
+  return Node.isArrayForm();
+}
+
+AST_MATCHER(CXXDeleteExpr, isNotArrayForm) {
+  return !Node.isArrayForm();
+}
+
+AST_MATCHER(CXXDeleteExpr, isArrayFormAsWritten) {
+  return Node.isArrayFormAsWritten();
+}
 
 /// Matches noexcept expressions.
 ///
@@ -4288,6 +4322,22 @@ AST_MATCHER_P(
     VarDecl, hasInitializer, internal::Matcher<Expr>,
     InnerMatcher) {
   const Expr *Initializer = Node.getAnyInitializer();
+  return (Initializer != nullptr &&
+          InnerMatcher.matches(*Initializer, Finder, Builder));
+}
+
+/// Matches a variable declaration that has an initializer expression
+/// that matches the given matcher.
+///
+/// Example matches x (matcher = varDecl(hasInitializer(callExpr())))
+/// \code
+///   bool y() { return true; }
+///   bool x = y();
+/// \endcode
+AST_MATCHER_P(
+    CXXNewExpr, hasNewInitializer, internal::Matcher<Expr>,
+    InnerMatcher) {
+  const Expr *Initializer = Node.getInitializer();
   return (Initializer != nullptr &&
           InnerMatcher.matches(*Initializer, Finder, Builder));
 }
@@ -8701,6 +8751,30 @@ AST_MATCHER(OMPDefaultClause, isPrivateKind) {
 /// ``default(firstprivate)``.
 AST_MATCHER(OMPDefaultClause, isFirstPrivateKind) {
   return Node.getDefaultKind() == llvm::omp::OMP_DEFAULT_firstprivate;
+}
+
+extern const internal::VariadicDynCastAllOfMatcher<OMPClause, OMPReductionClause>
+    ompReductionClause;
+
+AST_MATCHER_P(OMPReductionClause, hasAnyLHSExpr,
+              internal::Matcher<Expr>, InnerMatcher) {
+  return matchesFirstInPointerRange(InnerMatcher, Node.lhs_exprs().begin(),
+                                    Node.lhs_exprs().end(), Finder,
+                                    Builder) != Node.lhs_exprs().end();
+}
+
+AST_MATCHER_P(OMPReductionClause, hasAnyRHSExpr,
+              internal::Matcher<Expr>, InnerMatcher) {
+  return matchesFirstInPointerRange(InnerMatcher, Node.rhs_exprs().begin(),
+                                    Node.rhs_exprs().end(), Finder,
+                                    Builder) != Node.rhs_exprs().end();
+}
+
+AST_MATCHER_P(OMPReductionClause, hasAnyReductionOp,
+              internal::Matcher<Expr>, InnerMatcher) {
+  return matchesFirstInPointerRange(InnerMatcher, Node.reduction_ops().begin(),
+                                    Node.reduction_ops().end(), Finder,
+                                    Builder) != Node.reduction_ops().end();
 }
 
 /// Matches if the OpenMP directive is allowed to contain the specified OpenMP

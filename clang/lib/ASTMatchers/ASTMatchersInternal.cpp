@@ -1084,6 +1084,8 @@ const internal::VariadicDynCastAllOfMatcher<Stmt, OMPExecutableDirective>
     ompExecutableDirective;
 const internal::VariadicDynCastAllOfMatcher<OMPClause, OMPDefaultClause>
     ompDefaultClause;
+const internal::VariadicDynCastAllOfMatcher<OMPClause, OMPReductionClause>
+    ompReductionClause;
 const internal::VariadicDynCastAllOfMatcher<Stmt, OMPAtomicDirective>
         ompAtomicDirective;
 const internal::VariadicDynCastAllOfMatcher<Stmt, OMPBarrierDirective>

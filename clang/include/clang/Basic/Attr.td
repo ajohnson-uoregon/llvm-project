@@ -4075,19 +4075,19 @@ def InternalMatcherBlock : StmtAttr {
 
 def RewriteSetupBegin : InheritableAttr {
   let Spellings = [Clang<"rewrite_setup_begin">];
-  let Subjects = SubjectList<[Stmt, Var], ErrorDiag, "stmts">;
+  let Subjects = SubjectList<[Stmt, Var, Struct], ErrorDiag, "stmts">;
   let Documentation = [Undocumented];
 }
 
 def RewriteSetupEnd : InheritableAttr {
   let Spellings = [Clang<"rewrite_setup_end">];
-  let Subjects = SubjectList<[Stmt, Var], ErrorDiag, "stmts">;
+  let Subjects = SubjectList<[Stmt, Var, Struct], ErrorDiag, "stmts">;
   let Documentation = [Undocumented];
 }
 
 def RewriteSetup : InheritableAttr {
   let Spellings = [Clang<"rewrite_setup">];
-  let Subjects = SubjectList<[Stmt, Var], ErrorDiag, "stmts">;
+  let Subjects = SubjectList<[Stmt, Var, Struct], ErrorDiag, "stmts">;
   let Documentation = [Undocumented];
 }
 

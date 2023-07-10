@@ -258,11 +258,14 @@ RegistryMaps::RegistryMaps() {
   REGISTER_MATCHER(hasAnyClause);
   REGISTER_MATCHER(hasAnyConstructorInitializer);
   REGISTER_MATCHER(hasAnyDeclaration);
+  REGISTER_MATCHER(hasAnyLHSExpr);
   REGISTER_MATCHER(hasAnyName);
   REGISTER_MATCHER(hasAnyOperatorName);
   REGISTER_MATCHER(hasAnyOverloadedOperatorName);
   REGISTER_MATCHER(hasAnyParameter);
   REGISTER_MATCHER(hasAnyPlacementArg);
+  REGISTER_MATCHER(hasAnyRHSExpr);
+  REGISTER_MATCHER(hasAnyReductionOp);
   REGISTER_MATCHER(hasAnySelector);
   REGISTER_MATCHER(hasAnySubstatement);
   REGISTER_MATCHER(hasAnyTemplateArgument);
@@ -291,6 +294,7 @@ RegistryMaps::RegistryMaps() {
   REGISTER_MATCHER(hasDeducedType);
   REGISTER_MATCHER(hasDefaultArgument);
   REGISTER_MATCHER(hasDefinition);
+  REGISTER_MATCHER(hasDeleteArg);
   REGISTER_MATCHER(hasDescendant);
   REGISTER_MATCHER(hasDestinationType);
   REGISTER_MATCHER(hasDirectBase);
@@ -320,6 +324,7 @@ RegistryMaps::RegistryMaps() {
   REGISTER_MATCHER(hasMethod);
   REGISTER_MATCHER(hasName);
   REGISTER_MATCHER(hasNamedTypeLoc);
+  REGISTER_MATCHER(hasNewInitializer);
   REGISTER_MATCHER(hasNullSelector);
   REGISTER_MATCHER(hasObjectExpression);
   REGISTER_MATCHER(hasOperands);
@@ -370,6 +375,7 @@ RegistryMaps::RegistryMaps() {
   REGISTER_MATCHER(ignoringImplicit);
   REGISTER_MATCHER(ignoringParenCasts);
   REGISTER_MATCHER(ignoringParenImpCasts);
+  REGISTER_MATCHER(ignoringPointers);
   REGISTER_MATCHER(imaginaryLiteral);
   REGISTER_MATCHER(implicitCastExpr);
   REGISTER_MATCHER(implicitValueInitExpr);
@@ -385,6 +391,7 @@ RegistryMaps::RegistryMaps() {
   REGISTER_MATCHER(isAnyCharacter);
   REGISTER_MATCHER(isAnyPointer);
   REGISTER_MATCHER(isArray);
+  REGISTER_MATCHER(isArrayForm);
   REGISTER_MATCHER(isArrow);
   REGISTER_MATCHER(isAssignmentOperator);
   REGISTER_MATCHER(isAtPosition);
@@ -440,6 +447,7 @@ RegistryMaps::RegistryMaps() {
   REGISTER_MATCHER(isNoReturn);
   REGISTER_MATCHER(isNoThrow);
   REGISTER_MATCHER(isNoneKind);
+  REGISTER_MATCHER(isNotArrayForm);
   REGISTER_MATCHER(isOverride);
   REGISTER_MATCHER(isPrivate);
   REGISTER_MATCHER(isProtected);
@@ -576,6 +584,7 @@ RegistryMaps::RegistryMaps() {
   REGISTER_MATCHER(ompTeamsGenericLoopDirective);
   REGISTER_MATCHER(ompTileDirective);
   REGISTER_MATCHER(ompUnrollDirective);
+  REGISTER_MATCHER(ompReductionClause);
   REGISTER_MATCHER(on);
   REGISTER_MATCHER(onImplicitObjectArgument);
   REGISTER_MATCHER(opaqueValueExpr);
