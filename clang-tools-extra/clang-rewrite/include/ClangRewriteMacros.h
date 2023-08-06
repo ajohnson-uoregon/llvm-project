@@ -2,6 +2,7 @@
 #define CLANG_REWRITE_MACROS_H
 
 #include <vector>
+#include <string>
 #include <utility>
 
 namespace clang_rewrite {
@@ -20,6 +21,15 @@ namespace clang_rewrite {
 
   void not_contains(code_structure structure) {}
 
+  template<typename T>
+  std::string to_str(T t) {
+    return "";
+  }
+
+  template<typename T>
+  T code_literal(std::string str) {
+    return T();
+  }
 }
 
 #endif // CLANG_REWRITE_MACROS_H

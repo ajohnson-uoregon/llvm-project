@@ -314,7 +314,7 @@ VariantMatcher handle_non_bindable_children(Node* root,
     std::vector<VariantValue> child_matchers, StringRef name, int level) {
   if (child_matchers.size() > 1) {
     if (root->ignore_casts) {
-      return constructMatcher("ignoringParenImpCasts",
+      return constructMatcher("ignoringParenCasts",
               constructMatcher(name,
                 constructMatcher("allOf", child_matchers, level+3), level+2), level+1);
     }
@@ -325,7 +325,7 @@ VariantMatcher handle_non_bindable_children(Node* root,
   } // child_matchers.size() > 1
   else if (child_matchers.size() == 1) { // child_matchers.size() == 1
     if (root->ignore_casts) {
-      return constructMatcher("ignoringParenImpCasts",
+      return constructMatcher("ignoringParenCasts",
               constructMatcher(name, child_matchers[0], level+2), level+1);
     }
     else {
@@ -334,7 +334,7 @@ VariantMatcher handle_non_bindable_children(Node* root,
   }
   else { // child_matchers.size() == 0
     if (root->ignore_casts) {
-      return constructMatcher("ignoringParenImpCasts",
+      return constructMatcher("ignoringParenCasts",
               constructMatcher(name, level+2), level+1);
     }
     else {
@@ -348,12 +348,12 @@ VariantMatcher handle_bindable_children(Node* root,
   if (child_matchers.size() > 1) {
     if (root->ignore_casts) {
       if (root->bound) {
-        return constructMatcher("ignoringParenImpCasts",
+        return constructMatcher("ignoringParenCasts",
                 constructBoundMatcher(name, StringRef(root->bound_name),
                   constructMatcher("allOf", child_matchers, level+3), level+2), level+1);
       }
       else {
-        return constructMatcher("ignoringParenImpCasts",
+        return constructMatcher("ignoringParenCasts",
                 constructMatcher(name,
                   constructMatcher("allOf", child_matchers, level+3), level+2), level+1);
       }
@@ -372,12 +372,12 @@ VariantMatcher handle_bindable_children(Node* root,
   else if (child_matchers.size() == 1) { // child_matchers.size() == 1
     if (root->ignore_casts) {
       if (root->bound) {
-        return constructMatcher("ignoringParenImpCasts",
+        return constructMatcher("ignoringParenCasts",
                 constructBoundMatcher(name, StringRef(root->bound_name),
                   child_matchers[0], level+2), level+1);
       }
       else {
-        return constructMatcher("ignoringParenImpCasts",
+        return constructMatcher("ignoringParenCasts",
                 constructMatcher(name, child_matchers[0], level+2), level+1);
       }
     }
@@ -393,12 +393,12 @@ VariantMatcher handle_bindable_children(Node* root,
   else { // child_matchers.size() ==0
     if (root->ignore_casts) {
       if (root->bound) {
-        return constructMatcher("ignoringParenImpCasts",
+        return constructMatcher("ignoringParenCasts",
                 constructBoundMatcher(name, StringRef(root->bound_name),
                   level+2), level+1);
       }
       else {
-        return constructMatcher("ignoringParenImpCasts",
+        return constructMatcher("ignoringParenCasts",
                 constructMatcher(name, level+2), level+1);
       }
     }
@@ -649,7 +649,7 @@ VariantMatcher handle_binaryOperator(Node* root, int level) {
     }
     child_matchers.push_back(
       constructMatcher("hasRHS",
-        constructMatcher("ignoringParenImpCasts",
+        constructMatcher("ignoringParenCasts",
           make_matcher(rhs, level+7), level+6), level+5));
 
     if (rhs->next_sibling) {
@@ -863,7 +863,7 @@ VariantMatcher handle_anyOf(Node* root, int level) {
 
   if (child_matchers.size() > 1) {
     if (root->ignore_casts) {
-      return constructMatcher("ignoringParenImpCasts",
+      return constructMatcher("ignoringParenCasts",
                 constructMatcher("anyOf", child_matchers, level+2), level+1);
     }
     else {
@@ -873,7 +873,7 @@ VariantMatcher handle_anyOf(Node* root, int level) {
   else { // child_matchers.size() == 1
     // if (root->ignore_casts) {
     // TODO make this not always ignore casts, maybe
-      return constructMatcher("ignoringParenImpCasts", child_matchers[0], level+1);
+      return constructMatcher("ignoringParenCasts", child_matchers[0], level+1);
     // }
     // else {
       // return child_matchers[0];
@@ -1066,12 +1066,16 @@ VariantMatcher make_matcher(Node* root, int level) {
       return handle_bindable_node(root, "compoundLiteralExpr", level);
     case MT::cudaKernelCallExpr:
       return handle_callExpr(root, "cudaKernelCallExpr", level);
+    case MT::cxxConstructExpr:
+      return handle_bindable_node(root, "cxxConstructExpr", level);
     case MT::cxxDeleteExpr:
       return handle_bindable_node(root, "cxxDeleteExpr", level);
     case MT::cxxNewExpr:
       return handle_bindable_node(root, "cxxNewExpr", level);
     case MT::cxxOperatorCallExpr:
       return handle_callExpr(root, "cxxOperatorCallExpr", level);
+    case MT::cxxThisExpr:
+      return handle_bindable_node(root, "cxxThisExpr", level);
     // case MT::cxxDefaultArgExpr:
     //   return handle_non_bindable_node(root, "cxxDefaultArgExpr", level);
     case MT::declRefExpr:
@@ -1082,6 +1086,8 @@ VariantMatcher make_matcher(Node* root, int level) {
       return handle_non_bindable_node(root, "equals", level);
     case MT::expr:
       return handle_bindable_node(root, "expr", level);
+    case MT::fieldDecl:
+      return handle_bindable_node(root, "fieldDecl", level);
     case MT::floatLiteral:
       return handle_bindable_node(root, "floatLiteral", level);
     case MT::forStmt:
@@ -1108,10 +1114,14 @@ VariantMatcher make_matcher(Node* root, int level) {
       return handle_non_bindable_node(root, "hasInitializer", level);
     case MT::hasNewInitializer:
       return handle_non_bindable_node(root, "hasNewInitializer", level);
+    case MT::hasObjectExpression:
+      return handle_non_bindable_node(root, "hasObjectExpression", level);
     case MT::hasOperatorName:
       return handle_non_bindable_node(root, "hasOperatorName", level);
     case MT::hasReturnValue:
       return handle_non_bindable_node(root, "hasReturnValue", level);
+    case MT::hasSingleArgumentExpr:
+      return handle_non_bindable_node(root, "hasSingleArgumentExpr", level);
     case MT::hasSubExpr:
       return handle_non_bindable_node(root, "hasSubExpr", level);
     case MT::hasType:
@@ -1126,6 +1136,10 @@ VariantMatcher make_matcher(Node* root, int level) {
       return handle_non_bindable_node(root, "isArrayForm", level);
     case MT::isNotArrayForm:
       return handle_non_bindable_node(root, "isNotArrayForm", level);
+    case MT::memberExpr:
+      return handle_bindable_node(root, "memberExpr", level);
+    case MT::member:
+      return handle_non_bindable_node(root, "member", level);
     case MT::ompAtomicDirective:
         return handle_openmp_node(root, "ompAtomicDirective", level);
     case MT::ompBarrierDirective:
@@ -1282,6 +1296,8 @@ VariantMatcher make_matcher(Node* root, int level) {
       return handle_non_bindable_node(root, "to", level);
     case MT::type:
       return handle_bindable_node(root, "type", level);
+    case MT::unaryExprOrTypeTraitExpr:
+      return handle_bindable_node(root, "unaryExprOrTypeTraitExpr", level);
     case MT::unaryOperator:
       return handle_unaryOperator(root, level);
     case MT::valueDecl:

@@ -110,6 +110,16 @@ AST_MATCHER(OMPExecutableDirective, hasNoClauses) {
   return num_clauses == 0;
 }
 
+AST_MATCHER_P(UnaryExprOrTypeTraitExpr, hasSingleArgumentExpr,
+              internal::Matcher<Expr>, InnerMatcher) {
+  if (Node.isArgumentType()) {
+    return false;
+  }
+  else {
+    return InnerMatcher.matches(*(Node.getArgumentExpr()), Finder, Builder);
+  }
+}
+
 }
 }
 

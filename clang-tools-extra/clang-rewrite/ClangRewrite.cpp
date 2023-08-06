@@ -20,6 +20,7 @@
 #include "NewCodeCallback.h"
 #include "MatcherGenCallback.h"
 #include "FindLiteralsCallback.h"
+#include "NameRewriterCallback.h"
 
 #include <algorithm>
 #include <fstream>
@@ -117,6 +118,17 @@ int main(int argc, const char** argv) {
       return retval;
     }
 
+    MatchFinder name_rewriter;
+    NameRewriterCallback name_rewrite_callback(inst_file);
+
+    name_rewriter.addMatcher(insert_before_match, &name_rewrite_callback);
+    name_rewriter.addMatcher(insert_after_match, &name_rewrite_callback);
+    name_rewriter.addMatcher(replace_match, &name_rewrite_callback);
+    name_rewriter.addMatcher(matcher_stmt, &name_rewrite_callback);
+    name_rewriter.addMatcher(matcher_decl, &name_rewrite_callback);
+
+    retval = Tool->run(newFrontendActionFactory(&name_rewriter).get());
+
     MatchFinder inst_finder;
     InsertPrematchCallback prematch_callback;
     InsertPostmatchCallback postmatch_callback;
@@ -126,10 +138,12 @@ int main(int argc, const char** argv) {
     inst_finder.addMatcher(insert_before_match, &prematch_callback);
     inst_finder.addMatcher(insert_after_match, &postmatch_callback);
     inst_finder.addMatcher(replace_match, &replace_callback);
-    inst_finder.addMatcher(matcher, &matcher_callback);
+    inst_finder.addMatcher(matcher_stmt, &matcher_callback);
+    inst_finder.addMatcher(matcher_decl, &matcher_callback);
 
     // find matchers and replacers, make CodeActions
-    retval = Tool->run(newFrontendActionFactory(&inst_finder).get());
+    ProcessSpec = new ClangTool(Tool->getCompilationDatabase(), {temp_file_name+".rewritten_spec.cpp"});
+    retval = ProcessSpec->run(newFrontendActionFactory(&inst_finder).get());
     if (retval) {
       printf("Problems with creating matchers and transformations.\n");
       return retval;

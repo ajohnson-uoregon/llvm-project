@@ -19,6 +19,7 @@
 #include "ClangRewriteUtils.h"
 #include "MatcherGenCallback.h"
 #include "ReplaceBindingsCallback.h"
+#include "CodeLiteralsCallback.h"
 
 #include <algorithm>
 #include <iostream>
@@ -529,6 +530,110 @@ public:
     // create list of bindings
     bindings = create_bindings(result, context);
 
+    StatementMatcher code_literals = declStmt(containsAnyDeclaration(varDecl(
+      hasInitializer(hasDescendant(
+        callExpr(callee(unresolvedLookupExpr(
+          hasAnyDeclaration(functionTemplateDecl(
+            hasName("clang_rewrite::code_literal")
+          ))
+        ))).bind("code_literal_call")
+      ))
+    ).bind("code_literal_decl")));
+
+    MatchFinder code_literals_finder;
+    CodeLiteralsCallback literals_callback(&bindings);
+
+    code_literals_finder.addMatcher(code_literals, &literals_callback);
+
+    ClangTool process_temp(Tool->getCompilationDatabase(), {"clang_rewrite_temp_source.cpp.rewritten_spec.cpp"});
+    process_temp.run(newFrontendActionFactory(&code_literals_finder).get());
+
+    for (Binding& b: bindings) {
+      if (b.matchers.empty()) {
+        // copy pasta from create_bindings()
+        VariantMatcher inner_matcher;
+        if (!b.name.empty() && !b.qual_name.empty()) {
+          inner_matcher =
+            constructMatcher("declStmt",
+              constructMatcher("containsAnyDeclaration",
+                constructBoundMatcher("namedDecl", "clang_rewrite_match",
+                  constructMatcher("anyOf",
+                    constructMatcher("hasName", StringRef(b.name), 7),
+                    constructMatcher("hasName", StringRef(b.qual_name), 7),
+                  6),
+                5),
+              4),
+            3);
+        }
+        else if (!b.name.empty() || !b.qual_name.empty()) {
+          std::string valid_name = b.name.empty() ? b.qual_name : b.name;
+          inner_matcher =
+            constructMatcher("declStmt",
+              constructMatcher("containsAnyDeclaration",
+                constructBoundMatcher("namedDecl", "clang_rewrite_match",
+                  constructMatcher("hasName", StringRef(valid_name), 6), 5),
+              4),
+            3);
+        }
+        else {
+          printf("ERROR: no valid name\n");
+        }
+        b.matchers.push_back(inner_matcher);
+
+        VariantMatcher inner_matcher2;
+        if (!b.name.empty() && !b.qual_name.empty()) {
+          inner_matcher2 =
+            constructBoundMatcher("declRefExpr", "clang_rewrite_match",
+              constructMatcher("to",
+                constructMatcher("namedDecl",
+                  constructMatcher("anyOf",
+                    constructMatcher("hasName", StringRef(b.name), 7),
+                    constructMatcher("hasName", StringRef(b.qual_name), 7),
+                  6),
+                5),
+              4),
+            3);
+        }
+        else if (!b.name.empty() || !b.qual_name.empty()) {
+          std::string valid_name = b.name.empty() ? b.qual_name : b.name;
+          inner_matcher2 =
+            constructBoundMatcher("declRefExpr", "clang_rewrite_match",
+              constructMatcher("to",
+                constructMatcher("namedDecl",
+                    constructMatcher("hasName", StringRef(valid_name), 6),
+                5),
+              4),
+            3);
+        }
+        else {
+          printf("ERROR: no valid name\n");
+        }
+        b.matchers.push_back(inner_matcher2);
+
+        VariantMatcher inner_matcher3;
+        if (!b.name.empty() && !b.qual_name.empty()) {
+          inner_matcher3 =
+            constructBoundMatcher("parmVarDecl", "clang_rewrite_match",
+              constructMatcher("anyOf",
+                constructMatcher("hasName", StringRef(b.name), 5),
+                constructMatcher("hasName", StringRef(b.qual_name), 5),
+            4),
+          3);
+        }
+        else if (!b.name.empty() || !b.qual_name.empty()) {
+          std::string valid_name = b.name.empty() ? b.qual_name : b.name;
+          inner_matcher3 =
+            constructBoundMatcher("parmVarDecl", "clang_rewrite_match",
+              constructMatcher("hasName", StringRef(valid_name), 4),
+          3);
+        }
+        else {
+          printf("ERROR: no valid name\n");
+        }
+        b.matchers.push_back(inner_matcher3);
+      }
+    }
+
     SourceRange original_range;
     std::string original_file;
 
@@ -638,7 +743,7 @@ public:
     std::vector<Binding> deferred_bindings;
     std::vector<Binding> current_bindings;
     for (Binding b: all_bindings) {
-      if (StringRef(b.name).startswith("clang_rewrite") || StringRef(b.qual_name).startswith("clang_rewrite")) {
+      if (StringRef(b.name).startswith("clang_rewrite::") || StringRef(b.qual_name).startswith("clang_rewrite::")) {
         deferred_bindings.push_back(b);
       }
     }
@@ -681,7 +786,26 @@ public:
             }
             else {
               printf("ERROR: bad var name matcher\n");
-              return;
+            }
+
+            VariantMatcher setupmatcher =
+              constructBoundMatcher("declStmt", "clang_rewrite_top_level_match",
+                constructMatcher("containsAnyDeclaration",
+                  constructMatcher("varDecl",
+                    constructMatcher("allOf",
+                      constructMatcher("hasAttr", StringRef("attr::RewriteSetup"), 4),
+                      matcher,
+                    3),
+                  2),
+                1),
+              0);
+
+            std::optional<DynTypedMatcher> setupdynmatcher = setupmatcher.getSingleMatcher();
+            if (setupdynmatcher) {
+              finder.addDynamicMatcher(*setupdynmatcher, &cb);
+            }
+            else {
+              printf("ERROR: bad var name setup matcher\n");
             }
           }
 
@@ -707,7 +831,6 @@ public:
             }
             else {
               printf("ERROR: bad type binding matcher\n");
-              return;
             }
           }
         }

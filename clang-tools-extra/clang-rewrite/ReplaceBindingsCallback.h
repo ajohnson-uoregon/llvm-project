@@ -20,6 +20,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <filesystem>
 
 using namespace clang;
 using namespace clang::ast_matchers;
@@ -44,6 +45,8 @@ const T* findFirstChild(const Stmt* stmt) {
   }
   return nullptr;
 }
+
+
 
 class ReplaceBindingsCallback : public MatchFinder::MatchCallback {
 public:
@@ -71,15 +74,18 @@ public:
 
     const Expr* exp = result.Nodes.getNodeAs<Expr>("clang_rewrite_match");
     const NamedDecl* decl = result.Nodes.getNodeAs<NamedDecl>("clang_rewrite_match");
+    const DeclStmt* stmt = result.Nodes.getNodeAs<DeclStmt>("clang_rewrite_match");
 
     // TODO: can I condense the two names into one?
-    if (!exp && !decl) {
+    if (!exp && !decl && !stmt) {
       exp = result.Nodes.getNodeAs<Expr>("clang_rewrite_top_level_match");
       decl = result.Nodes.getNodeAs<NamedDecl>("clang_rewrite_top_level_match");
+      stmt = result.Nodes.getNodeAs<DeclStmt>("clang_rewrite_top_level_match");
     }
 
     bool expr_valid = true;
     bool decl_valid = true;
+    bool stmt_valid = true;
 
     if (!exp ||
         !context->getSourceManager().getFilename(exp->getBeginLoc()).endswith("clang_rewrite_temp_source.cpp." + std::to_string(num_bind_files) + ".bind.cpp"))
@@ -96,7 +102,14 @@ public:
       decl_valid = false;
     }
 
-    if (!expr_valid && !decl_valid) {
+    if (!stmt ||
+        !context->getSourceManager().getFilename(stmt->getBeginLoc()).endswith("clang_rewrite_temp_source.cpp." + std::to_string(num_bind_files) + ".bind.cpp")) {
+      if (stmt) printf("filename??? %s\n", context->getSourceManager().getFilename(stmt->getBeginLoc()).str().c_str());
+      printf("ERROR: invalid stmt binding match loc\n");
+      stmt_valid = false;
+    }
+
+    if (!expr_valid && !decl_valid && !stmt_valid) {
       printf("ERROR: no valid binding match loc\n");
       return;
     }
@@ -112,6 +125,9 @@ public:
       // printf("file name %s\n", context->getSourceManager().getFilename(decl->getBeginLoc()).str().c_str());
       match_range = SourceRange(decl->getBeginLoc(), decl->getEndLoc());
     }
+    else if (stmt_valid) {
+      match_range = SourceRange(stmt->getBeginLoc(), stmt->getEndLoc());
+    }
 
     FullSourceLoc begin;
     FullSourceLoc end;
@@ -126,6 +142,11 @@ public:
       begin = context->getFullLoc(decl->getBeginLoc());
       end = context->getFullLoc(decl->getEndLoc());
       match = context->getFullLoc(decl->getLocation());
+    }
+    else if (stmt_valid) {
+      begin = context->getFullLoc(stmt->getBeginLoc());
+      end = context->getFullLoc(stmt->getEndLoc());
+      match = context->getFullLoc(stmt->getBeginLoc());
     }
 
     //dump
@@ -183,7 +204,9 @@ public:
           hasArgument(0, cxxBindTemporaryExpr(hasSubExpr(
             cxxConstructExpr(hasArgument(0,
               cxxStdInitializerListExpr(hasSubExpr(materializeTemporaryExpr(hasSubExpr(
-                initListExpr(hasInit(0, cxxConstructExpr(hasArgument(0, expr(anything()).bind("body")))))
+                initListExpr(forEachDescendant(
+                  cxxConstructExpr(hasArgument(0, expr(anything()).bind("body")))
+                ))
               ))))
             ))
           )))
@@ -203,8 +226,7 @@ public:
         DynTypedNodeList Parents = context->getParents(*exp);
         llvm::SmallVector<DynTypedNode, 8> Stack(Parents.begin(), Parents.end());
         const CallExpr* call; // DO NOT try to get the location of this
-        std::string matcher_text = "";
-        std::string replacer_text = "";
+        std::vector<std::pair<std::string, std::string>> match_and_replace_text;
         while (!Stack.empty()) {
           const auto &CurNode = Stack.back();
           Stack.pop_back();
@@ -219,26 +241,31 @@ public:
                 "clang_rewrite::loop_body") {
               call = callexpr;
               if (callexpr->getNumArgs() > 0) {
+                printf("callexpr num args %d\n", callexpr->getNumArgs());
                 const Expr* arg = callexpr->getArg(0);
                 const InitListExpr* initlist = findFirstChild<InitListExpr>(arg);
-                const Expr* matcher = cast<CXXConstructExpr>(initlist->getInit(0))->getArg(0);
-                const Expr* replacer = cast<CXXConstructExpr>(initlist->getInit(0))->getArg(1);
+                for (int i = 0; i < initlist->getNumInits(); i++) {
+                  const Expr* matcher = cast<CXXConstructExpr>(initlist->getInit(i))->getArg(0);
+                  const Expr* replacer = cast<CXXConstructExpr>(initlist->getInit(i))->getArg(1);
 
-                FullSourceLoc m_begin = context->getFullLoc(matcher->getBeginLoc());
-                FullSourceLoc m_end = context->getFullLoc(matcher->getEndLoc());
+                  FullSourceLoc m_begin = context->getFullLoc(matcher->getBeginLoc());
+                  FullSourceLoc m_end = context->getFullLoc(matcher->getEndLoc());
 
-                FullSourceLoc r_begin = context->getFullLoc(replacer->getBeginLoc());
-                FullSourceLoc r_end = context->getFullLoc(replacer->getEndLoc());
+                  FullSourceLoc r_begin = context->getFullLoc(replacer->getBeginLoc());
+                  FullSourceLoc r_end = context->getFullLoc(replacer->getEndLoc());
 
-                matcher_text = binding_rw.getRewrittenText(SourceRange(m_begin,
-                  Lexer::getLocForEndOfToken(m_end, 0, context->getSourceManager(), context->getLangOpts())));
-                replacer_text = binding_rw.getRewrittenText(SourceRange(r_begin,
-                  Lexer::getLocForEndOfToken(r_end, 0, context->getSourceManager(), context->getLangOpts())));
+                  std::string matcher_text = binding_rw.getRewrittenText(SourceRange(m_begin,
+                    Lexer::getLocForEndOfToken(m_end, 0, context->getSourceManager(), context->getLangOpts())));
+                  std::string replacer_text = binding_rw.getRewrittenText(SourceRange(r_begin,
+                    Lexer::getLocForEndOfToken(r_end, 0, context->getSourceManager(), context->getLangOpts())));
 
-                matcher_text = matcher_text.substr(0, matcher_text.size()-1);
-                replacer_text = replacer_text.substr(0, replacer_text.size()-1);
-                printf("matcher text? %s\n", matcher_text.c_str());
-                printf("replacer text? %s\n", replacer_text.c_str());
+                  matcher_text = matcher_text.substr(0, matcher_text.size()-1);
+                  replacer_text = replacer_text.substr(0, replacer_text.size()-1);
+                  printf("matcher text? %s\n", matcher_text.c_str());
+                  printf("replacer text? %s\n", replacer_text.c_str());
+                  match_and_replace_text.push_back({matcher_text, replacer_text});
+                }
+
               }
             }
             llvm::append_range(Stack, context->getParents(CurNode));
@@ -267,7 +294,7 @@ public:
         int num_lines = std::count(bind.value.begin(), bind.value.end(), '\n');
         printf("num lines = %d\n", num_lines);
 
-        int num_cols = bind.value.size() - bind.value.rfind("\n");
+        int num_cols = bind.value.size() - bind.value.rfind("\n") + 1;
         printf("num cols = %d\n", num_cols);
         // run some kind of generic finder callback to generate bindings from
         // match itself
@@ -288,14 +315,17 @@ public:
         }
         inner_bindings.insert(inner_bindings.begin(), internal_bindings.begin(), internal_bindings.end());
         // generate bindings from matchers we made with mgcb
-        for (auto m : internal_matchers) {
+        // TODO: assumes order of things in internal_matchers is same as in
+        // match_and_replace_text; fix or verify always true
+        printf("num internal matchers %d\n", internal_matchers.size());
+        for (int i = 0; i < internal_matchers.size(); i++) {
           if (locIsInRangeHard(begin_line, begin_col, end_line, end_col,
-                m->getLine(), m->getCol())) {
+                internal_matchers[i]->getLine(), internal_matchers[i]->getCol())) {
             Binding b;
-            b.matchers = {VariantMatcher::SingleMatcher(m->getMatcher())};
-            b.name = matcher_text;
-            b.qual_name = matcher_text;
-            b.value = replacer_text;
+            b.matchers = {VariantMatcher::SingleMatcher(internal_matchers[i]->getMatcher())};
+            b.name = match_and_replace_text[i].first;
+            b.qual_name = match_and_replace_text[i].first;
+            b.value = match_and_replace_text[i].second;
             b.kind = BindingKind::VarNameBinding;
             b.has_valid_range = true;
             if (num_lines == 0) {
@@ -318,12 +348,14 @@ public:
       }
       else {
         if (isa<DeclRefExpr>(exp)) {
-          char* name_c = new char[end_offset - match_offset + 1];
-          size_t space;
+
           if (buff.has_value()) {
+            size_t space;
             space = Lexer::MeasureTokenLength(exp->getBeginLoc(),
               context->getSourceManager(), context->getLangOpts());
             printf("oh noes %lu\n", space);
+
+            char* name_c = new char[space + 1];
 
             memcpy(name_c, &(buff->getBufferStart()[match_offset]),
                    (space + 1) * sizeof(char));
@@ -333,14 +365,17 @@ public:
             if (name != StringRef(bind.name) && name != StringRef(bind.qual_name)) {
               printf("%s\n", name_c);
               printf("OH HENLO\n");
+              delete[] name_c;
               return;
             }
 
             exp->getExprLoc().dump(context->getSourceManager());
             binding_rw.ReplaceText(exp->getExprLoc(), space, bind.value);
 
-            int num_cols = bind.value.size() - bind.value.rfind("\n");
+            int num_cols = bind.value.size() - bind.value.rfind("\n") + 1;
             update_bindings(begin_line, begin_col, end_line, end_col, num_cols);
+
+            delete[] name_c;
           }
         }
         else {
@@ -368,7 +403,7 @@ public:
           int num_lines = std::count(bind.value.begin(), bind.value.end(), '\n');
           printf("num lines = %d\n", num_lines);
 
-          int num_cols = bind.value.size() - bind.value.rfind("\n");
+          int num_cols = bind.value.size() - bind.value.rfind("\n") + 1;
           printf("num cols = %d\n", num_cols);
 
           update_bindings(begin_line, begin_col, end_line, end_col, num_cols);
@@ -420,7 +455,7 @@ public:
 
           binding_rw.ReplaceText(decl->getLocation(), space, bind.value);
 
-          int num_cols = bind.value.size() - bind.value.rfind("\n");
+          int num_cols = bind.value.size() - bind.value.rfind("\n") + 1;
           update_bindings(begin_line, begin_col, end_line, end_col, num_cols);
         }
         delete[] name_c;
@@ -450,7 +485,7 @@ public:
 
         binding_rw.ReplaceText(loc, space, bind.value);
 
-        int num_cols = bind.value.size() - bind.value.rfind("\n");
+        int num_cols = bind.value.size() - bind.value.rfind("\n") + 1;
         update_bindings(begin_line, begin_col, end_line, end_col, num_cols);
       }
 
@@ -476,6 +511,11 @@ public:
       buff->write(out);
       out.close();
     }
+    // else {
+    //   std::filesystem::copy(temp_file_name + "." + std::to_string(num_bind_files) + ".bind.cpp",
+    //                         temp_file_name + ".bind_final.cpp",
+    //                         std::filesystem::copy_options::overwrite_existing);
+    // }
 
     if (buff) {
       num_bind_files++;
@@ -488,6 +528,40 @@ public:
     binding_rw.clearAllRewriteBuffers(binding_rw.getSourceMgr());
     line_delta = 0;
     past_matches.clear();
+    internal_matchers.clear();
+  }
+
+  template<typename T>
+  bool isInSetup(T* node) {
+    DynTypedNodeList Parents = context->getParents(*node);
+    llvm::SmallVector<DynTypedNode, 8> Stack(Parents.begin(), Parents.end());
+    while (!Stack.empty()) {
+      const auto &CurNode = Stack.back();
+      Stack.pop_back();
+      if (const NamedDecl* decl = CurNode.get<NamedDecl>()) {
+        if (decl->hasAttrs()) {
+          for (Attr* a : decl->attrs()) {
+            if (a->getKind() == attr::RewriteSetup) {
+              return true;
+            }
+          }
+        }
+      }
+      llvm::append_range(Stack, context->getParents(CurNode));
+    }
+
+    if (const DeclStmt* decl = dyn_cast<DeclStmt>(node)) {
+      for (auto d : decl->decls()) {
+        if (d->hasAttrs()) {
+          for (Attr* a : d->attrs()) {
+            if (a->getKind() == attr::RewriteSetup) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+    return false;
   }
 
   // same as checking whether it starts in the range 0:0 - start of valid_over

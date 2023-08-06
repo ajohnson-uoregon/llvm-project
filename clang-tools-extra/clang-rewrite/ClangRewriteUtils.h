@@ -18,6 +18,7 @@ std::vector<const FileEntry*> source_file_entries;
 std::vector<std::string> spec_files;
 
 ClangTool* Tool;
+ClangTool* ProcessSpec;
 ClangTool* ProcessTemp;
 
 std::string temp_file_name = "clang_rewrite_temp_source.cpp";
@@ -110,6 +111,7 @@ namespace dynamic {
     REGISTER_MATCHER(hasExpectedReturnType);
     REGISTER_MATCHER(hasNoClauses);
     // REGISTER_MATCHER(ignoringPointers);
+    REGISTER_MATCHER(hasSingleArgumentExpr);
   }
 
 }

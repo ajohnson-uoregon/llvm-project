@@ -165,7 +165,6 @@ public:
     delete[] body_code_c;
 
     // grab setup code
-    // TODO: make yet another callback to go searching for all setup code in range
     StatementMatcher setup_match =
       declStmt(containsAnyDeclaration(varDecl(
         hasAttr(attr::RewriteSetup)
@@ -176,7 +175,7 @@ public:
 
     setup_finder.addMatcher(setup_match, &setupcb);
 
-    int retval = Tool->run(newFrontendActionFactory(&setup_finder).get());
+    int retval = ProcessSpec->run(newFrontendActionFactory(&setup_finder).get());
 
     std::string setup_code = setupcb.setup_code;
 

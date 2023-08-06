@@ -310,6 +310,12 @@ public:
       return true;
     }
 
+    bool VisitCXXThisExpr(CXXThisExpr* expr) {
+      add_node(MT::cxxThisExpr, "cxxThisExpr()", getNumChildren(expr));
+
+      return true;
+    }
+
     bool VisitDeclRefExpr(DeclRefExpr* ref) {
       ValueDecl* decl = ref->getDecl();
       std::string name = decl->getNameAsString();
@@ -434,6 +440,66 @@ public:
       return true;
     }
 
+    bool VisitFieldDecl(FieldDecl* decl) {
+      std::string name = decl->getNameAsString();
+      std::string qualname = decl->getQualifiedNameAsString();
+
+      if (is_literal(decl)) {
+        Node* fielddecl = add_node(MT::fieldDecl, "fieldDecl()", 0);
+        fielddecl->set_name(name, qualname);
+        fielddecl->set_is_literal(true);
+        std::string ty = decl->getType().getAsString();
+        fielddecl->set_type(ty);
+      }
+      else if (is_internal_matcher && is_internal_literal(decl)) {
+        Node* fielddecl = add_node(MT::fieldDecl, "fieldDecl()", 0);
+        fielddecl->set_name(name, qualname);
+        fielddecl->set_is_literal(true);
+        std::string ty = decl->getType().getAsString();
+        fielddecl->set_type(ty);
+      }
+      else {
+        QualType ty = decl->getType();
+        while (ty->isPointerType()) {
+          printf("is pointer\n");
+          ty = ty->getPointeeType();
+        }
+        auto is_template_param = ty->isTemplateTypeParmType();
+        printf("is template type parameter type???? %s\n", is_template_param ? "true" : "false");
+
+        if (is_template_param) {
+          Node* fielddecl = add_node(MT::fieldDecl, "fieldDecl()", 1);
+          if (StringRef(name).starts_with("clang_rewrite_")) {
+            fielddecl->bind_to(name + ";" + qualname);
+          }
+          else {
+            fielddecl->bind_to("clang_rewrite_" + name + ";" + qualname);
+          }
+          add_node(MT::hasType, "hasType()", 1);
+          ty = decl->getType();
+          while (ty->isPointerType()) {
+            add_node(MT::pointerType, "pointerType()", 1);
+            add_node(MT::pointee, "pointee()", 1);
+            ty = ty->getPointeeType();
+          }
+          Node* type_node = add_node(MT::type, "type", 0);
+          type_node->bind_to(ty.getAsString());
+        }
+        else {
+          Node* fielddecl = add_node(MT::fieldDecl, "fieldDecl()", 0);
+          if (StringRef(name).starts_with("clang_rewrite_")) {
+            fielddecl->bind_to(name + ";" + qualname);
+          }
+          else {
+            fielddecl->bind_to("clang_rewrite_" + name + ";" + qualname);
+          }
+          std::string type = decl->getType().getAsString();
+          fielddecl->set_type(type);
+        }
+      }
+      return true;
+    }
+
     bool VisitForStmt(ForStmt* forstmt) {
       add_node(MT::forStmt, "forStmt()", getNumChildren(forstmt));
 
@@ -442,6 +508,17 @@ public:
 
     bool VisitIfStmt(IfStmt* ifstmt) {
       add_node(MT::ifStmt, "ifStmt()", getNumChildren(ifstmt));
+
+      return true;
+    }
+
+    bool VisitMemberExpr(MemberExpr* expr) {
+      add_node(MT::memberExpr, "memberExpr()", 2);
+      add_node(MT::member, "member()", 1);
+      TraverseDecl(expr->getMemberDecl());
+      expr->getMemberDecl()->dump();
+
+      add_node(MT::hasObjectExpression, "hasObjectExpression()", getNumChildren(expr));
 
       return true;
     }
@@ -832,6 +909,18 @@ public:
       return true;
     }
 
+    bool VisitUnaryExprOrTypeTraitExpr(UnaryExprOrTypeTraitExpr* expr) {
+      if (!expr->isArgumentType()) {
+        add_node(MT::unaryExprOrTypeTraitExpr, "unaryExprOrTypeTraitExpr()", 1);
+        add_node(MT::hasSingleArgumentExpr, "hasSingleArgumentExpr()", getNumChildren(expr));
+      }
+      else { // it's a type and we don't care
+        add_node(MT::unaryExprOrTypeTraitExpr, "unaryExprOrTypeTraitExpr()", 0);
+      }
+
+      return true;
+    }
+
     bool VisitVarDecl(VarDecl* decl) {
       std::string name = decl->getNameAsString();
       std::string qualname = decl->getQualifiedNameAsString();
@@ -1088,13 +1177,23 @@ private:
 };
 
 
-DeclarationMatcher matcher =
+DeclarationMatcher matcher_stmt =
   functionDecl(allOf(
     hasAttr(attr::Matcher),
     hasBody(compoundStmt(
       hasAnySubstatement(attributedStmt(allOf(
         hasAttr(attr::MatcherBlock),
         hasSubStmt(compoundStmt(anything()).bind("body"))
+      )))
+    ))
+  )).bind("matcher");
+
+DeclarationMatcher matcher_decl =
+  functionDecl(allOf(
+    hasAttr(attr::Matcher),
+    hasBody(compoundStmt(
+      hasAnySubstatement(declStmt(hasDescendant(
+        namedDecl(hasAttr(attr::MatcherBlock)).bind("body")
       )))
     ))
   )).bind("matcher");
@@ -1164,7 +1263,7 @@ public:
           matcher_name = name.str();
         }
       }
-      printf("FOUND matcher %s at %d:%d - %d:%d\n", matcher_name.c_str(), begin_line, begin_col, end_line, end_col);
+      printf("FOUND matcher (decl) %s at %d:%d - %d:%d\n", matcher_name.c_str(), begin_line, begin_col, end_line, end_col);
     }
     else if (stmt_valid) {
       FullSourceLoc begin = context->getFullLoc(stmt->getBeginLoc());
@@ -1181,7 +1280,7 @@ public:
             matcher_name = name.str();
           }
         }
-        printf("FOUND matcher %s at %d:%d - %d:%d\n", matcher_name.c_str(), begin_line, begin_col, end_line, end_col);
+        printf("FOUND matcher (stmt) %s at %d:%d - %d:%d\n", matcher_name.c_str(), begin_line, begin_col, end_line, end_col);
       }
       else {
         printf("FOUND nameless matcher at %d:%d - %d:%d\n", begin_line, begin_col, end_line, end_col);
@@ -1220,6 +1319,7 @@ public:
     if (body_stmt_valid) {
       if (const CompoundStmt* body = dyn_cast<CompoundStmt>(body_stmt)) {
         if (body->size() == 1) {
+          body->body_front()->dump();
           visitor.TraverseStmt(const_cast<Stmt*>(body->body_front()));
         }
         else {
