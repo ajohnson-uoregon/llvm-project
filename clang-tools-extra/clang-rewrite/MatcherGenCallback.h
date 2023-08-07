@@ -1208,6 +1208,7 @@ public:
   std::string matcher_name;
   bool is_internal_matcher;
   std::vector<Binding> internal_bindings;
+  std::vector<Location> past_matches;
 
   MatcherGenCallback(bool internal_matcher, std::vector<Binding> internal_binds)
     : is_internal_matcher(internal_matcher), internal_bindings(internal_binds) {}
@@ -1248,14 +1249,15 @@ public:
     // func->dump();
 
     unsigned int begin_line, begin_col;
+    unsigned int end_line, end_col;
 
     if (decl_valid) {
       FullSourceLoc begin = context->getFullLoc(decl->getBeginLoc());
       FullSourceLoc end = context->getFullLoc(decl->getEndLoc());
       begin_line = begin.getSpellingLineNumber();
       begin_col = begin.getSpellingColumnNumber();
-      unsigned int end_line = end.getSpellingLineNumber();
-      unsigned int end_col = end.getSpellingColumnNumber();
+      end_line = end.getSpellingLineNumber();
+      end_col = end.getSpellingColumnNumber();
 
       for (Attr* attr : decl->attrs()) {
         if (attr->getKind() == attr::Matcher) {
@@ -1270,8 +1272,8 @@ public:
       FullSourceLoc end = context->getFullLoc(stmt->getEndLoc());
       begin_line = begin.getSpellingLineNumber();
       begin_col = begin.getSpellingColumnNumber();
-      unsigned int end_line = end.getSpellingLineNumber();
-      unsigned int end_col = end.getSpellingColumnNumber();
+      end_line = end.getSpellingLineNumber();
+      end_col = end.getSpellingColumnNumber();
 
       if (const AttributedStmt* attrstmt = dyn_cast<AttributedStmt>(stmt)) {
         for (const Attr* attr : attrstmt->getAttrs()) {
@@ -1285,6 +1287,18 @@ public:
       else {
         printf("FOUND nameless matcher at %d:%d - %d:%d\n", begin_line, begin_col, end_line, end_col);
       }
+    }
+
+    if (std::find(past_matches.begin(), past_matches.end(),
+        (Location){begin_line, begin_col, end_line, end_col}) != past_matches.end()) {
+      printf("duplicate match in matcher gen\n");
+      for (Location l : past_matches) {
+        printf("\t{%d:%d-%d:%d}\n", l.begin_line, l.begin_col, l.end_line, l.end_col);
+      }
+      return;
+    }
+    else {
+      past_matches.push_back({begin_line, begin_col, end_line, end_col});
     }
 
     const Decl* body_decl = result.Nodes.getNodeAs<Decl>("body");

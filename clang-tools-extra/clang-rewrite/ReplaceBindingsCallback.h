@@ -491,6 +491,7 @@ public:
 
 
     }
+    internal_matchers.clear();
   }
 
   void onEndOfTranslationUnit() override {
