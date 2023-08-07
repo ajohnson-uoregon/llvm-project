@@ -4572,6 +4572,25 @@ AST_MATCHER_P2(InitListExpr, hasInit, unsigned, N,
           InnerMatcher.matches(*Node.getInit(N), Finder, Builder);
 }
 
+/// Matches any item of an initializer list expression.
+///
+/// Example matches y.
+///     (matcher = initListExpr(hasAnyInit(expr())))
+/// \code
+///   int x{y}.
+/// \endcode
+AST_MATCHER_P(InitListExpr, hasAnyInit, ast_matchers::internal::Matcher<Expr>,
+              InnerMatcher) {
+  for (const Expr *Arg : Node.inits()) {
+    ast_matchers::internal::BoundNodesTreeBuilder Result(*Builder);
+    if (InnerMatcher.matches(*Arg, Finder, &Result)) {
+      *Builder = std::move(Result);
+      return true;
+    }
+  }
+  return false;
+}
+
 /// Matches declaration statements that contain a specific number of
 /// declarations.
 ///
@@ -8758,6 +8777,9 @@ extern const internal::VariadicDynCastAllOfMatcher<OMPClause, OMPReductionClause
 
 AST_MATCHER_P(OMPReductionClause, hasAnyLHSExpr,
               internal::Matcher<Expr>, InnerMatcher) {
+  if (*(Node.lhs_exprs().begin()) == nullptr) {
+    return false;
+  }
   return matchesFirstInPointerRange(InnerMatcher, Node.lhs_exprs().begin(),
                                     Node.lhs_exprs().end(), Finder,
                                     Builder) != Node.lhs_exprs().end();
@@ -8765,6 +8787,9 @@ AST_MATCHER_P(OMPReductionClause, hasAnyLHSExpr,
 
 AST_MATCHER_P(OMPReductionClause, hasAnyRHSExpr,
               internal::Matcher<Expr>, InnerMatcher) {
+  if (*(Node.rhs_exprs().begin()) == nullptr) {
+    return false;
+  }
   return matchesFirstInPointerRange(InnerMatcher, Node.rhs_exprs().begin(),
                                     Node.rhs_exprs().end(), Finder,
                                     Builder) != Node.rhs_exprs().end();
@@ -8772,6 +8797,9 @@ AST_MATCHER_P(OMPReductionClause, hasAnyRHSExpr,
 
 AST_MATCHER_P(OMPReductionClause, hasAnyReductionOp,
               internal::Matcher<Expr>, InnerMatcher) {
+  if (*(Node.reduction_ops().begin()) == nullptr) {
+    return false;
+  }
   return matchesFirstInPointerRange(InnerMatcher, Node.reduction_ops().begin(),
                                     Node.reduction_ops().end(), Finder,
                                     Builder) != Node.reduction_ops().end();

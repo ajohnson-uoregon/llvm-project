@@ -2205,6 +2205,13 @@ inline bool HasAttrMatcher<CXXRecordDecl>::hasAttr(const CXXRecordDecl &Node,
                       [&](const Attr* A) { return A->getKind() == AttrKind; });
 }
 
+template<>
+inline bool HasAttrMatcher<NamedDecl>::hasAttr(const NamedDecl &Node,
+                                               attr::Kind AttrKind) {
+  return llvm::any_of(Node.attrs(),
+                      [&](const Attr* A) { return A->getKind() == AttrKind; });
+}
+
 /// If \p Loc is (transitively) expanded from macro \p MacroName, returns the
 /// location (in the chain of expansions) at which \p MacroName was
 /// expanded. Since the macro may have been expanded inside a series of

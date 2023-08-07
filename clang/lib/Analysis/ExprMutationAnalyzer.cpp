@@ -79,20 +79,6 @@ AST_MATCHER_P(Stmt, canResolveToExpr, ast_matchers::internal::Matcher<Stmt>,
   return ComplexMatcher.matches(*Exp, Finder, Builder);
 }
 
-// Similar to 'hasAnyArgument', but does not work because 'InitListExpr' does
-// not have the 'arguments()' method.
-AST_MATCHER_P(InitListExpr, hasAnyInit, ast_matchers::internal::Matcher<Expr>,
-              InnerMatcher) {
-  for (const Expr *Arg : Node.inits()) {
-    ast_matchers::internal::BoundNodesTreeBuilder Result(*Builder);
-    if (InnerMatcher.matches(*Arg, Finder, &Result)) {
-      *Builder = std::move(Result);
-      return true;
-    }
-  }
-  return false;
-}
-
 const ast_matchers::internal::VariadicDynCastAllOfMatcher<Stmt, CXXTypeidExpr>
     cxxTypeidExpr;
 

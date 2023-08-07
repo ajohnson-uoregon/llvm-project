@@ -8561,6 +8561,10 @@ static void handleRewriteSetupAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
   }
 }
 
+static void handleMatcherBlockAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
+  D->addAttr(::new (S.Context) MatcherBlockAttr(S.Context, AL));
+}
+
 template <typename AttrTy, typename ConflictingAttrTy>
 static AttrTy *mergeEnforceTCBAttrImpl(Sema &S, Decl *D, const AttrTy &AL) {
   // Check if the new redeclaration has different leaf-ness in the same TCB.
@@ -9424,6 +9428,10 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
   case ParsedAttr::AT_RewriteSetupBegin:
   case ParsedAttr::AT_RewriteSetupEnd:
     handleRewriteSetupAttr(S, D, AL);
+    break;
+
+  case ParsedAttr::AT_MatcherBlock:
+    handleMatcherBlockAttr(S, D, AL);
     break;
   }
 }

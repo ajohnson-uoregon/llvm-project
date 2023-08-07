@@ -4061,13 +4061,13 @@ def Matcher : CodeModifyAttr {
   let Documentation = [Undocumented];
 }
 
-def MatcherBlock : StmtAttr {
+def MatcherBlock : InheritableAttr {
   let Spellings = [Clang<"matcher_block">];
-  let Subjects = SubjectList<[CompoundStmt], ErrorDiag, "compound stmts">;
+  let Subjects = SubjectList<[Var, Function, Record, Field, Stmt, Named, CXXRecord, Struct, CompoundStmt], ErrorDiag, "compound stmts">;
   let Documentation = [Undocumented];
 }
 
-def InternalMatcherBlock : StmtAttr {
+def InternalMatcherBlock : InheritableAttr {
   let Spellings = [Clang<"internal_matcher_block">];
   let Subjects = SubjectList<[CompoundStmt], ErrorDiag, "compound stmts">;
   let Documentation = [Undocumented];
@@ -4087,7 +4087,7 @@ def RewriteSetupEnd : InheritableAttr {
 
 def RewriteSetup : InheritableAttr {
   let Spellings = [Clang<"rewrite_setup">];
-  let Subjects = SubjectList<[Stmt, Var, Struct], ErrorDiag, "stmts">;
+  let Subjects = SubjectList<[Stmt, Var, Record, Field, Named, CXXRecord, Struct], ErrorDiag, "stmts">;
   let Documentation = [Undocumented];
 }
 

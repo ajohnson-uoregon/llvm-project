@@ -258,6 +258,7 @@ RegistryMaps::RegistryMaps() {
   REGISTER_MATCHER(hasAnyClause);
   REGISTER_MATCHER(hasAnyConstructorInitializer);
   REGISTER_MATCHER(hasAnyDeclaration);
+  REGISTER_MATCHER(hasAnyInit);
   REGISTER_MATCHER(hasAnyLHSExpr);
   REGISTER_MATCHER(hasAnyName);
   REGISTER_MATCHER(hasAnyOperatorName);
