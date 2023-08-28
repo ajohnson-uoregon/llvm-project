@@ -4859,6 +4859,15 @@ AST_MATCHER_P(LambdaExpr, hasAnyCapture, internal::Matcher<LambdaCapture>,
   return false;
 }
 
+AST_MATCHER_P(LambdaExpr, hasCallOperator, internal::Matcher<CXXMethodDecl>,
+              InnerMatcher) {
+  return InnerMatcher.matches(*(Node.getCallOperator()), Finder, Builder);
+}
+
+AST_MATCHER_P(LambdaExpr, hasLambdaBody, internal::Matcher<Stmt>, InnerMatcher) {
+  return InnerMatcher.matches(*(Node.getBody()), Finder, Builder);
+}
+
 /// Matches a `LambdaCapture` that refers to the specified `VarDecl`. The
 /// `VarDecl` can be a separate variable that is captured by value or
 /// reference, or a synthesized variable if the capture has an initializer.
@@ -5956,6 +5965,16 @@ AST_POLYMORPHIC_MATCHER_P(hasSubExpr,
   const Expr *expr = Node.getSubExpr();
   return InnerMatcher.matches(*expr, Finder, Builder);
 }
+
+AST_MATCHER_P(ParenListExpr, hasAnySubExpr, internal::Matcher<Expr>, InnerMatcher) {
+  for (unsigned int i = 0; i < Node.getNumExprs(); i++) {
+    if (InnerMatcher.matches(*(Node.getExpr(i)), Finder, Builder)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 
 /// Matches casts that has a given cast kind.
 ///
@@ -8447,6 +8466,15 @@ AST_MATCHER_P(Expr, ignoringElidableConstructorCall,
 extern const internal::VariadicDynCastAllOfMatcher<Stmt, CapturedStmt> capturedStmt;
 
 extern const internal::VariadicDynCastAllOfMatcher<Decl, CapturedDecl> capturedDecl;
+
+extern const internal::VariadicDynCastAllOfMatcher<Expr, RecoveryExpr> recoveryExpr;
+
+AST_MATCHER_P(RecoveryExpr, hasAnySubExpression, internal::Matcher<Expr>,
+              InnerMatcher) {
+  return llvm::any_of(Node.subExpressions(), [&](const Expr* expr) {
+    return InnerMatcher.matches(*expr, Finder, Builder);
+  });
+}
 
 //----------------------------------------------------------------------------//
 // OpenMP handling.

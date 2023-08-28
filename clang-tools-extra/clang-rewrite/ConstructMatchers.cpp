@@ -514,6 +514,7 @@ VariantMatcher handle_callExpr(Node* root, std::string call_type, int level) {
   if (callee != nullptr) {        // functionDecl name
     printf("callee not null\n");
     Node* funcdecl = callee->get_child_or_null(MT::functionDecl);
+    Node* lookup = callee->get_child_or_null(MT::unresolvedLookupExpr);
     if (funcdecl != nullptr) {
       printf("funcdecl not null\n");
       if (funcdecl->is_named()) {
@@ -525,8 +526,33 @@ VariantMatcher handle_callExpr(Node* root, std::string call_type, int level) {
         callee_qual_name = funcdecl->bound_name;
       }
       else {
-        printf("WARNING: callee has no name\n");
+        printf("WARNING: callee function has no name\n");
       }
+    }
+    else if (lookup != nullptr) {
+      printf("lookup expr not null\n");
+      Node* hasany = lookup->get_child_or_null(MT::hasAnyDeclaration);
+      Node* decl = hasany->get_child_or_null(MT::namedDecl);
+      if (decl) {
+        if (decl->is_named()) {
+          callee_short_name = decl->short_name;
+          callee_qual_name = decl->qual_name;
+        }
+        else if (decl->is_bound()) {
+          callee_short_name = decl->bound_name;
+          callee_qual_name = decl->bound_name;
+        }
+        else {
+          printf("WARNING: callee lookup has no name\n");
+        }
+      }
+      else {
+        printf("WARNING: lookup expr has no named child\n");
+      }
+
+    }
+    else {
+      printf("WARNING: callee has no name at all\n");
     }
   }
   printf("callee_name %s (%s)\n", callee_short_name.c_str(), callee_qual_name.c_str());
@@ -1070,6 +1096,8 @@ VariantMatcher make_matcher(Node* root, int level) {
       return handle_bindable_node(root, "cxxConstructExpr", level);
     case MT::cxxDeleteExpr:
       return handle_bindable_node(root, "cxxDeleteExpr", level);
+    case MT::cxxMethodDecl:
+      return handle_bindable_node(root, "cxxMethodDecl", level);
     case MT::cxxNewExpr:
       return handle_bindable_node(root, "cxxNewExpr", level);
     case MT::cxxOperatorCallExpr:
@@ -1094,16 +1122,26 @@ VariantMatcher make_matcher(Node* root, int level) {
       return handle_forStmt(root, level);
     case MT::functionDecl:
       return handle_bindable_node(root, "functionDecl", level);
+    case MT::hasAnyBody:
+      return handle_non_bindable_node(root, "hasAnyBody", level);
+    case MT::hasAnyDeclaration:
+      return handle_non_bindable_node(root, "hasAnyDeclaration", level);
     case MT::hasAnyLHSExpr:
       return handle_non_bindable_node(root, "hasAnyLHSExpr", level);
+    case MT::hasAnyParameter:
+      return handle_non_bindable_node(root, "hasAnyParameter", level);
     case MT::hasAnyReductionOp:
       return handle_non_bindable_node(root, "hasAnyReductionOp", level);
     case MT::hasAnyRHSExpr:
       return handle_non_bindable_node(root, "hasAnyRHSExpr", level);
+    case MT::hasAnySubExpr:
+      return handle_non_bindable_node(root, "hasAnySubExpr", level);
     case MT::hasArraySize:
       return handle_non_bindable_node(root, "hasArraySize", level);
     case MT::hasAssociatedStmt:
       return handle_non_bindable_node(root, "hasAssociatedStmt", level);
+    case MT::hasCallOperator:
+      return handle_non_bindable_node(root, "hasCallOperator", level);
     case MT::hasCapturedStmt:
       return handle_non_bindable_node(root, "hasCapturedStmt", level);
     case MT::hasDeleteArg:
@@ -1112,12 +1150,16 @@ VariantMatcher make_matcher(Node* root, int level) {
       return handle_non_bindable_node(root, "hasExpectedReturnType", level);
     case MT::hasInitializer:
       return handle_non_bindable_node(root, "hasInitializer", level);
+    case MT::hasLambdaBody:
+      return handle_non_bindable_node(root, "hasLambdaBody", level);
     case MT::hasNewInitializer:
       return handle_non_bindable_node(root, "hasNewInitializer", level);
     case MT::hasObjectExpression:
       return handle_non_bindable_node(root, "hasObjectExpression", level);
     case MT::hasOperatorName:
       return handle_non_bindable_node(root, "hasOperatorName", level);
+    case MT::hasParameter:
+      return handle_non_bindable_node(root, "hasParameter", level);
     case MT::hasReturnValue:
       return handle_non_bindable_node(root, "hasReturnValue", level);
     case MT::hasSingleArgumentExpr:
@@ -1136,10 +1178,14 @@ VariantMatcher make_matcher(Node* root, int level) {
       return handle_non_bindable_node(root, "isArrayForm", level);
     case MT::isNotArrayForm:
       return handle_non_bindable_node(root, "isNotArrayForm", level);
+    case MT::lambdaExpr:
+      return handle_bindable_node(root, "lambdaExpr", level);
     case MT::memberExpr:
       return handle_bindable_node(root, "memberExpr", level);
     case MT::member:
       return handle_non_bindable_node(root, "member", level);
+    case MT::namedDecl:
+      return handle_bindable_node(root, "namedDecl", level);
     case MT::ompAtomicDirective:
         return handle_openmp_node(root, "ompAtomicDirective", level);
     case MT::ompBarrierDirective:
@@ -1286,6 +1332,10 @@ VariantMatcher make_matcher(Node* root, int level) {
       return handle_bindable_node(root, "ompReductionClause", level);
     case MT::parenExpr:
       return handle_bindable_node(root, "parenExpr", level);
+    case MT::parenListExpr:
+      return handle_bindable_node(root, "parenListExpr", level);
+    case MT::parmVarDecl:
+      return handle_bindable_node(root, "parmVarDecl", level);
     case MT::pointerType:
       return handle_bindable_node(root, "pointerType", level);
     case MT::pointee:
@@ -1300,6 +1350,8 @@ VariantMatcher make_matcher(Node* root, int level) {
       return handle_bindable_node(root, "unaryExprOrTypeTraitExpr", level);
     case MT::unaryOperator:
       return handle_unaryOperator(root, level);
+    case MT::unresolvedLookupExpr:
+      return handle_bindable_node(root, "unresolvedLookupExpr", level);
     case MT::valueDecl:
       return handle_bindable_node(root, "valueDecl", level);
     case MT::varDecl:

@@ -32,6 +32,7 @@ enum class MatcherType {
   cxxDefaultArgExpr,
   cxxDeleteExpr,
   cxxFunctionalCastExpr,  //
+  cxxMethodDecl,
   cxxNewExpr,
   cxxOperatorCallExpr,    //
   cxxThisExpr,
@@ -44,23 +45,30 @@ enum class MatcherType {
   floatLiteral,                 //
   forStmt,                //
   functionDecl,
+  hasAnyBody,
+  hasAnyDeclaration,
   hasAnyLHSExpr,
+  hasAnyParameter,
   hasAnyReductionOp,
   hasAnyRHSExpr,                  // 30
+  hasAnySubExpr,
   hasArraySize,                   //
   hasAssociatedStmt,              //
   hasBody,                       //
+  hasCallOperator,
   hasCapturedStmt,              //
   hasCondition,               //
   hasDeleteArg,
   hasExpectedReturnType,
   hasIncrement,           //
   hasInitializer,             //
+  hasLambdaBody,
   hasLHS,                       // 40
   hasLoopInit,                  //
   hasNewInitializer,             //
   hasObjectExpression,
   hasOperatorName,              //
+  hasParameter,
   hasReturnValue,         //
   hasRHS,                         //
   hasSingleArgumentExpr,
@@ -74,6 +82,8 @@ enum class MatcherType {
   loopBody,                     // macro
   memberExpr,
   member,
+  lambdaExpr,
+  namedDecl,
   ompAtomicDirective,
   ompBarrierDirective,                //
   ompCancelDirective,                 // 60
@@ -147,6 +157,8 @@ enum class MatcherType {
   ompUnrollDirective,
   ompReductionClause,                     //
   parenExpr,                    // 130
+  parenListExpr,
+  parmVarDecl,
   pointerType,                  //
   pointee,                //
   returnStmt,             //
@@ -155,8 +167,9 @@ enum class MatcherType {
   type,                         //
   unaryExprOrTypeTraitExpr,
   unaryOperator,              //
-  valueDecl,
-  varDecl,                // 140
+  unresolvedLookupExpr,
+  valueDecl,                    // 140
+  varDecl,                //
 };
 
 static std::vector<MatcherType> singletons = {

@@ -115,9 +115,87 @@ public:
     b.qual_name = literal_decl->getQualifiedNameAsString();
     b.value = new_name;
 
-    // DO NOT attempt to create the matchers here, it gives SUPER WEIRD ERRORS
-    // probably due to StringRefs being tied to this ASTContext, so when it
-    // gets destructed with them still having active references, everything implodes
+    // copy pasta from create_bindings()
+    VariantMatcher inner_matcher;
+    if (!b.name.empty() && !b.qual_name.empty()) {
+      inner_matcher =
+        constructMatcher("declStmt",
+          constructMatcher("containsAnyDeclaration",
+            constructBoundMatcher("namedDecl", "clang_rewrite_match",
+              constructMatcher("anyOf",
+                constructMatcher("hasName", StringRef(b.name), 7),
+                constructMatcher("hasName", StringRef(b.qual_name), 7),
+              6),
+            5),
+          4),
+        3);
+    }
+    else if (!b.name.empty() || !b.qual_name.empty()) {
+      std::string valid_name = b.name.empty() ? b.qual_name : b.name;
+      inner_matcher =
+        constructMatcher("declStmt",
+          constructMatcher("containsAnyDeclaration",
+            constructBoundMatcher("namedDecl", "clang_rewrite_match",
+              constructMatcher("hasName", StringRef(valid_name), 6), 5),
+          4),
+        3);
+    }
+    else {
+      printf("ERROR: no valid name\n");
+    }
+    b.matchers.push_back(inner_matcher);
+
+    VariantMatcher inner_matcher2;
+    if (!b.name.empty() && !b.qual_name.empty()) {
+      inner_matcher2 =
+        constructBoundMatcher("declRefExpr", "clang_rewrite_match",
+          constructMatcher("to",
+            constructMatcher("namedDecl",
+              constructMatcher("anyOf",
+                constructMatcher("hasName", StringRef(b.name), 7),
+                constructMatcher("hasName", StringRef(b.qual_name), 7),
+              6),
+            5),
+          4),
+        3);
+    }
+    else if (!b.name.empty() || !b.qual_name.empty()) {
+      std::string valid_name = b.name.empty() ? b.qual_name : b.name;
+      inner_matcher2 =
+        constructBoundMatcher("declRefExpr", "clang_rewrite_match",
+          constructMatcher("to",
+            constructMatcher("namedDecl",
+                constructMatcher("hasName", StringRef(valid_name), 6),
+            5),
+          4),
+        3);
+    }
+    else {
+      printf("ERROR: no valid name\n");
+    }
+    b.matchers.push_back(inner_matcher2);
+
+    VariantMatcher inner_matcher3;
+    if (!b.name.empty() && !b.qual_name.empty()) {
+      inner_matcher3 =
+        constructBoundMatcher("parmVarDecl", "clang_rewrite_match",
+          constructMatcher("anyOf",
+            constructMatcher("hasName", StringRef(b.name), 5),
+            constructMatcher("hasName", StringRef(b.qual_name), 5),
+        4),
+      3);
+    }
+    else if (!b.name.empty() || !b.qual_name.empty()) {
+      std::string valid_name = b.name.empty() ? b.qual_name : b.name;
+      inner_matcher3 =
+        constructBoundMatcher("parmVarDecl", "clang_rewrite_match",
+          constructMatcher("hasName", StringRef(valid_name), 4),
+      3);
+    }
+    else {
+      printf("ERROR: no valid name\n");
+    }
+    b.matchers.push_back(inner_matcher3);
 
     b.kind = BindingKind::VarNameBinding;
 

@@ -268,6 +268,7 @@ RegistryMaps::RegistryMaps() {
   REGISTER_MATCHER(hasAnyRHSExpr);
   REGISTER_MATCHER(hasAnyReductionOp);
   REGISTER_MATCHER(hasAnySelector);
+  REGISTER_MATCHER(hasAnySubExpr);
   REGISTER_MATCHER(hasAnySubstatement);
   REGISTER_MATCHER(hasAnyTemplateArgument);
   REGISTER_MATCHER(hasAnyTemplateArgumentLoc);
@@ -282,6 +283,7 @@ RegistryMaps::RegistryMaps() {
   REGISTER_MATCHER(hasBinding);
   REGISTER_MATCHER(hasBitWidth);
   REGISTER_MATCHER(hasBody);
+  REGISTER_MATCHER(hasCallOperator);
   REGISTER_MATCHER(hasCanonicalType);
   REGISTER_MATCHER(hasCapturedDecl);
   REGISTER_MATCHER(hasCapturedStmt);
@@ -316,6 +318,7 @@ RegistryMaps::RegistryMaps() {
   REGISTER_MATCHER(hasInitStatement);
   REGISTER_MATCHER(hasKernelConfig);
   REGISTER_MATCHER(hasKeywordSelector);
+  REGISTER_MATCHER(hasLambdaBody);
   REGISTER_MATCHER(hasLHS);
   REGISTER_MATCHER(hasLocalQualifiers);
   REGISTER_MATCHER(hasLocalStorage);
@@ -605,6 +608,7 @@ RegistryMaps::RegistryMaps() {
   REGISTER_MATCHER(realFloatingPointType);
   REGISTER_MATCHER(recordDecl);
   REGISTER_MATCHER(recordType);
+  REGISTER_MATCHER(recoveryExpr);
   REGISTER_MATCHER(referenceType);
   REGISTER_MATCHER(referenceTypeLoc);
   REGISTER_MATCHER(refersToDeclaration);

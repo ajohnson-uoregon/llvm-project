@@ -1232,6 +1232,7 @@ const internal::VariadicDynCastAllOfMatcher<Decl, CXXDeductionGuideDecl>
     cxxDeductionGuideDecl;
 const internal::VariadicDynCastAllOfMatcher<Stmt, CapturedStmt> capturedStmt;
 const internal::VariadicDynCastAllOfMatcher<Decl, CapturedDecl> capturedDecl;
+const internal::VariadicDynCastAllOfMatcher<Expr, RecoveryExpr> recoveryExpr;
 
 } // end namespace ast_matchers
 } // end namespace clang

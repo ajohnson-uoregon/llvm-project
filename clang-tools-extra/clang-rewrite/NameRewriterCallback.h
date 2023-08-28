@@ -105,6 +105,51 @@ public:
     return false;
   }
 
+  bool VisitRecoveryExpr(RecoveryExpr* expr) {
+    printf("recovery expr\n");
+    // for (Expr* e : expr->subExpressions()) {
+    //   e->dump();
+    //   // TraverseStmt(e);
+    // }
+
+    FullSourceLoc begin = context->getFullLoc(expr->getBeginLoc());
+    FullSourceLoc end = context->getFullLoc(expr->getEndLoc());
+
+    size_t length = Lexer::MeasureTokenLength(begin, context->getSourceManager(), context->getLangOpts());
+
+    FileID fid = begin.getFileID();
+    unsigned int begin_offset = begin.getFileOffset();
+    unsigned int end_offset = end.getFileOffset();
+
+    printf("begin offset %u\n", begin_offset);
+    printf("end offset   %u\n", end_offset);
+    printf("array length %u\n", length);
+
+    std::optional<llvm::MemoryBufferRef> buff =
+        context->getSourceManager().getBufferOrNone(fid);
+
+    char *code_c = new char[length + 1];
+    if (buff.has_value()) {
+      memcpy(code_c, &(buff->getBufferStart()[begin_offset]),
+             (length + 1) * sizeof(char));
+      code_c[length] =
+          '\0'; // force null terminated for Reasons
+      printf("body code??? %s\n", code_c);
+    } else {
+      printf("no buffer :<\n");
+    }
+
+    for (NamedDecl* d : valid_decls) {
+      if (d->getNameAsString() == std::string(code_c)) {
+        printf("recovery expr %s\n", code_c);
+        name_rewriter.ReplaceText(begin, length, "clang_rewrite_" + d->getNameAsString());
+      }
+    }
+
+    delete[] code_c;
+    return true;
+  }
+
 private:
   ASTContext* context;
   std::vector<std::string> literals;

@@ -115,7 +115,6 @@ int main(int argc, const char** argv) {
     retval = Tool->run(newFrontendActionFactory(&literal_finder).get());
     if (retval) {
       printf("Problems with finding literals.\n");
-      return retval;
     }
 
     MatchFinder name_rewriter;
@@ -146,7 +145,6 @@ int main(int argc, const char** argv) {
     retval = ProcessSpec->run(newFrontendActionFactory(&inst_finder).get());
     if (retval) {
       printf("Problems with creating matchers and transformations.\n");
-      return retval;
     }
   }
 

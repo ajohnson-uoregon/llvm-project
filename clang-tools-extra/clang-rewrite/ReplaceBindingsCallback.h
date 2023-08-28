@@ -212,11 +212,19 @@ public:
           )))
         )).bind("matcher");
 
+        StatementMatcher inits_matcher2 = callExpr(allOf(
+          callee(unresolvedLookupExpr(hasAnyDeclaration(namedDecl(hasName("clang_rewrite::loop_body"))))),
+          hasArgument(0, initListExpr(forEachDescendant(
+            initListExpr(hasInit(0, expr().bind("body")))
+          )))
+        )).bind("matcher");
+
         // TODO: only find matches within range?
         MatchFinder inits_finder;
         MatcherGenCallback mgcb(/*is_internal_matcher=*/true, all_bindings);
 
         inits_finder.addMatcher(inits_matcher, &mgcb);
+        inits_finder.addMatcher(inits_matcher2, &mgcb);
 
         printf("ABOUT TO RUN THE THING\n");
         ClangTool process_temp(Tool->getCompilationDatabase(), {"clang_rewrite_temp_source.cpp.bind_final.cpp"});
@@ -237,13 +245,26 @@ public:
             break;
           }
           else if (const CallExpr* callexpr = CurNode.get<CallExpr>()) {
-            if (callexpr->getDirectCallee()->getQualifiedNameAsString() ==
-                "clang_rewrite::loop_body") {
+            const Expr* callee = callexpr->getCallee();
+            // i don't like doing this either but it's the best i got
+            bool lookup_is_loopbody = false;
+            if (const UnresolvedLookupExpr* lookup = dyn_cast<UnresolvedLookupExpr>(callee)) {
+              const Decl* d = *(lookup->decls().begin());
+              if (const NamedDecl* decl = dyn_cast<NamedDecl>(d)) {
+                if (decl->getQualifiedNameAsString() == "clang_rewrite::loop_body") {
+                  lookup_is_loopbody = true;
+                }
+              }
+            }
+            if ((callexpr->getDirectCallee() && callexpr->getDirectCallee()->getQualifiedNameAsString() ==
+                "clang_rewrite::loop_body") ||
+                lookup_is_loopbody) {
               call = callexpr;
               if (callexpr->getNumArgs() > 0) {
                 printf("callexpr num args %d\n", callexpr->getNumArgs());
                 const Expr* arg = callexpr->getArg(0);
                 const InitListExpr* initlist = findFirstChild<InitListExpr>(arg);
+
                 for (int i = 0; i < initlist->getNumInits(); i++) {
                   const Expr* matcher = cast<CXXConstructExpr>(initlist->getInit(i))->getArg(0);
                   const Expr* replacer = cast<CXXConstructExpr>(initlist->getInit(i))->getArg(1);

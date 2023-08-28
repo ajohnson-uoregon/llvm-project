@@ -62,6 +62,8 @@ public:
   FileID fid;
   std::string newfname = temp_file_name;
 
+  std::vector<Location> past_matches;
+
 
   void run(const MatchFinder::MatchResult &result) override {
     printf("running SetupStripperCallback\n");
@@ -74,6 +76,26 @@ public:
     if (!setup) {
       printf("ERROR: invalid setup section match\n");
       return;
+    }
+
+    FullSourceLoc begin = context->getFullLoc(setup->getBeginLoc());
+    FullSourceLoc end = context->getFullLoc(setup->getEndLoc());
+
+    unsigned int begin_line = begin.getSpellingLineNumber();
+    unsigned int begin_col = begin.getSpellingColumnNumber();
+    unsigned int end_line = end.getSpellingLineNumber();
+    unsigned int end_col = end.getSpellingColumnNumber();
+
+    if (std::find(past_matches.begin(), past_matches.end(),
+        (Location){begin_line, begin_col, end_line, end_col}) != past_matches.end()) {
+      printf("duplicate match\n");
+      for (Location l : past_matches) {
+        printf("\t{%d:%d-%d:%d}\n", l.begin_line, l.begin_col, l.end_line, l.end_col);
+      }
+      return;
+    }
+    else {
+      past_matches.push_back({begin_line, begin_col, end_line, end_col});
     }
 
     FullSourceLoc full_loc(setup->getBeginLoc(), context->getSourceManager());
@@ -112,6 +134,8 @@ public:
   std::string newfname = temp_file_name;
   std::string new_text = "";
 
+  std::vector<Location> past_matches;
+
   void run(const MatchFinder::MatchResult &result) override {
     printf("running AttrStripperCallback\n");
 
@@ -125,6 +149,26 @@ public:
     if (!match && !body) {
       printf("ERROR: invalid attr match\n");
       return;
+    }
+
+    FullSourceLoc begin = context->getFullLoc(body->getBeginLoc());
+    FullSourceLoc end = context->getFullLoc(body->getEndLoc());
+
+    unsigned int begin_line = begin.getSpellingLineNumber();
+    unsigned int begin_col = begin.getSpellingColumnNumber();
+    unsigned int end_line = end.getSpellingLineNumber();
+    unsigned int end_col = end.getSpellingColumnNumber();
+
+    if (std::find(past_matches.begin(), past_matches.end(),
+        (Location){begin_line, begin_col, end_line, end_col}) != past_matches.end()) {
+      printf("duplicate match\n");
+      for (Location l : past_matches) {
+        printf("\t{%d:%d-%d:%d}\n", l.begin_line, l.begin_col, l.end_line, l.end_col);
+      }
+      return;
+    }
+    else {
+      past_matches.push_back({begin_line, begin_col, end_line, end_col});
     }
 
     FullSourceLoc full_loc(match->getBeginLoc(), context->getSourceManager());
@@ -315,6 +359,36 @@ std::vector<Binding> create_bindings(const MatchFinder::MatchResult &result,
         }
         b.matchers.push_back(inner_matcher3);
 
+        VariantMatcher inner_matcher4;
+        if (!b.name.empty() && !b.qual_name.empty()) {
+          inner_matcher4 =
+            constructBoundMatcher("unresolvedLookupExpr", "clang_rewrite_match",
+              constructMatcher("hasAnyDeclaration",
+                constructMatcher("namedDecl",
+                  constructMatcher("anyOf",
+                    constructMatcher("hasName", StringRef(b.name), 7),
+                    constructMatcher("hasName", StringRef(b.qual_name), 7),
+                  6),
+                5),
+              4),
+            3);
+        }
+        else if (!b.name.empty() || !b.qual_name.empty()) {
+          std::string valid_name = b.name.empty() ? b.qual_name : b.name;
+          inner_matcher4 =
+            constructBoundMatcher("unresolvedLookupExpr", "clang_rewrite_match",
+              constructMatcher("hasAnyDeclaration",
+                constructMatcher("namedDecl",
+                  constructMatcher("hasName", StringRef(valid_name), 6),
+                5),
+              4),
+            3);
+        }
+        else {
+          printf("ERROR: no valid name\n");
+        }
+        b.matchers.push_back(inner_matcher4);
+
         b.value = code;
         b.kind = BindingKind::VarNameBinding;
         bindings.push_back(b);
@@ -359,6 +433,14 @@ std::vector<Binding> create_bindings(const MatchFinder::MatchResult &result,
               4),
             3);
           b.matchers.push_back(inner_matcher2);
+          VariantMatcher inner_matcher3 =
+            constructBoundMatcher("parmVarDecl", "clang_rewrite_match",
+              constructMatcher("anyOf",
+                constructMatcher("hasName", StringRef(b.name), 5),
+                constructMatcher("hasName", StringRef(b.qual_name), 5),
+            4),
+          3);
+          b.matchers.push_back(inner_matcher3);
           b.value = name;
           b.kind = BindingKind::VarNameBinding;
           bindings.push_back(b);
@@ -382,6 +464,11 @@ std::vector<Binding> create_bindings(const MatchFinder::MatchResult &result,
               4),
             3);
           b.matchers.push_back(inner_matcher2);
+          VariantMatcher inner_matcher3 =
+            constructBoundMatcher("parmVarDecl", "clang_rewrite_match",
+              constructMatcher("hasName", StringRef(valid_name), 4),
+          3);
+          b.matchers.push_back(inner_matcher3);
           b.value = name;
           b.kind = BindingKind::VarNameBinding;
           bindings.push_back(b);
@@ -500,6 +587,7 @@ public:
   MatcherWrapper<T>* matcher;
 
   std::vector<Binding> bindings;
+  std::vector<Location> past_matches;
 
   RewriteCallback(MatcherWrapper<T> *matcher) : matcher(matcher) {}
 
@@ -527,6 +615,34 @@ public:
       return;
     }
 
+    FullSourceLoc begin, end;
+
+    if (smatch) {
+      begin = context->getFullLoc(smatch->getBeginLoc());
+      end = context->getFullLoc(smatch->getEndLoc());
+    }
+    else if (dmatch) {
+      begin = context->getFullLoc(dmatch->getBeginLoc());
+      end = context->getFullLoc(dmatch->getBeginLoc());
+    }
+
+    unsigned int begin_line = begin.getSpellingLineNumber();
+    unsigned int begin_col = begin.getSpellingColumnNumber();
+    unsigned int end_line = end.getSpellingLineNumber();
+    unsigned int end_col = end.getSpellingColumnNumber();
+
+    if (std::find(past_matches.begin(), past_matches.end(),
+        (Location){begin_line, begin_col, end_line, end_col}) != past_matches.end()) {
+      printf("duplicate match\n");
+      for (Location l : past_matches) {
+        printf("\t{%d:%d-%d:%d}\n", l.begin_line, l.begin_col, l.end_line, l.end_col);
+      }
+      return;
+    }
+    else {
+      past_matches.push_back({begin_line, begin_col, end_line, end_col});
+    }
+
     // create list of bindings
     bindings = create_bindings(result, context);
 
@@ -540,99 +656,24 @@ public:
       ))
     ).bind("code_literal_decl")));
 
+    StatementMatcher code_literals2 = declStmt(containsAnyDeclaration(varDecl(
+      hasInitializer(
+        callExpr(callee(unresolvedLookupExpr(
+          hasAnyDeclaration(functionTemplateDecl(
+            hasName("clang_rewrite::code_literal")
+          ))
+        ))).bind("code_literal_call")
+      )
+    ).bind("code_literal_decl")));
+
     MatchFinder code_literals_finder;
     CodeLiteralsCallback literals_callback(&bindings);
 
     code_literals_finder.addMatcher(code_literals, &literals_callback);
+    code_literals_finder.addMatcher(code_literals2, &literals_callback);
 
     ClangTool process_temp(Tool->getCompilationDatabase(), {"clang_rewrite_temp_source.cpp.rewritten_spec.cpp"});
     process_temp.run(newFrontendActionFactory(&code_literals_finder).get());
-
-    for (Binding& b: bindings) {
-      if (b.matchers.empty()) {
-        // copy pasta from create_bindings()
-        VariantMatcher inner_matcher;
-        if (!b.name.empty() && !b.qual_name.empty()) {
-          inner_matcher =
-            constructMatcher("declStmt",
-              constructMatcher("containsAnyDeclaration",
-                constructBoundMatcher("namedDecl", "clang_rewrite_match",
-                  constructMatcher("anyOf",
-                    constructMatcher("hasName", StringRef(b.name), 7),
-                    constructMatcher("hasName", StringRef(b.qual_name), 7),
-                  6),
-                5),
-              4),
-            3);
-        }
-        else if (!b.name.empty() || !b.qual_name.empty()) {
-          std::string valid_name = b.name.empty() ? b.qual_name : b.name;
-          inner_matcher =
-            constructMatcher("declStmt",
-              constructMatcher("containsAnyDeclaration",
-                constructBoundMatcher("namedDecl", "clang_rewrite_match",
-                  constructMatcher("hasName", StringRef(valid_name), 6), 5),
-              4),
-            3);
-        }
-        else {
-          printf("ERROR: no valid name\n");
-        }
-        b.matchers.push_back(inner_matcher);
-
-        VariantMatcher inner_matcher2;
-        if (!b.name.empty() && !b.qual_name.empty()) {
-          inner_matcher2 =
-            constructBoundMatcher("declRefExpr", "clang_rewrite_match",
-              constructMatcher("to",
-                constructMatcher("namedDecl",
-                  constructMatcher("anyOf",
-                    constructMatcher("hasName", StringRef(b.name), 7),
-                    constructMatcher("hasName", StringRef(b.qual_name), 7),
-                  6),
-                5),
-              4),
-            3);
-        }
-        else if (!b.name.empty() || !b.qual_name.empty()) {
-          std::string valid_name = b.name.empty() ? b.qual_name : b.name;
-          inner_matcher2 =
-            constructBoundMatcher("declRefExpr", "clang_rewrite_match",
-              constructMatcher("to",
-                constructMatcher("namedDecl",
-                    constructMatcher("hasName", StringRef(valid_name), 6),
-                5),
-              4),
-            3);
-        }
-        else {
-          printf("ERROR: no valid name\n");
-        }
-        b.matchers.push_back(inner_matcher2);
-
-        VariantMatcher inner_matcher3;
-        if (!b.name.empty() && !b.qual_name.empty()) {
-          inner_matcher3 =
-            constructBoundMatcher("parmVarDecl", "clang_rewrite_match",
-              constructMatcher("anyOf",
-                constructMatcher("hasName", StringRef(b.name), 5),
-                constructMatcher("hasName", StringRef(b.qual_name), 5),
-            4),
-          3);
-        }
-        else if (!b.name.empty() || !b.qual_name.empty()) {
-          std::string valid_name = b.name.empty() ? b.qual_name : b.name;
-          inner_matcher3 =
-            constructBoundMatcher("parmVarDecl", "clang_rewrite_match",
-              constructMatcher("hasName", StringRef(valid_name), 4),
-          3);
-        }
-        else {
-          printf("ERROR: no valid name\n");
-        }
-        b.matchers.push_back(inner_matcher3);
-      }
-    }
 
     SourceRange original_range;
     std::string original_file;
@@ -707,6 +748,12 @@ public:
       printf("WARNING: only one action currently supported\n");
     }
 
+    if (!std::filesystem::exists(temp_file_name + ".bind_final.cpp")) {
+      std::filesystem::copy(temp_file_name + "." + std::to_string(num_bind_files) + ".bind.cpp",
+                            temp_file_name + ".bind_final.cpp",
+                            std::filesystem::copy_options::overwrite_existing);
+    }
+
     std::string new_code = strip_attrs();
     file_rw.ReplaceText(original_range, new_code);
     file_rw.overwriteChangedFiles();
@@ -721,6 +768,7 @@ public:
     binding_rw.resetAllRewriteBuffers(binding_rw.getSourceMgr());
     attr_stripper_rw.resetAllRewriteBuffers(attr_stripper_rw.getSourceMgr());
 
+    std::filesystem::remove(temp_file_name + ".bind_final.cpp");
   }
 
   void onEndOfTranslationUnit() override {}

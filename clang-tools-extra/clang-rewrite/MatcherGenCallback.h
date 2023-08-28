@@ -50,9 +50,9 @@ public:
       return root;
     }
 
-    bool is_literal(NamedDecl* decl) {
+    bool is_literal(const NamedDecl* decl) {
       // printf("BUT IS IT LITERAL\n");
-      DeclContext* con = decl->getDeclContext();
+      const DeclContext* con = decl->getDeclContext();
       if (auto ns = dyn_cast<NamespaceDecl>(con)) {
         // printf("NAMESPACE\n");
         // ns->dump();
@@ -74,7 +74,7 @@ public:
       return is_literal(ref->getDecl());
     }
 
-    bool is_internal_literal(NamedDecl* decl) {
+    bool is_internal_literal(const NamedDecl* decl) {
       printf("internal literals\n");
       for (Binding b : internal_literals) {
         printf("%s\n", b.value.c_str());
@@ -172,6 +172,7 @@ public:
         return true;
       }
       FunctionDecl* callee = call->getDirectCallee();
+      Expr* broken_callee = call->getCallee();
       if (callee != nullptr) {
         if (callee->getQualifiedNameAsString() == "clang_rewrite::loop_body") {
           printf("FOUND LOOP BODY CALL\n");
@@ -196,6 +197,30 @@ public:
         }
         else {
           fxn->bind_to(callee->getNameAsString());
+        }
+      }
+      else if (broken_callee != nullptr) {
+        if (const UnresolvedLookupExpr* lookup = dyn_cast<UnresolvedLookupExpr>(broken_callee)) {
+          add_node(MT::callExpr, "callExpr()", getNumChildren(call) + 1);
+          add_node(MT::callee, "callee()", 1);
+          add_node(MT::unresolvedLookupExpr, "unresolvedLookupExpr()", 1);
+          add_node(MT::hasAnyDeclaration, "hasAnyDeclaration()", 1);
+          Node* named = add_node(MT::namedDecl, "namedDecl()", 0);
+
+          const Decl* d = *(lookup->decls().begin());
+          if (const NamedDecl* decl = dyn_cast<NamedDecl>(d)) {
+            if (is_literal(decl)) {
+              named->set_is_literal(true);
+              named->set_name(decl->getNameAsString(), decl->getQualifiedNameAsString());
+            }
+            else if (is_internal_matcher && is_internal_literal(decl)) {
+              named->set_is_literal(true);
+              named->set_name(decl->getNameAsString(), decl->getQualifiedNameAsString());
+            }
+            else {
+              named->bind_to(decl->getNameAsString());
+            }
+          }
         }
       }
       else {
@@ -280,6 +305,47 @@ public:
       set_type_on_child(ty);
       add_node(MT::fakeNode, "cxxFunctionalCastExpr", getNumChildren(cast));
       return true;
+    }
+
+    bool VisitCXXMethodDecl(CXXMethodDecl* decl) {
+      Node* method = add_node(MT::cxxMethodDecl, "cxxMethodDecl()", decl->getNumParams() + 1);
+
+      std::string name = decl->getNameAsString();
+      std::string qualname = decl->getQualifiedNameAsString();
+
+      if (is_literal(decl)) {
+        method->set_name(name, qualname);
+        method->set_is_literal(true);
+        std::string ty = decl->getType().getAsString();
+        method->set_type(ty);
+      }
+      else if (is_internal_matcher && is_internal_literal(decl)) {
+        method->set_name(name, qualname);
+        method->set_is_literal(true);
+        std::string ty = decl->getType().getAsString();
+        method->set_type(ty);
+      }
+      else if (name == "operator()") {
+        method->set_name(name, name);
+        method->set_is_literal(true);
+      }
+      else {
+        method->bind_to(name + ";" + qualname);
+      }
+
+      // TODO: figure out matchers with arg and submatcher
+      // int i = 0;
+      for (const ParmVarDecl* parm : decl->parameters()) {
+        Node* p = add_node(MT::hasAnyParameter, "hasAnyParameter()", 1);
+        // p->add_arg(i);
+        TraverseDecl(const_cast<ParmVarDecl*>(parm));
+        // i++;
+      }
+
+      add_node(MT::hasAnyBody, "hasAnyBody()", getNumChildren(decl->getBody()));
+      TraverseStmt(decl->getBody());
+
+      return false;
     }
 
     bool VisitCXXNewExpr(CXXNewExpr* expr) {
@@ -510,6 +576,17 @@ public:
       add_node(MT::ifStmt, "ifStmt()", getNumChildren(ifstmt));
 
       return true;
+    }
+
+    bool VisitLambdaExpr(LambdaExpr* expr) {
+      add_node(MT::lambdaExpr, "lambdaExpr()", 2);
+      add_node(MT::hasCallOperator, "hasCallOperator()", 1);
+      TraverseDecl(expr->getCallOperator());
+
+      add_node(MT::hasLambdaBody, "hasLambdaBody()", 1);
+      TraverseStmt(expr->getBody());
+
+      return false;
     }
 
     bool VisitMemberExpr(MemberExpr* expr) {
@@ -909,6 +986,38 @@ public:
       return true;
     }
 
+    bool VisitParenListExpr(ParenListExpr* parens) {
+      add_node(MT::parenListExpr, "parenListExpr()", 1);
+      add_node(MT::hasAnySubExpr, "hasAnySubExpr()", getNumChildren(parens));
+
+      return true;
+    }
+
+    bool VisitParmVarDecl(ParmVarDecl* decl) {
+      Node* d = add_node(MT::parmVarDecl, "parmVarDecl()", 0);
+      std::string name = decl->getNameAsString();
+      std::string qualname = decl->getQualifiedNameAsString();
+
+      if (is_literal(decl)) {
+        d->set_name(name, qualname);
+        d->set_is_literal(true);
+        std::string ty = decl->getType().getAsString();
+        d->set_type(ty);
+      }
+      else if (is_internal_matcher && is_internal_literal(decl)) {
+        d->set_name(name, qualname);
+        d->set_is_literal(true);
+        std::string ty = decl->getType().getAsString();
+        d->set_type(ty);
+      }
+      else {
+        d->bind_to(name + ";" + qualname);
+      }
+
+
+      return true;
+    }
+
     bool VisitUnaryExprOrTypeTraitExpr(UnaryExprOrTypeTraitExpr* expr) {
       if (!expr->isArgumentType()) {
         add_node(MT::unaryExprOrTypeTraitExpr, "unaryExprOrTypeTraitExpr()", 1);
@@ -921,7 +1030,34 @@ public:
       return true;
     }
 
+    bool VisitUnresolvedLookupExpr(UnresolvedLookupExpr* expr) {
+      add_node(MT::unresolvedLookupExpr, "unresolvedLookupExpr()", 1);
+      add_node(MT::hasAnyDeclaration, "hasAnyDeclaration()", 1);
+
+      Node* named = add_node(MT::namedDecl, "namedDecl()", 0);
+
+      const Decl* d = *(expr->decls().begin());
+      if (const NamedDecl* decl = dyn_cast<NamedDecl>(d)) {
+        if (is_literal(decl)) {
+          named->set_is_literal(true);
+          named->set_name(decl->getNameAsString(), decl->getQualifiedNameAsString());
+        }
+        else if (is_internal_matcher && is_internal_literal(decl)) {
+          named->set_is_literal(true);
+          named->set_name(decl->getNameAsString(), decl->getQualifiedNameAsString());
+        }
+        else {
+          named->bind_to(decl->getNameAsString());
+        }
+      }
+
+      return true;
+    }
+
     bool VisitVarDecl(VarDecl* decl) {
+      if (isa<ParmVarDecl>(decl)) {
+        return true;
+      }
       std::string name = decl->getNameAsString();
       std::string qualname = decl->getQualifiedNameAsString();
 
