@@ -20,6 +20,7 @@
 #include "CodeAction.h"
 #include "ConstructMatchers.h"
 #include "FindLiteralsCallback.h"
+#include "include/ClangRewriteMacros.h"
 
 #include <string>
 #include <vector>
@@ -181,7 +182,43 @@ public:
           // short_name be the name of the loop instead of a generic loop_body
           body->set_name("loop_body", "clang_rewrite::loop_body");
           body->bind_to("clang_rewrite::loop_body");
-          return false; //don't traverse the rest of the tree, we handle that
+          return true;
+        }
+        else if (callee->getQualifiedNameAsString() == "clang_rewrite::contains") {
+          printf("FOUND CONTAINS CALL\n");
+          add_node(MT::contains, "contains", call->getNumArgs());
+
+          for (const Expr* arg : call->arguments()) {
+            if (const DeclRefExpr* decl = dyn_cast<DeclRefExpr>(arg)) {
+              const ValueDecl* val = decl->getDecl();
+              decl->getDecl()->dump();
+              if (const EnumConstantDecl* enum_val = dyn_cast<EnumConstantDecl>(val)) {
+                const llvm::APSInt init = enum_val->getInitVal();
+                int test = init.getExtValue();
+                printf("testing %d\n", test);
+                switch (test) {
+                  case (int)clang_rewrite::code_structure::loop:
+                    printf("YAHAHA YOU FOUND ME\n");
+                    add_node(MT::code_structure_loop, "loop", 0);
+                    break;
+                  case (int)clang_rewrite::code_structure::conditional:
+                    add_node(MT::code_structure_conditional, "conditional", 0);
+                    break;
+                  case (int)clang_rewrite::code_structure::math:
+                    add_node(MT::code_structure_math, "math", 0);
+                    break;
+                  default:
+                    printf("unknown code structure\n");
+                }
+              }
+            }
+          }
+          // get argument
+          return true;
+        }
+        else if (callee->getQualifiedNameAsString() == "clang_rewrite::not_contains") {
+          printf("FOUND NOT CONTAINS CALL\n");
+          return true;
         }
         // plus 1 for callee
         add_node(MT::callExpr, "callExpr()", getNumChildren(call) +1);
@@ -388,6 +425,10 @@ public:
       std::string qualname = decl->getQualifiedNameAsString();
       printf("name: %s\n", name.c_str());
       printf("qual name %s\n", qualname.c_str());
+
+      if (StringRef(qualname).startswith("clang_rewrite::")) {
+        return true;
+      }
 
       if (is_literal(ref)) {
         Node* declref = add_node(MT::declRefExpr, "declRefExpr()", getNumChildren(ref) +1);

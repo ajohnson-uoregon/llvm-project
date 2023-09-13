@@ -24,9 +24,13 @@ enum class MatcherType {
   callExpr,
   capturedStmt,
   characterLiteral,
+  code_structure_conditional,
+  code_structure_loop,
+  code_structure_math,
   compoundLiteralExpr,
-  compoundStmt,
-  cudaKernelCallExpr,           // 10
+  compoundStmt,                 // 10
+  contains,
+  cudaKernelCallExpr,           //
   cxxBoolLiteral,               //
   cxxConstructExpr,
   cxxDefaultArgExpr,
@@ -34,27 +38,27 @@ enum class MatcherType {
   cxxFunctionalCastExpr,  //
   cxxMethodDecl,
   cxxNewExpr,
-  cxxOperatorCallExpr,    //
+  cxxOperatorCallExpr,        // 20
   cxxThisExpr,
   declRefExpr,
-  declStmt,                       // 20
+  declStmt,                       //
   equals,                         //
   expr,                          //
   fieldDecl,
   fixedPointLiteral,            //
   floatLiteral,                 //
   forStmt,                //
-  functionDecl,
+  functionDecl,               // 30
   hasAnyBody,
   hasAnyDeclaration,
   hasAnyLHSExpr,
   hasAnyParameter,
   hasAnyReductionOp,
-  hasAnyRHSExpr,                  // 30
+  hasAnyRHSExpr,                  //
   hasAnySubExpr,
   hasArraySize,                   //
   hasAssociatedStmt,              //
-  hasBody,                       //
+  hasBody,                       // 40
   hasCallOperator,
   hasCapturedStmt,              //
   hasCondition,               //
@@ -63,8 +67,8 @@ enum class MatcherType {
   hasIncrement,           //
   hasInitializer,             //
   hasLambdaBody,
-  hasLHS,                       // 40
-  hasLoopInit,                  //
+  hasLHS,                       //
+  hasLoopInit,                  // 50
   hasNewInitializer,             //
   hasObjectExpression,
   hasOperatorName,              //
@@ -74,7 +78,7 @@ enum class MatcherType {
   hasSingleArgumentExpr,
   hasSubExpr,                     //
   hasType,                        //
-  ifStmt,                         // 50
+  ifStmt,                         // 60
   ignoringParenImpCasts,          //
   integerLiteral,                 //
   isArrayForm,

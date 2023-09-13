@@ -8,7 +8,9 @@
 namespace clang_rewrite {
 
   enum class code_structure {
-    loop,
+    loop = 0,
+    conditional,
+    math,
   };
 
   void loop_body() {}
@@ -18,6 +20,8 @@ namespace clang_rewrite {
 
   // template<typename T, typename U>
   void loop_body(std::vector<std::pair<int,int>> bindings) {}
+
+  void contains(code_structure structure) {}
 
   void not_contains(code_structure structure) {}
 

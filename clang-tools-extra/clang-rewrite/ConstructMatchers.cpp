@@ -433,6 +433,9 @@ VariantMatcher handle_compoundStmt(Node* root, int level) {
       if (child->matcher_type == MT::loopBody) {
         root->bind_to(child->qual_name);
       }
+      else if (child->matcher_type == MT::contains) {
+        child_matchers.push_back(make_matcher(child, level+5));
+      }
       else {
         child_matchers.push_back(constructMatcher("hasAnySubstatement",
             make_matcher(child, level+6), level+5));
@@ -1009,6 +1012,75 @@ VariantMatcher handle_openmp_node(Node* root, StringRef name, int level) {
   return handle_bindable_children(root, child_matchers, name, level);
 }
 
+VariantMatcher handle_code_structure_math(Node* root, int level) {
+  std::vector<VariantValue> child_matchers;
+  child_matchers.insert(child_matchers.end(), root->args.begin(), root->args.end());
+
+  DynTypedMatcher matcher =
+    binaryOperator(anyOf(
+      hasOperatorName("+"),
+      hasOperatorName("-"),
+      hasOperatorName("*"),
+      hasOperatorName("/"),
+      hasOperatorName("%"),
+      hasOperatorName("&"),
+      hasOperatorName("|"),
+      hasOperatorName("^")
+    ));
+
+  child_matchers.push_back(VariantMatcher::SingleMatcher(matcher));
+
+  if (root->has_name) {
+    child_matchers.push_back(constructMatcher("hasName", StringRef(root->qual_name), level+5));
+  }
+  if (root->bound) {
+    printf("WARNING: binding on a non bindable node\n");
+  }
+
+  if (root->children) {
+    for (Node* child = root->children; child != nullptr; child = child->next_sibling) {
+      child_matchers.push_back(make_matcher(child, level+5));
+    }
+  }
+  if (child_matchers.size() < 1 && !is_singleton(root->matcher_type)) {
+    // guarantee child_matchers.size() >= 1 (also required to not make an
+    // ambiguous matcher and actually match things)
+    child_matchers.push_back(constructMatcher("anything", level+5));
+  }
+
+
+
+  if (child_matchers.size() > 1) {
+    if (root->ignore_casts) {
+      return constructMatcher("ignoringParenCasts",
+              constructMatcher("allOf", child_matchers, level+2), level+1);
+    }
+    else {
+      return constructMatcher("allOf", child_matchers, level+1);
+    }
+  } // child_matchers.size() > 1
+  else if (child_matchers.size() == 1) { // child_matchers.size() == 1
+    if (root->ignore_casts) {
+      return constructMatcher("ignoringParenCasts", child_matchers[0], level+1);
+    }
+    else {
+      return child_matchers[0].getMatcher();
+    }
+  }
+  else {
+    return VariantMatcher::SingleMatcher(matcher);
+  }
+  // else { // child_matchers.size() == 0
+  //   if (root->ignore_casts) {
+  //     return constructMatcher("ignoringParenCasts",
+  //             constructMatcher(name, level+2), level+1);
+  //   }
+  //   else {
+  //     return constructMatcher(name, level+1);
+  //   }
+  // } // child_matchers.size()
+}
+
 
 
 VariantMatcher handle_non_bindable_node(Node* root, StringRef name, int level) {
@@ -1086,10 +1158,18 @@ VariantMatcher make_matcher(Node* root, int level) {
       return handle_callExpr(root, "callExpr", level);
     case MT::capturedStmt:
       return handle_bindable_node(root, "capturedStmt", level);
+    case MT::code_structure_conditional:
+      return handle_non_bindable_node(root, "ifStmt", level);
+    case MT::code_structure_loop:
+      return handle_non_bindable_node(root, "forStmt", level);
+    case MT::code_structure_math:
+      return handle_code_structure_math(root, level);
     case MT::compoundStmt:
       return handle_compoundStmt(root, level);
     case MT::compoundLiteralExpr:
       return handle_bindable_node(root, "compoundLiteralExpr", level);
+    case MT::contains:
+      return handle_non_bindable_node(root, "hasDescendant", level);
     case MT::cudaKernelCallExpr:
       return handle_callExpr(root, "cudaKernelCallExpr", level);
     case MT::cxxConstructExpr:
