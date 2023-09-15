@@ -8537,8 +8537,17 @@ static void handleCodeModifyAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
     case ParsedAttr::AT_InsertCodeBefore:
       D->addAttr(::new (S.Context) InsertCodeBeforeAttr(S.Context, AL, Matchers.data(), Matchers.size()));
       break;
+    case ParsedAttr::AT_InsertAtEntry:
+      D->addAttr(::new (S.Context) InsertAtEntryAttr(S.Context, AL, Matchers.data(), Matchers.size()));
+      break;
+    case ParsedAttr::AT_InsertAtExit:
+      D->addAttr(::new (S.Context) InsertAtExitAttr(S.Context, AL, Matchers.data(), Matchers.size()));
+      break;
     case ParsedAttr::AT_Matcher:
       D->addAttr(::new (S.Context) MatcherAttr(S.Context, AL, Matchers[0]));
+      break;
+    case ParsedAttr::AT_FunctionMatcher:
+      D->addAttr(::new (S.Context) FunctionMatcherAttr(S.Context, AL, Matchers[0]));
       break;
     default:
       llvm_unreachable("unexpected attribute kind");
@@ -9420,7 +9429,10 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
   case ParsedAttr::AT_ReplaceCode:
   case ParsedAttr::AT_InsertCodeBefore:
   case ParsedAttr::AT_InsertCodeAfter:
+  case ParsedAttr::AT_InsertAtEntry:
+  case ParsedAttr::AT_InsertAtExit:
   case ParsedAttr::AT_Matcher:
+  case ParsedAttr::AT_FunctionMatcher:
     handleCodeModifyAttr(S, D, AL);
     break;
 

@@ -4061,6 +4061,27 @@ def Matcher : CodeModifyAttr {
   let Documentation = [Undocumented];
 }
 
+def FunctionMatcher : CodeModifyAttr {
+  let Spellings = [Clang<"function_matcher">];
+  let Subjects = SubjectList<[Function]>;
+  let Args = [StringArgument<"MatcherName">];
+  let Documentation = [Undocumented];
+}
+
+def InsertAtEntry : CodeModifyAttr {
+  let Spellings = [Clang<"insert_at_entry">];
+  let Subjects = SubjectList<[Function]>;
+  let Args = [VariadicStringArgument<"Matchers">];
+  let Documentation = [Undocumented];
+}
+
+def InsertAtExit : CodeModifyAttr {
+  let Spellings = [Clang<"insert_at_exit">];
+  let Subjects = SubjectList<[Function]>;
+  let Args = [VariadicStringArgument<"Matchers">];
+  let Documentation = [Undocumented];
+}
+
 def MatcherBlock : InheritableAttr {
   let Spellings = [Clang<"matcher_block">];
   let Subjects = SubjectList<[Var, Function, Record, Field, Stmt, Named, CXXRecord, Struct, CompoundStmt], ErrorDiag, "compound stmts">;

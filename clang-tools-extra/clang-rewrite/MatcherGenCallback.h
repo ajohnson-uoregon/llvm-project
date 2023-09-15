@@ -184,6 +184,13 @@ public:
           body->bind_to("clang_rewrite::loop_body");
           return true;
         }
+        else if (callee->getQualifiedNameAsString() == "clang_rewrite::function_body") {
+          printf("FOUND FUNCTION BODY CALL\n");
+          Node* body = add_node(MT::functionBody, "functionBody", 0);
+          body->set_name("function_body", "clang_rewrite::function_body");
+          body->bind_to("clang_rewrite::function_body");
+          return true;
+        }
         else if (callee->getQualifiedNameAsString() == "clang_rewrite::contains") {
           printf("FOUND CONTAINS CALL\n");
           add_node(MT::contains, "contains", call->getNumArgs());
@@ -609,6 +616,35 @@ public:
 
     bool VisitForStmt(ForStmt* forstmt) {
       add_node(MT::forStmt, "forStmt()", getNumChildren(forstmt));
+
+      return true;
+    }
+
+    bool VisitFunctionDecl(FunctionDecl* func) {
+      Node* func_node = add_node(MT::functionDecl, "functionDecl()", func->getNumParams() + 2); // args + num args + body
+
+      std::string name = func->getNameAsString();
+      std::string qualname = func->getQualifiedNameAsString();
+
+      if (is_literal(func)) {
+        func_node->set_name(name, qualname);
+        func_node->set_is_literal(true);
+        std::string ty = func->getType().getAsString();
+        func_node->set_type(ty);
+      }
+      else if (is_internal_matcher && is_internal_literal(func)) {
+        func_node->set_name(name, qualname);
+        func_node->set_is_literal(true);
+        std::string ty = func->getType().getAsString();
+        func_node->set_type(ty);
+      }
+      else if (name == "operator()") {
+        func_node->set_name(name, name);
+        func_node->set_is_literal(true);
+      }
+      else {
+        func_node->bind_to(name + ";" + qualname);
+      }
 
       return true;
     }
@@ -1375,6 +1411,9 @@ DeclarationMatcher matcher_decl =
     ))
   )).bind("matcher");
 
+DeclarationMatcher matcher_func =
+  functionDecl(hasAttr(attr::FunctionMatcher)).bind("matcher");
+
 // std::unordered_map<std::string, VariantMatcher> stmt_matchers;
 std::vector<MatcherWrapper<ast_matchers::internal::DynTypedMatcher> *> user_matchers;
 std::vector<MatcherWrapper<ast_matchers::internal::DynTypedMatcher> *> internal_matchers;
@@ -1427,6 +1466,7 @@ public:
 
     unsigned int begin_line, begin_col;
     unsigned int end_line, end_col;
+    bool is_function_matcher = false;
 
     if (decl_valid) {
       FullSourceLoc begin = context->getFullLoc(decl->getBeginLoc());
@@ -1440,6 +1480,11 @@ public:
         if (attr->getKind() == attr::Matcher) {
           StringRef name = cast<MatcherAttr>(attr)->getMatcherName();
           matcher_name = name.str();
+        }
+        else if (attr->getKind() == attr::FunctionMatcher) {
+          StringRef name = cast<FunctionMatcherAttr>(attr)->getMatcherName();
+          matcher_name = name.str();
+          is_function_matcher = true;
         }
       }
       printf("FOUND matcher (decl) %s at %d:%d - %d:%d\n", matcher_name.c_str(), begin_line, begin_col, end_line, end_col);
@@ -1457,6 +1502,11 @@ public:
           if (attr->getKind() == attr::Matcher) {
             StringRef name = cast<MatcherAttr>(attr)->getMatcherName();
             matcher_name = name.str();
+          }
+          else if (attr->getKind() == attr::FunctionMatcher) {
+            StringRef name = cast<FunctionMatcherAttr>(attr)->getMatcherName();
+            matcher_name = name.str();
+            is_function_matcher = true;
           }
         }
         printf("FOUND matcher (stmt) %s at %d:%d - %d:%d\n", matcher_name.c_str(), begin_line, begin_col, end_line, end_col);
@@ -1478,65 +1528,78 @@ public:
       past_matches.push_back({begin_line, begin_col, end_line, end_col});
     }
 
-    const Decl* body_decl = result.Nodes.getNodeAs<Decl>("body");
-    const Stmt* body_stmt = result.Nodes.getNodeAs<Stmt>("body");
-
-    bool body_decl_valid = true;
-    bool body_stmt_valid = true;
-
-    if (!body_decl || !context->getSourceManager().isWrittenInMainFile(body_decl->getBeginLoc())) {
-      // printf("ERROR: invalid body\n");
-      // return;
-      body_decl_valid = false;
-    }
-    if (!body_stmt || !context->getSourceManager().isWrittenInMainFile(body_stmt->getBeginLoc())) {
-      // printf("ERROR: invalid body\n");
-      // return;
-      body_stmt_valid = false;
-    }
-
-    if (!body_decl_valid && !body_stmt_valid) {
-      printf("ERROR: invalid matcher body\n");
-      return;
-    }
-    // printf("function body\n");
-    // body->dump();
-
-    // std::vector<std::string> literals;
-
     BuildMatcherVisitor visitor(context, clang_rewrite_literals,
       is_internal_matcher, internal_bindings);
 
-    if (body_stmt_valid) {
-      if (const CompoundStmt* body = dyn_cast<CompoundStmt>(body_stmt)) {
-        if (body->size() == 1) {
-          body->body_front()->dump();
-          visitor.TraverseStmt(const_cast<Stmt*>(body->body_front()));
+    if (!is_function_matcher) {
+      const Decl* body_decl = result.Nodes.getNodeAs<Decl>("body");
+      const Stmt* body_stmt = result.Nodes.getNodeAs<Stmt>("body");
+
+      bool body_decl_valid = true;
+      bool body_stmt_valid = true;
+
+      if (!body_decl || !context->getSourceManager().isWrittenInMainFile(body_decl->getBeginLoc())) {
+        // printf("ERROR: invalid body\n");
+        // return;
+        body_decl_valid = false;
+      }
+      if (!body_stmt || !context->getSourceManager().isWrittenInMainFile(body_stmt->getBeginLoc())) {
+        // printf("ERROR: invalid body\n");
+        // return;
+        body_stmt_valid = false;
+      }
+
+      if (!body_decl_valid && !body_stmt_valid) {
+        printf("ERROR: invalid matcher body\n");
+        return;
+      }
+      // printf("function body\n");
+      // body->dump();
+
+      // std::vector<std::string> literals;
+
+      if (body_stmt_valid) {
+        if (const CompoundStmt* body = dyn_cast<CompoundStmt>(body_stmt)) {
+          if (body->size() == 1) {
+            body->body_front()->dump();
+            visitor.TraverseStmt(const_cast<Stmt*>(body->body_front()));
+          }
+          else {
+            printf("WARNING: matcher generation for more than one statement is not "
+              "fully implemented and may produce incorrect or invalid results.\n");
+            // TODO: figure out multiple statements. ideas:
+            // possibly do the compoundStmt thing but bind matchers for hasAnySubstmt
+            //    to s1, s2, etc and then verify that loc(s1) < loc(s2) < ...
+            // if we want to allow for intervening statements,
+            //    loc(s1) < loc(s2) < loc(s3) is good
+            // if we have s1; sa; s2; s3 that holds but if s1, s2, and s3 are
+            //    reordered at all it'll break
+            // if we don't allow intervening statements, we'd need the strict
+            //    ordering and something like end(s1) = start(s2) and
+            //    end(s2) = start(s3) in addition
+            visitor.TraverseStmt(const_cast<CompoundStmt*>(body));
+          }
         }
         else {
-          printf("WARNING: matcher generation for more than one statement is not "
-            "fully implemented and may produce incorrect or invalid results.\n");
-          // TODO: figure out multiple statements. ideas:
-          // possibly do the compoundStmt thing but bind matchers for hasAnySubstmt
-          //    to s1, s2, etc and then verify that loc(s1) < loc(s2) < ...
-          // if we want to allow for intervening statements,
-          //    loc(s1) < loc(s2) < loc(s3) is good
-          // if we have s1; sa; s2; s3 that holds but if s1, s2, and s3 are
-          //    reordered at all it'll break
-          // if we don't allow intervening statements, we'd need the strict
-          //    ordering and something like end(s1) = start(s2) and
-          //    end(s2) = start(s3) in addition
-          visitor.TraverseStmt(const_cast<CompoundStmt*>(body));
+          visitor.TraverseStmt(const_cast<Stmt*>(body_stmt));
         }
       }
-      else {
-        visitor.TraverseStmt(const_cast<Stmt*>(body_stmt));
+      else if (body_decl_valid) {
+        printf("WARNING: matcher generation for declarations is not fully "
+               "implemented and may produce incorrect or invalid results.\n");
+        visitor.TraverseDecl(const_cast<Decl*>(body_decl));
       }
     }
-    else if (body_decl_valid) {
-      printf("WARNING: matcher generation for declarations is not fully "
-             "implemented and may produce incorrect or invalid results.\n");
-      visitor.TraverseDecl(const_cast<Decl*>(body_decl));
+    else { // is_function_matcher
+      if (decl_valid) {
+        visitor.TraverseDecl(const_cast<Decl*>(decl));
+      }
+      else if (stmt_valid) {
+        visitor.TraverseStmt(const_cast<Stmt*>(stmt));
+      }
+      else {
+        printf("ERROR: no valid stmt or decl for function matcher\n");
+      }
     }
 
 

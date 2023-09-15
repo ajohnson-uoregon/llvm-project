@@ -48,6 +48,7 @@ enum class MatcherType {
   fixedPointLiteral,            //
   floatLiteral,                 //
   forStmt,                //
+  functionBody,         // macro
   functionDecl,               // 30
   hasAnyBody,
   hasAnyDeclaration,

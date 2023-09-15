@@ -125,6 +125,7 @@ int main(int argc, const char** argv) {
     name_rewriter.addMatcher(replace_match, &name_rewrite_callback);
     name_rewriter.addMatcher(matcher_stmt, &name_rewrite_callback);
     name_rewriter.addMatcher(matcher_decl, &name_rewrite_callback);
+    name_rewriter.addMatcher(matcher_func, &name_rewrite_callback);
 
     retval = Tool->run(newFrontendActionFactory(&name_rewriter).get());
 
@@ -139,6 +140,7 @@ int main(int argc, const char** argv) {
     inst_finder.addMatcher(replace_match, &replace_callback);
     inst_finder.addMatcher(matcher_stmt, &matcher_callback);
     inst_finder.addMatcher(matcher_decl, &matcher_callback);
+    inst_finder.addMatcher(matcher_func, &matcher_callback);
 
     // find matchers and replacers, make CodeActions
     ProcessSpec = new ClangTool(Tool->getCompilationDatabase(), {temp_file_name+".rewritten_spec.cpp"});

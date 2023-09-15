@@ -433,6 +433,9 @@ VariantMatcher handle_compoundStmt(Node* root, int level) {
       if (child->matcher_type == MT::loopBody) {
         root->bind_to(child->qual_name);
       }
+      else if (child->matcher_type == MT::functionBody) {
+        root->bind_to(child->qual_name);
+      }
       else if (child->matcher_type == MT::contains) {
         child_matchers.push_back(make_matcher(child, level+5));
       }
@@ -1081,6 +1084,68 @@ VariantMatcher handle_code_structure_math(Node* root, int level) {
   // } // child_matchers.size()
 }
 
+VariantMatcher handle_functionDecl(Node* root, int level) {
+  std::vector<VariantValue> child_matchers;
+  child_matchers.insert(child_matchers.end(), root->args.begin(), root->args.end());
+
+  // if (root->has_type && root->is_literal) {
+  //   child_matchers.push_back(constructMatcher("hasType",
+  //     constructMatcher("asString", StringRef(root->type), level+6), level+5));
+  // }
+
+  if (root->has_type && root->matcher_type == MatcherType::varDecl) {
+    child_matchers.push_back(constructMatcher("hasType",
+      constructMatcher("asString", StringRef(root->type), level+6), level+5));
+  }
+
+  if (root->has_name) {
+    child_matchers.push_back(constructMatcher("hasName", StringRef(root->qual_name), level+5));
+  }
+
+  if (root->children) {
+    // for (Node* child = root->children; child != nullptr; child = child->next_sibling) {
+    //   child_matchers.push_back(make_matcher(child, level+5));
+    // }
+
+    Node* arg = root->children;
+    int argnum = 0;
+    // because this is the top level matcher a lot of the time, need to handle
+    // it having a copy child with the actual name bound
+    if (arg != nullptr && arg->matcher_type == MatcherType::functionDecl) {
+      child_matchers.push_back(make_matcher(arg, level+5));
+      arg = arg->next_sibling;
+    }
+
+    while (arg != nullptr && arg->matcher_type != MatcherType::compoundStmt) {
+      child_matchers.push_back(constructMatcher("hasParameter", VariantValue(argnum), make_matcher(arg, level+6), level+5));
+      argnum++;
+      arg = arg->next_sibling;
+    }
+
+    child_matchers.push_back(constructMatcher("parameterCountIs", VariantValue(argnum), level+5));
+
+    if (arg != nullptr && arg->matcher_type == MatcherType::compoundStmt) {
+      Node* body = arg;
+      child_matchers.push_back(constructMatcher("hasAnyBody", make_matcher(body, level+6), level+5));
+    }
+    else if (arg == nullptr) {
+      printf("functiondecl has no body?\n");
+    }
+
+    if (arg && arg->next_sibling) {
+      printf("functiondecl has extra operands???\n");
+    }
+  }
+
+  if (child_matchers.size() < 1 && !is_singleton(root->matcher_type)) {
+    // guarantee child_matchers.size() >= 1 (also required to not make an
+    // ambiguous matcher and actually match things)
+    child_matchers.push_back(constructMatcher("anything", level+5));
+  }
+
+  return handle_bindable_children(root, child_matchers, "functionDecl", level);
+}
+
 
 
 VariantMatcher handle_non_bindable_node(Node* root, StringRef name, int level) {
@@ -1201,7 +1266,7 @@ VariantMatcher make_matcher(Node* root, int level) {
     case MT::forStmt:
       return handle_forStmt(root, level);
     case MT::functionDecl:
-      return handle_bindable_node(root, "functionDecl", level);
+      return handle_functionDecl(root, level);
     case MT::hasAnyBody:
       return handle_non_bindable_node(root, "hasAnyBody", level);
     case MT::hasAnyDeclaration:

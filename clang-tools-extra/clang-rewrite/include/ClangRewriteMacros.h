@@ -21,6 +21,8 @@ namespace clang_rewrite {
   // template<typename T, typename U>
   void loop_body(std::vector<std::pair<int,int>> bindings) {}
 
+  void function_body() {}
+
   void contains(code_structure structure) {}
 
   void not_contains(code_structure structure) {}
