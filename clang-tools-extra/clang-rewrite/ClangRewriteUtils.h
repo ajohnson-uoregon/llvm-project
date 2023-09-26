@@ -1,8 +1,11 @@
 #ifndef CLANG_REWRITE_UTILS_H
 #define CLANG_REWRITE_UTILS_H
 
+#include "clang/AST/ASTContext.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/ASTMatchers/Dynamic/Registry.h"
+#include "clang/Lex/Lexer.h"
+#include "clang/Lex/Token.h"
 
 #include "LocalASTMatchers.h"
 #include "CodeAction.h"
@@ -81,6 +84,60 @@ bool locIsInRangeHard(clang::rewrite_tool::Location l,
 bool locIsInRangeHard(clang::rewrite_tool::Location l,
                       int my_begin_line, int my_begin_col) {
   return locIsInRangeHard(l.begin_line, l.begin_col, l.end_line, l.end_col, my_begin_line, my_begin_col);
+}
+
+size_t getLengthOfName(const Expr* exp, ASTContext* context) {
+  size_t space = 0;
+
+  clang::SourceLocation start = exp->getBeginLoc();
+  clang::SourceLocation end = exp->getEndLoc();
+  std::optional<Token> tok = Lexer::findNextToken(end, context->getSourceManager(), context->getLangOpts());
+  clang::SourceLocation merp = Lexer::getLocForEndOfToken(end, 0, context->getSourceManager(), context->getLangOpts());
+
+  // while (tok && (tok->is(tok::coloncolon) || tok->is(tok::identifier) || tok->is(tok::raw_identifier))) {
+  //   printf("TOK %s (%s)\n", Lexer::getSpelling(*tok, context->getSourceManager(), context->getLangOpts()).c_str(), tok->getName());
+  //   space += Lexer::MeasureTokenLength(loc, context->getSourceManager(), context->getLangOpts());
+  //   tok = Lexer::findNextToken(loc, context->getSourceManager(), context->getLangOpts());
+  //   loc = Lexer::getLocForEndOfToken(loc, 0, context->getSourceManager(), context->getLangOpts());
+  //   printf("next tok %s (%s)\n", Lexer::getSpelling(*tok, context->getSourceManager(), context->getLangOpts()).c_str(), tok->getName());
+  // }
+
+  FullSourceLoc beginfull = context->getFullLoc(start);
+  FullSourceLoc endfull = context->getFullLoc(merp);
+
+  unsigned int begin_offset = beginfull.getFileOffset();
+  unsigned int end_offset = endfull.getFileOffset();
+
+  space = end_offset - begin_offset;
+
+  return space;
+}
+
+size_t getLengthOfExpr(const Expr* exp, ASTContext* context) {
+  size_t space = 0;
+
+  clang::SourceLocation start = exp->getBeginLoc();
+  clang::SourceLocation end = exp->getEndLoc();
+  std::optional<Token> tok = Lexer::findNextToken(end, context->getSourceManager(), context->getLangOpts());
+  clang::SourceLocation merp = Lexer::getLocForEndOfToken(end, 0, context->getSourceManager(), context->getLangOpts());
+
+  // while (tok && (tok->is(tok::coloncolon) || tok->is(tok::identifier) || tok->is(tok::raw_identifier))) {
+  //   printf("TOK %s (%s)\n", Lexer::getSpelling(*tok, context->getSourceManager(), context->getLangOpts()).c_str(), tok->getName());
+  //   space += Lexer::MeasureTokenLength(loc, context->getSourceManager(), context->getLangOpts());
+  //   tok = Lexer::findNextToken(loc, context->getSourceManager(), context->getLangOpts());
+  //   loc = Lexer::getLocForEndOfToken(loc, 0, context->getSourceManager(), context->getLangOpts());
+  //   printf("next tok %s (%s)\n", Lexer::getSpelling(*tok, context->getSourceManager(), context->getLangOpts()).c_str(), tok->getName());
+  // }
+
+  FullSourceLoc beginfull = context->getFullLoc(start);
+  FullSourceLoc endfull = context->getFullLoc(merp);
+
+  unsigned int begin_offset = beginfull.getFileOffset();
+  unsigned int end_offset = endfull.getFileOffset();
+
+  space = end_offset - begin_offset;
+
+  return space;
 }
 
 void dump_binding(clang::rewrite_tool::Binding b) {

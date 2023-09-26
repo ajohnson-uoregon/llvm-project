@@ -123,6 +123,7 @@ int main(int argc, const char** argv) {
     name_rewriter.addMatcher(insert_before_match, &name_rewrite_callback);
     name_rewriter.addMatcher(insert_after_match, &name_rewrite_callback);
     name_rewriter.addMatcher(replace_match, &name_rewrite_callback);
+    name_rewriter.addMatcher(replace_in_body_match, &name_rewrite_callback);
     name_rewriter.addMatcher(matcher_stmt, &name_rewrite_callback);
     name_rewriter.addMatcher(matcher_decl, &name_rewrite_callback);
     name_rewriter.addMatcher(matcher_func, &name_rewrite_callback);
@@ -133,11 +134,13 @@ int main(int argc, const char** argv) {
     InsertPrematchCallback prematch_callback;
     InsertPostmatchCallback postmatch_callback;
     ReplaceCallback replace_callback;
+    ReplaceInBodyCallback replace_in_body_callback;
     MatcherGenCallback matcher_callback(/*is_internal_matcher=*/false, {});
 
     inst_finder.addMatcher(insert_before_match, &prematch_callback);
     inst_finder.addMatcher(insert_after_match, &postmatch_callback);
     inst_finder.addMatcher(replace_match, &replace_callback);
+    inst_finder.addMatcher(replace_in_body_match, &replace_in_body_callback);
     inst_finder.addMatcher(matcher_stmt, &matcher_callback);
     inst_finder.addMatcher(matcher_decl, &matcher_callback);
     inst_finder.addMatcher(matcher_func, &matcher_callback);

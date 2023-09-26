@@ -4054,6 +4054,20 @@ def ReplaceCode : CodeModifyAttr {
   let Documentation = [Undocumented];
 }
 
+def FunctionReplaceCode : CodeModifyAttr {
+  let Spellings = [Clang<"function_replace">];
+  let Subjects = SubjectList<[Function]>;
+  let Args = [VariadicStringArgument<"Matchers">];
+  let Documentation = [Undocumented];
+}
+
+def ReplaceInBody : CodeModifyAttr {
+  let Spellings = [Clang<"replace_in_body">];
+  let Subjects = SubjectList<[Function]>;
+  let Args = [VariadicStringArgument<"Matchers">];
+  let Documentation = [Undocumented];
+}
+
 def Matcher : CodeModifyAttr {
   let Spellings = [Clang<"matcher">];
   let Subjects = SubjectList<[Function]>;

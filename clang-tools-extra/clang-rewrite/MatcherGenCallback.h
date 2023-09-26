@@ -157,6 +157,45 @@ public:
       return true;
     }
 
+    bool VisitAttributedStmt(AttributedStmt* stmt) {
+      bool traverse_substmt = true;
+      bool add_attr_to_tree = true;
+      bool has_matcher_block = false;
+      for (const Attr* a : stmt->getAttrs()) {
+        if (a->getKind() == attr::RewriteSetup) {
+          traverse_substmt = false;
+          add_attr_to_tree = false;
+        }
+        if (a->getKind() == attr::MatcherBlock) {
+          add_attr_to_tree = false;
+          has_matcher_block = true;
+        }
+      }
+
+      if (add_attr_to_tree) {
+        add_node(MT::attributedStmt, "attributedStmt()", getNumChildren(stmt) + stmt->getAttrs().size());
+        for (const Attr* a : stmt->getAttrs()) {
+          Node* hasattr = add_node(MT::hasAttr, "hasAttr()", 0);
+          hasattr->add_arg(a->getKind());
+        }
+
+      }
+
+      if (traverse_substmt) {
+        if (has_matcher_block) {
+          if (const CompoundStmt* comp = dyn_cast<CompoundStmt>(stmt->getSubStmt())) {
+            for (const Stmt* s : comp->body()) {
+              TraverseStmt(const_cast<Stmt*>(s));
+            }
+          }
+        }
+        else {
+          TraverseStmt(stmt->getSubStmt());
+        }
+      }
+      return false;
+    }
+
     bool VisitBinaryOperator(BinaryOperator* binop) {
       // plus one for opname
       add_node(MT::binaryOperator, "binaryOperator()", getNumChildren(binop) +1);
@@ -549,6 +588,15 @@ public:
     }
 
     bool VisitDeclStmt(DeclStmt* decl) {
+      for (auto d : decl->decls()) {
+        if (d->hasAttrs()) {
+          for (const Attr* a : d->attrs()) {
+            if (a->getKind() == attr::RewriteSetup) {
+              return true;
+            }
+          }
+        }
+      }
       add_node(MT::declStmt, "declStmt()", getNumChildren(decl));
 
       return true;
@@ -1134,6 +1182,13 @@ public:
     bool VisitVarDecl(VarDecl* decl) {
       if (isa<ParmVarDecl>(decl)) {
         return true;
+      }
+      if (decl->hasAttrs()) {
+        for (const Attr* a : decl->attrs()) {
+          if (a->getKind() == attr::RewriteSetup) {
+            return true;
+          }
+        }
       }
       std::string name = decl->getNameAsString();
       std::string qualname = decl->getQualifiedNameAsString();

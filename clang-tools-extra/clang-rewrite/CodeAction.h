@@ -31,6 +31,7 @@ enum NewCodeKind {
   InsertPrematch,
   InsertPostmatch,
   Replace,
+  ReplaceInBody,
 };
 
 enum BindingKind {

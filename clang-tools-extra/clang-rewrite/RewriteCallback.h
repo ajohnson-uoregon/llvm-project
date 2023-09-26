@@ -688,8 +688,21 @@ public:
       original_file = context->getSourceManager().getFilename(smatch->getBeginLoc());
     }
     else if (dmatch) {
-      original_range = SourceRange(dmatch->getBeginLoc(), dmatch->getEndLoc());
-      original_file = context->getSourceManager().getFilename(dmatch->getBeginLoc());
+      if (const FunctionDecl* func = dyn_cast<FunctionDecl>(dmatch)) {
+        const Stmt* body = func->getBody();
+        if (const CompoundStmt* bodystmt = dyn_cast<CompoundStmt>(body)) {
+          original_range = SourceRange(bodystmt->body_front()->getBeginLoc(), bodystmt->body_back()->getEndLoc());
+          original_file = context->getSourceManager().getFilename(dmatch->getBeginLoc());
+        }
+        else {
+          original_range = SourceRange(dmatch->getBeginLoc(), dmatch->getEndLoc());
+          original_file = context->getSourceManager().getFilename(dmatch->getBeginLoc());
+        }
+      }
+      else {
+        original_range = SourceRange(dmatch->getBeginLoc(), dmatch->getEndLoc());
+        original_file = context->getSourceManager().getFilename(dmatch->getBeginLoc());
+      }
     }
 
     // std::string binding_file_name = temp_file_name;

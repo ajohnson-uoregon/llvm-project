@@ -8531,6 +8531,12 @@ static void handleCodeModifyAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
     case ParsedAttr::AT_ReplaceCode:
       D->addAttr(::new (S.Context) ReplaceCodeAttr(S.Context, AL, Matchers.data(), Matchers.size()));
       break;
+    case ParsedAttr::AT_FunctionReplaceCode:
+      D->addAttr(::new (S.Context) FunctionReplaceCodeAttr(S.Context, AL, Matchers.data(), Matchers.size()));
+      break;
+    case ParsedAttr::AT_ReplaceInBody:
+      D->addAttr(::new (S.Context) ReplaceInBodyAttr(S.Context, AL, Matchers.data(), Matchers.size()));
+      break;
     case ParsedAttr::AT_InsertCodeAfter:
       D->addAttr(::new (S.Context) InsertCodeAfterAttr(S.Context, AL, Matchers.data(), Matchers.size()));
       break;
@@ -9427,6 +9433,8 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
     break;
 
   case ParsedAttr::AT_ReplaceCode:
+  case ParsedAttr::AT_FunctionReplaceCode:
+  case ParsedAttr::AT_ReplaceInBody:
   case ParsedAttr::AT_InsertCodeBefore:
   case ParsedAttr::AT_InsertCodeAfter:
   case ParsedAttr::AT_InsertAtEntry:

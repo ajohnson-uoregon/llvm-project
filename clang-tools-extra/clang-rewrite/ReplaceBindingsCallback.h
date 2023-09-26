@@ -195,12 +195,23 @@ public:
       printf("expr\n");
       exp->dump();
       if (bind.name == "clang_rewrite::loop_body" ||
-          bind.qual_name == "clang_rewrite::loop_body") {
+          bind.qual_name == "clang_rewrite::loop_body" ||
+          bind.name == "clang_rewrite::function_body" ||
+          bind.qual_name == "clang_rewrite::function_body") {
+        std::string loop_or_func;
+        if (bind.name == "clang_rewrite::loop_body" ||
+            bind.qual_name == "clang_rewrite::loop_body") {
+          loop_or_func == "clang_rewrite::loop_body";
+        }
+        else if (bind.name == "clang_rewrite::function_body" ||
+                 bind.qual_name == "clang_rewrite::function_body") {
+          loop_or_func = "clang_rewrite::function_body";
+        }
         // go match loop_body in file - might need to rewrite file in between
         // pull matcher/replacer pair
         // run MatcherGenCallback to put matcher into internal_matchers
         StatementMatcher inits_matcher = callExpr(allOf(
-          callee(functionDecl(hasName("clang_rewrite::loop_body"))),
+          callee(functionDecl(hasName(loop_or_func))),
           hasArgument(0, cxxBindTemporaryExpr(hasSubExpr(
             cxxConstructExpr(hasArgument(0,
               cxxStdInitializerListExpr(hasSubExpr(materializeTemporaryExpr(hasSubExpr(
@@ -213,7 +224,7 @@ public:
         )).bind("matcher");
 
         StatementMatcher inits_matcher2 = callExpr(allOf(
-          callee(unresolvedLookupExpr(hasAnyDeclaration(namedDecl(hasName("clang_rewrite::loop_body"))))),
+          callee(unresolvedLookupExpr(hasAnyDeclaration(namedDecl(hasName(loop_or_func))))),
           hasArgument(0, initListExpr(forEachDescendant(
             initListExpr(hasInit(0, expr().bind("body")))
           )))
@@ -227,7 +238,7 @@ public:
         inits_finder.addMatcher(inits_matcher2, &mgcb);
 
         printf("ABOUT TO RUN THE THING\n");
-        ClangTool process_temp(Tool->getCompilationDatabase(), {"clang_rewrite_temp_source.cpp.bind_final.cpp"});
+        ClangTool process_temp(Tool->getCompilationDatabase(), {temp_file_name + "." + std::to_string(num_bind_files) + ".bind.cpp"});
         process_temp.run(newFrontendActionFactory(&inits_finder).get());
         // rewrite file with b.value wrapped in internal matcher_block attr
         // to do that we need the callexpr
@@ -239,25 +250,32 @@ public:
           const auto &CurNode = Stack.back();
           Stack.pop_back();
           if (const CompoundStmt* comp = CurNode.get<CompoundStmt>()) {
-            begin = context->getFullLoc(comp->getLBracLoc());
-            end = context->getFullLoc(comp->getRBracLoc());
-            match = begin;
-            break;
+            if (loop_or_func == "clang_rewrite::loop_body") {
+              begin = context->getFullLoc(comp->getLBracLoc());
+              end = context->getFullLoc(comp->getRBracLoc());
+              match = begin;
+              break;
+            }
+            else {
+              break;
+            }
           }
           else if (const CallExpr* callexpr = CurNode.get<CallExpr>()) {
+            SourceLocation rparen = callexpr->getRParenLoc();
+            end = context->getFullLoc(rparen);
             const Expr* callee = callexpr->getCallee();
             // i don't like doing this either but it's the best i got
             bool lookup_is_loopbody = false;
             if (const UnresolvedLookupExpr* lookup = dyn_cast<UnresolvedLookupExpr>(callee)) {
               const Decl* d = *(lookup->decls().begin());
               if (const NamedDecl* decl = dyn_cast<NamedDecl>(d)) {
-                if (decl->getQualifiedNameAsString() == "clang_rewrite::loop_body") {
+                if (decl->getQualifiedNameAsString() == loop_or_func) {
                   lookup_is_loopbody = true;
                 }
               }
             }
             if ((callexpr->getDirectCallee() && callexpr->getDirectCallee()->getQualifiedNameAsString() ==
-                "clang_rewrite::loop_body") ||
+                loop_or_func) ||
                 lookup_is_loopbody) {
               call = callexpr;
               if (callexpr->getNumArgs() > 0) {
@@ -371,9 +389,9 @@ public:
         if (isa<DeclRefExpr>(exp)) {
 
           if (buff.has_value()) {
-            size_t space;
-            space = Lexer::MeasureTokenLength(exp->getBeginLoc(),
-              context->getSourceManager(), context->getLangOpts());
+            size_t space = getLengthOfName(exp, context);
+            // space = Lexer::MeasureTokenLength(exp->getBeginLoc(),
+            //   context->getSourceManager(), context->getLangOpts());
             printf("oh noes %lu\n", space);
 
             char* name_c = new char[space + 1];

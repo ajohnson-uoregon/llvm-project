@@ -19,6 +19,7 @@ enum class MatcherType {
   fakeNode,                     // 0
   anyOf,
   arraySubscriptExpr,
+  attributedStmt,
   binaryOperator,
   callee,
   callExpr,
@@ -59,6 +60,7 @@ enum class MatcherType {
   hasAnySubExpr,
   hasArraySize,                   //
   hasAssociatedStmt,              //
+  hasAttr,
   hasBody,                       // 40
   hasCallOperator,
   hasCapturedStmt,              //

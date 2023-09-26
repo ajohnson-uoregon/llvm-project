@@ -60,6 +60,7 @@ public:
         for (Attr* a : decl->attrs()) {
           if (a->getKind() == attr::Matcher ||
               a->getKind() == attr::ReplaceCode ||
+              a->getKind() == attr::ReplaceInBody ||
               a->getKind() == attr::InsertCodeBefore ||
               a->getKind() == attr::InsertCodeAfter) {
             is_matcher_replacer = true;
@@ -172,6 +173,7 @@ public:
     const Decl* insert_before = result.Nodes.getNodeAs<Decl>("insert_before_match");
     const Decl* insert_after = result.Nodes.getNodeAs<Decl>("insert_after_match");
     const Decl* replace = result.Nodes.getNodeAs<Decl>("replace");
+    const Decl* replace_in_body = result.Nodes.getNodeAs<Decl>("replace_in_body");
 
     const Decl* valid_decl;
 
@@ -186,6 +188,9 @@ public:
     }
     else if (replace && context->getSourceManager().isWrittenInMainFile(replace->getBeginLoc())) {
       valid_decl = replace;
+    }
+    else if (replace_in_body && context->getSourceManager().isWrittenInMainFile(replace_in_body->getBeginLoc())) {
+      valid_decl = replace_in_body;
     }
     else {
       valid_decl = nullptr;

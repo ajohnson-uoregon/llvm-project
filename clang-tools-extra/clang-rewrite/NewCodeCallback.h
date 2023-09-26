@@ -65,6 +65,20 @@ DeclarationMatcher replace_match =
     )))
   )).bind("replace");
 
+DeclarationMatcher replace_in_body_match =
+  functionDecl(allOf(
+    hasAttr(attr::ReplaceInBody),
+    hasBody(compoundStmt(allOf(
+      optionally(hasAnySubstatement(declStmt(
+        containsAnyDeclaration(varDecl(hasAttr(attr::RewriteSetup)))
+      ).bind("setup"))),
+      hasAnySubstatement(attributedStmt(allOf(
+        hasAttr(attr::MatcherBlock),
+        hasSubStmt(compoundStmt(anything()))
+      )).bind("body"))
+    )))
+  )).bind("replace_in_body");
+
 
 std::vector<CodeAction *> all_actions;
 
@@ -119,6 +133,11 @@ public:
         case attr::InsertCodeBefore:
           for (StringRef m : cast<InsertCodeBeforeAttr>(attr)->matchers()) {
             // llvm::outs() << m << "\n";
+            matcher_names.push_back(m.str());
+          }
+          break;
+        case attr::ReplaceInBody:
+          for (StringRef m : cast<ReplaceInBodyAttr>(attr)->matchers()) {
             matcher_names.push_back(m.str());
           }
           break;
@@ -212,6 +231,14 @@ public:
   ReplaceCallback() {
     kind = Replace;
     kind_name = "replace";
+  }
+};
+
+class ReplaceInBodyCallback : public NewCodeCallback {
+public:
+  ReplaceInBodyCallback() {
+    kind = ReplaceInBody;
+    kind_name = "replace_in_body";
   }
 };
 
